@@ -66,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   //Formulario inline Categorías
   const inputCatNombre = document.getElementById('input-categoria-nombre');
+  const inputCatDescripcion = document.getElementById('input-categoria-descripcion');
   const inputCatActivo = document.getElementById('input-categoria-activo');
   const btnGuardarCat = document.getElementById('btn-guardar-categoria');
   const btnCancelarCat = document.getElementById('btn-cancelar-categoria');
@@ -84,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
   //Formulario inline Subcategorías
   const inputSubcatCat = document.getElementById('input-subcat-categoria');
   const inputSubcatNombre = document.getElementById('input-subcat-nombre');
+  const inputSubcatDescripcion = document.getElementById('input-subcat-descripcion');
   const inputSubcatActivo = document.getElementById('input-subcat-activo');
   const btnGuardarSubcat = document.getElementById('btn-guardar-subcategoria');
   const btnCancelarSubcat = document.getElementById('btn-cancelar-subcategoria');
@@ -133,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let subcategoriasCache = [];
   let marcasCache = [];
   let unidadesCache = [];
-  let modoEditCat = false;   
+  let modoEditCat = false;
   let modoEditSubcat = false;
   let modoEditMarca = false;
   let modoEditUnidad = false;
@@ -407,15 +409,18 @@ document.addEventListener('DOMContentLoaded', () => {
           const kFragment = document.createDocumentFragment();
           data.kardex.forEach(k => {
             const tr = document.createElement('tr');
+            const refTexto = k.referencia_tipo
+              ? `${k.referencia_tipo.charAt(0).toUpperCase() + k.referencia_tipo.slice(1)} #${k.referencia_id ?? '—'}`
+              : '—';
             tr.innerHTML = `
                             <td>${getBadge(k.tipo_movimiento)}</td>
                             <td class="small">${k.motivo ?? '—'}</td>
                             <td class="text-end">${k.cantidad}</td>
                             <td class="text-end">${k.stock_anterior}</td>
                             <td class="text-end fw-semibold">${k.stock_posterior}</td>
-                            <td class="small">${k.referencia_tipo ?? '—'}</td>
+                            <td class="small">${refTexto}</td>
                             <td class="small">${k.usuario}</td>
-                            <td class="small text-muted">${formatDate(k.registrado_en, true)}</td>`;
+                            <td class="small text-nowrap text-muted">${formatDate(k.registrado_en, true)}</td>`;
             kFragment.appendChild(tr);
           });
           tbodyKardex.innerHTML = '';
@@ -650,7 +655,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tr.innerHTML = `
             <td class="text-muted small">${i + 1}</td>
             <td class="fw-semibold">${c.nombre}</td>
-            <td><span class="badge text-bg-secondary">${subcuenta}</span></td>
+            <td><span class="fw-semibold">${subcuenta}</span></td>
             <td>${getBadge(c.activo ? 'activo' : 'inactivo')}</td>
             <td>
                 <div class="d-flex gap-1 justify-content-end">
@@ -725,12 +730,17 @@ document.addEventListener('DOMContentLoaded', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ nombre, activo: inputCatActivo?.checked ? 1 : 0 }),
+        body: JSON.stringify({
+          nombre,
+          descripcion: inputCatDescripcion?.value.trim() || null,
+          activo: inputCatActivo?.checked ? 1 : 0
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al crear categoría');
       showToast('Categoría creada', 'success');
       if (inputCatNombre) inputCatNombre.value = '';
+      if (inputCatDescripcion) inputCatDescripcion.value = '';
       if (inputCatActivo) inputCatActivo.checked = true;
       cargarCategorias();
     } catch (err) {
@@ -740,9 +750,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   btnCancelarCat?.addEventListener('click', () => {
     if (inputCatNombre) inputCatNombre.value = '';
+    if (inputCatDescripcion) inputCatDescripcion.value = '';
     if (inputCatActivo) inputCatActivo.checked = true;
   });
 
+  
   // Guardar edición categoría (modal)
   btnGuardarEditCat?.addEventListener('click', async () => {
     const id = editCatId?.value;
@@ -804,7 +816,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tr.innerHTML = `
             <td class="text-muted small">${i + 1}</td>
             <td class="fw-semibold">${s.nombre}</td>
-            <td><span class="badge text-bg-secondary">${catNombre}</span></td>
+            <td><span class="fw-semibold">${catNombre}</span></td>
             <td>${getBadge(s.activo ? 'activo' : 'inactivo')}</td>
             <td>
                 <div class="d-flex gap-1 justify-content-end">
@@ -864,6 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Nueva subcategoría (form inline)
+  // Nueva subcategoría (form inline)
   btnGuardarSubcat?.addEventListener('click', async () => {
     const nombre = inputSubcatNombre?.value.trim();
     const catId = inputSubcatCat?.value;
@@ -874,12 +887,18 @@ document.addEventListener('DOMContentLoaded', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ nombre, id_categoria: catId, activo: inputSubcatActivo?.checked ? 1 : 0 }),
+        body: JSON.stringify({
+          nombre,
+          descripcion: inputSubcatDescripcion?.value.trim() || null,
+          id_categoria: catId,
+          activo: inputSubcatActivo?.checked ? 1 : 0
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al crear subcategoría');
       showToast('Subcategoría creada', 'success');
       if (inputSubcatNombre) inputSubcatNombre.value = '';
+      if (inputSubcatDescripcion) inputSubcatDescripcion.value = '';
       if (inputSubcatCat) inputSubcatCat.value = '';
       if (inputSubcatActivo) inputSubcatActivo.checked = true;
       cargarSubcategorias();
@@ -890,6 +909,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   btnCancelarSubcat?.addEventListener('click', () => {
     if (inputSubcatNombre) inputSubcatNombre.value = '';
+    if (inputSubcatDescripcion) inputSubcatDescripcion.value = '';
     if (inputSubcatCat) inputSubcatCat.value = '';
     if (inputSubcatActivo) inputSubcatActivo.checked = true;
   });
@@ -930,6 +950,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function cargarMarcas() {
     try {
+      if (!productosCache.length) await cargarProductos();
       const res = await fetch('/api/catalogo/marcas', { credentials: 'include' });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al cargar marcas');
@@ -957,7 +978,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tr.innerHTML = `
             <td class="text-muted small">${i + 1}</td>
             <td class="fw-semibold">${m.nombre}</td>
-            <td><span class="badge text-bg-secondary">${productosCount}</span></td>
+            <td><span class="fw-semibold">${productosCount}</span></td>
             <td>${getBadge(m.activo ? 'activo' : 'inactivo')}</td>
             <td>
                 <div class="d-flex gap-1 justify-content-end">
@@ -997,7 +1018,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!m) return;
       editMarcaId.value = m.id_marca;
       editMarcaNombre.value = m.nombre;
-      editMarcaPais.value = m.pais ?? '';
+      editMarcaPais.value = m.pais_origen ?? '';
       editMarcaActivo.checked = !!m.activo;
     }
 
@@ -1028,7 +1049,7 @@ document.addEventListener('DOMContentLoaded', () => {
         credentials: 'include',
         body: JSON.stringify({
           nombre,
-          pais: inputMarcaPais?.value.trim() || null,
+          pais_origen: inputMarcaPais?.value.trim() || null,
           activo: inputMarcaActivo?.checked ? 1 : 0,
         }),
       });
@@ -1063,7 +1084,7 @@ document.addEventListener('DOMContentLoaded', () => {
         credentials: 'include',
         body: JSON.stringify({
           nombre,
-          pais: editMarcaPais?.value.trim() || null,
+          pais_origen: editMarcaPais?.value.trim() || null,
           activo: editMarcaActivo?.checked ? 1 : 0,
         }),
       });
@@ -1084,6 +1105,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function cargarUnidades() {
     try {
+      if (!productosCache.length) await cargarProductos();
       const res = await fetch('/api/catalogo/unidades', { credentials: 'include' });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al cargar unidades');
@@ -1111,8 +1133,8 @@ document.addEventListener('DOMContentLoaded', () => {
       tr.innerHTML = `
             <td class="text-muted small">${i + 1}</td>
             <td class="fw-semibold">${u.nombre}</td>
-            <td><span class="badge text-bg-secondary">${u.abreviatura}</span></td>
-            <td><span class="badge text-bg-secondary">${productosCount}</span></td>
+            <td><span class="fw-semibold">${u.abreviatura}</span></td>
+            <td><span class="fw-semibold">${productosCount}</span></td>
             <td>
                 <div class="d-flex gap-1 justify-content-end">
                     <button type="button" class="btn btn-sm"

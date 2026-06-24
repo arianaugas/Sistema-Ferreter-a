@@ -1,61 +1,61 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ─── REFERENCIAS DOM ────────────────────────────────────────────────
-    const tbodyProveedores      = document.getElementById('tabla-proveedores-body');
-    const tbodyContactos        = document.getElementById('tabla-contactos-proveedor');
-    const tbodyProductosProv    = document.getElementById('tabla-productos-proveedor');
-    const tbodyComparativa      = document.getElementById('tabla-comparativa-body');
+    //REFERENCIAS DOM
+    const tbodyProveedores = document.getElementById('tabla-proveedores-body');
+    const tbodyContactos = document.getElementById('tabla-contactos-proveedor');
+    const tbodyProductosProv = document.getElementById('tabla-productos-proveedor');
+    const tbodyComparativa = document.getElementById('tabla-comparativa-body');
 
     // Filtros lista
-    const inputBuscar           = document.getElementById('input-buscar-proveedor');
-    const filtroCond            = document.getElementById('filtro-condicion-pago');
-    const filtroEstado          = document.getElementById('filtro-estado-proveedor');
+    const inputBuscar = document.getElementById('input-buscar-proveedor');
+    const filtroCond = document.getElementById('filtro-condicion-pago');
+    const filtroEstado = document.getElementById('filtro-estado-proveedor');
 
     // Filtros comparativa
-    const inputBuscarComp       = document.getElementById('input-buscar-comparativa');
-    const filtroCompCat         = document.getElementById('filtro-comparativa-categoria');
+    const inputBuscarComp = document.getElementById('input-buscar-comparativa');
+    const filtroCompCat = document.getElementById('filtro-comparativa-categoria');
 
     // Forms
-    const formNuevo             = document.getElementById('form-nuevo-proveedor');
-    const formEditar            = document.getElementById('form-editar-proveedor');
-    const formNuevoContacto     = document.getElementById('form-nuevo-contacto');
-    const formVincularProducto  = document.getElementById('form-vincular-producto');
+    const formNuevo = document.getElementById('form-nuevo-proveedor');
+    const formEditar = document.getElementById('form-editar-proveedor');
+    const formNuevoContacto = document.getElementById('form-nuevo-contacto');
+    const formVincularProducto = document.getElementById('form-vincular-producto');
 
     // Ficha modal
-    const modalFichaNombre      = document.getElementById('modal-proveedor-nombre');
-    const fichaRuc              = document.getElementById('ficha-prov-ruc');
-    const fichaNombre           = document.getElementById('ficha-prov-nombre');
-    const fichaDireccion        = document.getElementById('ficha-prov-direccion');
-    const fichaTelefono         = document.getElementById('ficha-prov-telefono');
-    const fichaCorreo           = document.getElementById('ficha-prov-correo');
-    const fichaWeb              = document.getElementById('ficha-prov-web');
-    const fichaCondicion        = document.getElementById('ficha-prov-condicion');
-    const fichaEstado           = document.getElementById('ficha-prov-estado');
-    const fichaCreado           = document.getElementById('ficha-prov-creado');
+    const modalFichaNombre = document.getElementById('modal-proveedor-nombre');
+    const fichaRuc = document.getElementById('ficha-prov-ruc');
+    const fichaNombre = document.getElementById('ficha-prov-nombre');
+    const fichaDireccion = document.getElementById('ficha-prov-direccion');
+    const fichaTelefono = document.getElementById('ficha-prov-telefono');
+    const fichaCorreo = document.getElementById('ficha-prov-correo');
+    const fichaWeb = document.getElementById('ficha-prov-web');
+    const fichaCondicion = document.getElementById('ficha-prov-condicion');
+    const fichaEstado = document.getElementById('ficha-prov-estado');
+    const fichaCreado = document.getElementById('ficha-prov-creado');
 
     // Offcanvas editar — inputs
-    const epRuc                 = document.getElementById('ep-ruc');
-    const epNombre              = document.getElementById('ep-nombre');
-    const epDireccion           = document.getElementById('ep-direccion');
-    const epTelefono            = document.getElementById('ep-telefono');
-    const epCorreo              = document.getElementById('ep-correo');
-    const epWeb                 = document.getElementById('ep-web');
-    const epCondicion           = document.getElementById('ep-condicion-pago');
-    const epActivo              = document.getElementById('ep-activo');
+    const epRuc = document.getElementById('ep-ruc');
+    const epNombre = document.getElementById('ep-nombre');
+    const epDireccion = document.getElementById('ep-direccion');
+    const epTelefono = document.getElementById('ep-telefono');
+    const epCorreo = document.getElementById('ep-correo');
+    const epWeb = document.getElementById('ep-web');
+    const epCondicion = document.getElementById('ep-condicion-pago');
+    const epActivo = document.getElementById('ep-activo');
 
     // Vincular producto — datalist
-    const vpProductoTexto       = document.getElementById('vp-producto-texto');
-    const vpProductoLista       = document.getElementById('vp-producto-lista');
-    const vpProductoHidden      = document.getElementById('vp-producto');
+    const vpProductoTexto = document.getElementById('vp-producto-texto');
+    const vpProductoLista = document.getElementById('vp-producto-lista');
+    const vpProductoHidden = document.getElementById('vp-producto');
 
     // Tab comparativa
-    const tabComparativa        = document.getElementById('tab-comparativa-btn');
+    const tabComparativa = document.getElementById('tab-comparativa-btn');
 
-    // ─── ESTADO LOCAL ───────────────────────────────────────────────────
+    //ESTADO LOCAL
     let proveedorActivoId = null;
-    let debounceTimer     = null;
+    let debounceTimer = null;
 
-    // ─── CONSTANTES ─────────────────────────────────────────────────────
+    //CONSTANTES
     const CONDICION_LABEL = {
         contado:   { label: 'Contado', cls: 'text-bg-secondary' },
         '30_dias': { label: '30 días', cls: 'text-bg-info'      },
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '90_dias': { label: '90 días', cls: 'text-bg-warning'   },
     };
 
-    // ─── UTILIDADES ─────────────────────────────────────────────────────
+    //UTILIDADES
     function badgeCondicion(condicion) {
         const c = CONDICION_LABEL[condicion] ?? { label: condicion ?? '—', cls: 'text-bg-secondary' };
         return `<span class="badge rounded-pill ${c.cls}">${c.label}</span>`;
@@ -81,27 +81,24 @@ document.addEventListener('DOMContentLoaded', () => {
         formEl.classList.remove('was-validated');
     }
 
-    // ─── CARGA INICIAL ──────────────────────────────────────────────────
+    //CARGA INICIAL
     cargarProveedores();
     cargarProductosParaVincular();
     cargarCategoriasComparativa();
 
-    // ════════════════════════════════════════════════════════════════════
     // LISTA DE PROVEEDORES
-    // ════════════════════════════════════════════════════════════════════
-
     async function cargarProveedores() {
         const params = new URLSearchParams();
         const buscar = inputBuscar?.value.trim();
         const cond   = filtroCond?.value;
         const estado = filtroEstado?.value;
 
-        if (buscar)            params.set('buscar', buscar);
-        if (cond)              params.set('condicion_pago', cond);
-        if (estado !== '')     params.set('activo', estado);
+        if (buscar) params.set('buscar', buscar);
+        if (cond) params.set('condicion_pago', cond);
+        if (estado !== '') params.set('activo', estado);
 
         try {
-            const res  = await fetch(`/api/proveedores?${params}`, { credentials: 'include' });
+            const res = await fetch(`/api/proveedores?${params}`, { credentials: 'include' });
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al cargar proveedores');
             renderTablaProveedores(data.proveedores);
@@ -159,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </td>`;
 
             const trDetail = document.createElement('tr');
-            trDetail.id        = `detalle-prov-${p.id_proveedor}`;
+            trDetail.id = `detalle-prov-${p.id_proveedor}`;
             trDetail.className = 'detail-row collapse';
             trDetail.innerHTML = `
                 <td colspan="8" class="bg-body-tertiary px-4 py-3">
@@ -215,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initExpandableRows();
     }
 
-    // ─── Delegación tabla proveedores ────────────────────────────────────
+    //Delegación tabla proveedores 
     tbodyProveedores?.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-accion]');
         if (!btn) return;
@@ -229,9 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ════════════════════════════════════════════════════════════════════
     // FICHA DE PROVEEDOR (modal)
-    // ════════════════════════════════════════════════════════════════════
 
     async function abrirFicha(id) {
         proveedorActivoId = id;
@@ -243,11 +238,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const p = data.proveedor;
 
             if (modalFichaNombre) modalFichaNombre.textContent  = p.nombre;
-            if (fichaRuc)         fichaRuc.textContent          = p.ruc;
-            if (fichaNombre)      fichaNombre.textContent       = p.nombre;
-            if (fichaDireccion)   fichaDireccion.textContent    = p.direccion  || '—';
-            if (fichaTelefono)    fichaTelefono.textContent     = p.telefono   || '—';
-            if (fichaCorreo)      fichaCorreo.textContent       = p.correo     || '—';
+            if (fichaRuc) fichaRuc.textContent = p.ruc;
+            if (fichaNombre) fichaNombre.textContent = p.nombre;
+            if (fichaDireccion) fichaDireccion.textContent = p.direccion || '—';
+            if (fichaTelefono) fichaTelefono.textContent = p.telefono || '—';
+            if (fichaCorreo) fichaCorreo.textContent = p.correo || '—';
 
             if (fichaWeb) {
                 fichaWeb.innerHTML = p.web
@@ -257,13 +252,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (fichaCondicion) {
                 const c = CONDICION_LABEL[p.condicion_pago] ?? { label: p.condicion_pago, cls: 'text-bg-secondary' };
-                fichaCondicion.className   = `badge rounded-pill ${c.cls}`;
+                fichaCondicion.className = `badge rounded-pill ${c.cls}`;
                 fichaCondicion.textContent = c.label;
             }
 
             if (fichaEstado) {
                 const ok = p.activo;
-                fichaEstado.className   = `badge rounded-pill ${ok ? 'text-bg-success' : 'text-bg-secondary'}`;
+                fichaEstado.className = `badge rounded-pill ${ok ? 'text-bg-success' : 'text-bg-secondary'}`;
                 fichaEstado.textContent = ok ? 'Activo' : 'Inactivo';
             }
 
@@ -282,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ─── Render contactos (dentro del modal ficha) ───────────────────────
+    //Render contactos (dentro del modal ficha) 
     function renderTablaContactos(contactos) {
         if (!tbodyContactos) return;
 
@@ -320,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tbodyContactos.appendChild(fragment);
     }
 
-    // ─── Render productos del proveedor (dentro del modal ficha) ─────────
+    //Render productos del proveedor (dentro del modal ficha) 
     function renderTablaProductosProv(productos) {
         if (!tbodyProductosProv) return;
 
@@ -341,8 +336,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>
                     ${p.es_preferido
                         ? `<span class="badge text-bg-warning rounded-pill">
-                               <i class="fa-solid fa-star fa-xs me-1" aria-hidden="true"></i>Preferido
-                           </span>`
+                                <i class="fa-solid fa-star fa-xs me-1" aria-hidden="true"></i>Preferido
+                            </span>`
                         : `<span class="badge text-bg-secondary rounded-pill">No</span>`}
                 </td>
                 <td class="text-end">
@@ -359,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tbodyProductosProv.appendChild(fragment);
     }
 
-    // ─── Delegación: contactos ────────────────────────────────────────────
+    //Delegación: contactos 
     tbodyContactos?.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-accion="eliminar-contacto"]');
         if (!btn) return;
@@ -379,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ─── Delegación: productos del proveedor ─────────────────────────────
+    //Delegación: productos del proveedor 
     tbodyProductosProv?.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-accion="desvincular-producto"]');
         if (!btn) return;
@@ -399,10 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ════════════════════════════════════════════════════════════════════
-    // OFFCANVAS EDITAR
-    // ════════════════════════════════════════════════════════════════════
-
+    //OFFCANVAS EDITAR
     async function abrirEditar(id) {
         proveedorActivoId = id;
         try {
@@ -411,14 +403,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok || !data.ok) throw new Error(data.mensaje);
 
             const p = data.proveedor;
-            if (epRuc)       epRuc.value       = p.ruc             || '';
-            if (epNombre)    epNombre.value     = p.nombre          || '';
-            if (epDireccion) epDireccion.value  = p.direccion       || '';
-            if (epTelefono)  epTelefono.value   = p.telefono        || '';
-            if (epCorreo)    epCorreo.value     = p.correo          || '';
-            if (epWeb)       epWeb.value        = p.web             || '';
-            if (epCondicion) epCondicion.value  = p.condicion_pago  || 'contado';
-            if (epActivo)    epActivo.checked   = !!p.activo;
+            if (epRuc) epRuc.value = p.ruc || '';
+            if (epNombre) epNombre.value = p.nombre || '';
+            if (epDireccion) epDireccion.value = p.direccion || '';
+            if (epTelefono) epTelefono.value = p.telefono || '';
+            if (epCorreo) epCorreo.value = p.correo || '';
+            if (epWeb) epWeb.value = p.web || '';
+            if (epCondicion) epCondicion.value  = p.condicion_pago || 'contado';
+            if (epActivo) epActivo.checked = !!p.activo;
 
             bootstrap.Offcanvas.getOrCreateInstance(
                 document.getElementById('offcanvas-editar-proveedor')
@@ -429,22 +421,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════
     // FORMS
-    // ════════════════════════════════════════════════════════════════════
 
-    // ─── Nuevo proveedor ─────────────────────────────────────────────────
+    //Nuevo proveedor
     formNuevo?.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!formNuevo.checkValidity()) { formNuevo.classList.add('was-validated'); return; }
 
         const body = {
-            ruc:            document.getElementById('np-ruc').value.trim(),
-            nombre:         document.getElementById('np-nombre').value.trim(),
-            direccion:      document.getElementById('np-direccion').value.trim(),
-            telefono:       document.getElementById('np-telefono').value.trim(),
-            correo:         document.getElementById('np-correo').value.trim(),
-            web:            document.getElementById('np-web').value.trim(),
+            ruc: document.getElementById('np-ruc').value.trim(),
+            nombre: document.getElementById('np-nombre').value.trim(),
+            direccion: document.getElementById('np-direccion').value.trim(),
+            telefono: document.getElementById('np-telefono').value.trim(),
+            correo: document.getElementById('np-correo').value.trim(),
+            web: document.getElementById('np-web').value.trim(),
             condicion_pago: document.getElementById('np-condicion-pago').value,
         };
 
@@ -469,18 +459,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ─── Editar proveedor ────────────────────────────────────────────────
+    //Editar proveedor
     formEditar?.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!formEditar.checkValidity()) { formEditar.classList.add('was-validated'); return; }
 
         const body = {
-            ruc:            epRuc?.value.trim(),
-            nombre:         epNombre?.value.trim(),
-            direccion:      epDireccion?.value.trim(),
-            telefono:       epTelefono?.value.trim(),
-            correo:         epCorreo?.value.trim(),
-            web:            epWeb?.value.trim(),
+            ruc: epRuc?.value.trim(),
+            nombre: epNombre?.value.trim(),
+            direccion: epDireccion?.value.trim(),
+            telefono: epTelefono?.value.trim(),
+            correo: epCorreo?.value.trim(),
+            web: epWeb?.value.trim(),
             condicion_pago: epCondicion?.value,
         };
 
@@ -504,7 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ─── Desactivar proveedor ────────────────────────────────────────────
+    //Desactivar proveedor 
     async function desactivarProveedor(id) {
         try {
             const res  = await fetch(`/api/proveedores/${id}`, {
@@ -520,16 +510,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ─── Nuevo contacto ──────────────────────────────────────────────────
+    //Nuevo contacto
     formNuevoContacto?.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!formNuevoContacto.checkValidity()) { formNuevoContacto.classList.add('was-validated'); return; }
 
         const body = {
-            nombre:       document.getElementById('nc-prov-nombre').value.trim(),
-            cargo:        document.getElementById('nc-prov-cargo').value.trim(),
-            telefono:     document.getElementById('nc-prov-telefono').value.trim(),
-            correo:       document.getElementById('nc-prov-correo').value.trim(),
+            nombre: document.getElementById('nc-prov-nombre').value.trim(),
+            cargo: document.getElementById('nc-prov-cargo').value.trim(),
+            telefono: document.getElementById('nc-prov-telefono').value.trim(),
+            correo: document.getElementById('nc-prov-correo').value.trim(),
             es_principal: document.getElementById('nc-prov-principal').checked,
         };
 
@@ -554,7 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ─── Vincular producto ───────────────────────────────────────────────
+    //Vincular producto 
     formVincularProducto?.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -569,11 +559,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const body = {
-            id_producto:         parseInt(vpProductoHidden.value),
-            codigo_proveedor:    document.getElementById('vp-codigo-prov').value.trim(),
-            precio_compra:       parseFloat(document.getElementById('vp-precio').value),
+            id_producto: parseInt(vpProductoHidden.value),
+            codigo_proveedor: document.getElementById('vp-codigo-prov').value.trim(),
+            precio_compra: parseFloat(document.getElementById('vp-precio').value),
             tiempo_entrega_dias: parseInt(document.getElementById('vp-entrega').value) || null,
-            es_preferido:        document.getElementById('vp-preferido').checked,
+            es_preferido: document.getElementById('vp-preferido').checked,
         };
 
         try {
@@ -597,10 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ════════════════════════════════════════════════════════════════════
     // DATALIST DE PRODUCTOS (para vincular)
-    // ════════════════════════════════════════════════════════════════════
-
     async function cargarProductosParaVincular() {
         try {
             const res  = await fetch('/api/productos?activo=1', { credentials: 'include' });
@@ -611,8 +598,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const fragment = document.createDocumentFragment();
             data.productos.forEach(p => {
-                const option    = document.createElement('option');
-                option.value    = `${p.nombre} (${p.codigo})`;
+                const option = document.createElement('option');
+                option.value = `${p.nombre} (${p.codigo})`;
                 option.dataset.id = p.id_producto;
                 fragment.appendChild(option);
             });
@@ -627,15 +614,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Resolver id_producto oculto cuando el usuario selecciona del datalist
     vpProductoTexto?.addEventListener('input', function () {
         const opciones = vpProductoLista ? Array.from(vpProductoLista.options) : [];
-        const match    = opciones.find(o => o.value === this.value);
+        const match = opciones.find(o => o.value === this.value);
         if (vpProductoHidden) vpProductoHidden.value = match ? (match.dataset.id || '') : '';
         this.classList.toggle('is-invalid', !!this.value && !match);
         if (match) this.classList.remove('is-invalid');
     });
 
-    // ════════════════════════════════════════════════════════════════════
     // FILTROS
-    // ════════════════════════════════════════════════════════════════════
 
     inputBuscar?.addEventListener('input', () => {
         clearTimeout(debounceTimer);
@@ -645,13 +630,11 @@ document.addEventListener('DOMContentLoaded', () => {
     filtroEstado?.addEventListener('change', cargarProveedores);
 
     
-    // ════════════════════════════════════════════════════════════════════
     // COMPARATIVA
-    // ════════════════════════════════════════════════════════════════════
 
     async function cargarCategoriasComparativa() {
     try {
-        const res  = await fetch('/api/categorias/cat', { credentials: 'include' });
+        const res = await fetch('/api/categorias/cat', { credentials: 'include' });
         const data = await res.json();
         if (!res.ok || !data.ok) throw new Error(data.mensaje);
 
@@ -659,13 +642,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const fragment = document.createDocumentFragment();
         const opcionTodas = document.createElement('option');
-        opcionTodas.value       = '';
+        opcionTodas.value = '';
         opcionTodas.textContent = 'Todas las categorías';
         fragment.appendChild(opcionTodas);
 
         data.categorias.forEach(c => {
-            const option       = document.createElement('option');
-            option.value       = c.id_categoria;
+            const option = document.createElement('option');
+            option.value = c.id_categoria;
             option.textContent = c.nombre;
             fragment.appendChild(option);
         });
@@ -687,12 +670,12 @@ document.addEventListener('DOMContentLoaded', () => {
     async function cargarComparativa() {
         const params = new URLSearchParams();
         const buscar = inputBuscarComp?.value.trim();
-        const cat    = filtroCompCat?.value;
+        const cat = filtroCompCat?.value;
         if (buscar) params.set('buscar', buscar);
-        if (cat)    params.set('categoria', cat);
+        if (cat) params.set('categoria', cat);
 
         try {
-            const res  = await fetch(`/api/proveedores/comparativa?${params}`, { credentials: 'include' });
+            const res = await fetch(`/api/proveedores/comparativa?${params}`, { credentials: 'include' });
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error en comparativa');
             renderComparativa(data.comparativa);
@@ -724,7 +707,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </td>
                 <td><span class="font-monospace small fw-semibold">${prod.codigo || '—'}</span></td>
                 <td class="fw-semibold">${prod.producto}</td>
-                <td><span class="badge text-bg-secondary">${prod.categoria} / ${prod.subcategoria}</span></td>
+                <td><span class="fw-semibold">${prod.categoria} / ${prod.subcategoria}</span></td>
                 <td><span class="badge rounded-pill text-bg-primary">
                     ${prod.total_proveedores} proveedor${prod.total_proveedores !== 1 ? 'es' : ''}
                 </span></td>
@@ -732,21 +715,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const filasProv = prod.proveedores.map(pv => {
                 const esMejor = parseFloat(pv.precio_compra) === parseFloat(prod.mejor_precio);
-                return `<tr class="${esMejor ? 'table-success' : ''}">
+                return `<tr>
                     <td class="fw-semibold">${pv.proveedor}</td>
-                    <td class="${esMejor ? 'fw-semibold' : ''}">${formatMoney(pv.precio_compra)} / ${prod.unidad}</td>
-                    <td>${pv.tiempo_entrega_dias ? pv.tiempo_entrega_dias + ' días' : '—'}</td>
+                    <td>
+                        ${esMejor
+                            ? `<span class="badge text-bg-success px-1">${formatMoney(pv.precio_compra)} / ${prod.unidad} ✓</span>`
+                            : `<span class="text-danger fw-semibold">${formatMoney(pv.precio_compra)} / ${prod.unidad}</span>`}
+                    </td>
+                    <td>${pv.tiempo_entrega_dias ? `<span class="badge text-bg-info text-dark">${pv.tiempo_entrega_dias} días</span>` : '—'}</td>
                     <td class="font-monospace small text-muted">${pv.codigo_proveedor || '—'}</td>
                     <td>
                         ${pv.es_preferido
-                            ? `<span class="badge text-bg-warning"><i class="fa-solid fa-star fa-xs me-1" aria-hidden="true"></i>Sí</span>`
-                            : `<span class="badge text-bg-secondary">No</span>`}
+                            ? `<span class="badge text-bg-warning text-dark"><i class="fa-solid fa-star fa-xs me-1" aria-hidden="true"></i>Preferido</span>`
+                            : `<span class="badge text-bg-light border">Secundario</span>`}
                     </td>
                 </tr>`;
             }).join('');
 
             const trDetail = document.createElement('tr');
-            trDetail.id        = rowId;
+            trDetail.id = rowId;
             trDetail.className = 'detail-row collapse';
             trDetail.innerHTML = `
                 <td colspan="6" class="bg-body-secondary px-4 py-3">

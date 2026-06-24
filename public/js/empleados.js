@@ -54,7 +54,7 @@ function renderTablaCargos(cargos) {
         tr.innerHTML = `
             <td>${i + 1}</td>
             <td><span class="fw-semibold">${c.nombre}</span></td>
-            <td><span class="badge text-bg-light border">${c.total_empleados ?? 0}</span></td>
+            <td><span class="fw-semibold">${c.total_empleados ?? 0}</span></td>
             <td><span class="badge" data-status="${c.activo ? 'activo' : 'inactivo'}">${c.activo ? 'Activo' : 'Inactivo'}</span></td>
             <td class="text-end">
                 <div class="d-flex gap-1 justify-content-end">

@@ -661,15 +661,12 @@ Unidades de medida — Lista y gestión de unidades, agregar tambien.
                         <div class="row g-3">
                             <!-- Lista -->
                             <div class="col-12 col-lg-8">
-                                <div class="card">
-                                    <div class="card-header d-flex align-items-center justify-content-between">
+                                <div class="card contenido-header">
+                                    <div class="card-header contenido-header d-flex align-items-center justify-content-between">
                                         <h2 class="h6 fw-semibold mb-0">
                                             <i aria-hidden="true"></i>Categorías
                                         </h2>
-                                        <!--<button type="button" class="btn btn-sm btn-primary" id="btn-nueva-categoria"
-                                            aria-label="Nueva categoría">
-                                            <i class="fa-solid fa-plus me-1" aria-hidden="true"></i>Nueva
-                                        </button>-->
+                                        
                                     </div>
                                     <div class="card-body p-0">
                                         <div class="table-responsive">
@@ -708,12 +705,20 @@ Unidades de medida — Lista y gestión de unidades, agregar tambien.
                                     </div>
                                     <div class="card-body">
                                         <!-- Campos: tabla categorias → nombre, activo -->
+                                        <!-- Campos: tabla categorias → nombre, descripcion, activo -->
                                         <div class="mb-3">
                                             <label for="input-categoria-nombre" class="form-label form-label-sm">Nombre
                                                 <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control form-control-sm"
                                                 id="input-categoria-nombre" maxlength="60"
                                                 placeholder="Ej: Herramientas" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="input-categoria-descripcion"
+                                                class="form-label form-label-sm">Descripción</label>
+                                            <textarea class="form-control form-control-sm"
+                                                id="input-categoria-descripcion" rows="2" maxlength="200"
+                                                placeholder="Descripción breve (opcional)"></textarea>
                                         </div>
                                         <div class="mb-3">
                                             <div class="form-check form-switch">
@@ -856,6 +861,13 @@ Unidades de medida — Lista y gestión de unidades, agregar tambien.
                                                 required>
                                         </div>
                                         <div class="mb-3">
+                                            <label for="input-subcat-descripcion"
+                                                class="form-label form-label-sm">Descripción</label>
+                                            <textarea class="form-control form-control-sm" id="input-subcat-descripcion"
+                                                rows="2" maxlength="200"
+                                                placeholder="Descripción breve (opcional)"></textarea>
+                                        </div>
+                                        <div class="mb-3">
                                             <div class="form-check form-switch">
                                                 <input class="form-check-input" type="checkbox" role="switch"
                                                     id="input-subcat-activo" checked>
@@ -880,8 +892,8 @@ Unidades de medida — Lista y gestión de unidades, agregar tambien.
                     <section class="tab-pane fade" id="section-marcas" role="tabpanel" aria-labelledby="tab-marcas">
                         <div class="row g-3">
                             <div class="col-12 col-lg-8">
-                                <div class="card">
-                                    <div class="card-header d-flex align-items-center justify-content-between">
+                                <div class="card contenido-header">
+                                    <div class="card-header contenido-header d-flex align-items-center justify-content-between">
                                         <h2 class="h6 fw-semibold mb-0">
                                             <i aria-hidden="true"></i>Marcas
                                         </h2>
@@ -961,8 +973,8 @@ Unidades de medida — Lista y gestión de unidades, agregar tambien.
                     <section class="tab-pane fade" id="section-unidades" role="tabpanel" aria-labelledby="tab-unidades">
                         <div class="row g-3">
                             <div class="col-12 col-lg-8">
-                                <div class="card">
-                                    <div class="card-header d-flex align-items-center justify-content-between">
+                                <div class="card contenido-header">
+                                    <div class="card-header contenido-header d-flex align-items-center justify-content-between">
                                         <h2 class="h6 fw-semibold mb-0">
                                             <i aria-hidden="true"></i>Unidades de medida
                                         </h2>
@@ -1308,7 +1320,7 @@ Unidades de medida — Lista y gestión de unidades, agregar tambien.
                                     <th scope="col">Cantidad</th>
                                     <th scope="col">Stock anterior</th>
                                     <th scope="col">Stock posterior</th>
-                                    <th scope="col">Referencia</th>
+                                    <th scope="col">Origen</th>
                                     <th scope="col">Usuario</th>
                                     <th scope="col">Fecha</th>
                                 </tr>

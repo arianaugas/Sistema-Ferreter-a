@@ -19,9 +19,7 @@ const getAll = async (req, res) => {
         if (activo !== undefined && activo !== '') {
             where += ' AND p.activo = @activo';
             params.activo = { type: sql.Bit, value: parseInt(activo) };
-        } else {
-            where += ' AND p.activo = 1';
-        }
+        } 
 
         //validamos las fechas CAMBIE AQUI
         if (fecha_desde) {

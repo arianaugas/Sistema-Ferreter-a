@@ -511,8 +511,8 @@ body {
 }
 
 .table thead th {
-  background-color: #cbd7d8a6;
-  color: var(--color-text-muted);
+  background-color: #7eb3d12f;
+  color: var(#181717);
   font-weight: 600;
   font-size: 0.775rem;
   text-transform: uppercase;

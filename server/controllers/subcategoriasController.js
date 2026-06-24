@@ -6,13 +6,15 @@ const getAll = async (req, res) => {
   const { id_categoria } = req.query; // leer filtro opcional
 
   try {
-    let queryStr = `SELECT id_subcategoria, nombre, id_categoria FROM subcategorias WHERE activo = 1`;
+    let queryStr = `SELECT id_subcategoria, nombre, descripcion, id_categoria, activo FROM subcategorias WHERE 1=1`;
     const params = {};
 
     if (id_categoria) {
       queryStr += ` AND id_categoria = @id_categoria`;
       params.id_categoria = { type: sql.Int, value: id_categoria };
     }
+
+    queryStr += ` ORDER BY nombre ASC`;
 
     const result = await query(queryStr, params);
     res.json({ ok: true, subcategorias: result.recordset });
@@ -28,7 +30,7 @@ const getById = async (req, res) => {
   const { id } = req.params;//traemos el id
   try {
     //realizamos una consulta
-    const result = await query(`SELECT id_subcategoria, nombre, id_categoria FROM subcategorias WHERE id_subcategoria = @id AND activo = 1`, {
+    const result = await query(`SELECT id_subcategoria, nombre, descripcion, id_categoria, activo FROM subcategorias WHERE id_subcategoria = @id`, {
       id: { type: sql.Int, value: id }
     });
     //guardamos en una constante
@@ -46,7 +48,7 @@ const getById = async (req, res) => {
 
 // Crear nueva subcategoría
 const crear = async (req, res) => {
-  const { nombre, id_categoria } = req.body;
+  const { nombre, descripcion, id_categoria } = req.body;
 
   if (!nombre || !id_categoria) return res.status(400).json({ ok: false, mensaje: 'Nombre e id_categoria son obligatorios' });
 
@@ -59,10 +61,11 @@ const crear = async (req, res) => {
     const result = await withTransaction(async trx => {
       const reqTr = trx.request();
       reqTr.input('nombre',       sql.VarChar, nombre);
+      reqTr.input('descripcion',  sql.VarChar, descripcion || null);
       reqTr.input('id_categoria', sql.Int,     id_categoria);
       const resp = await reqTr.query(
-        `INSERT INTO subcategorias (nombre, id_categoria, activo) OUTPUT INSERTED.* 
-         VALUES (@nombre, @id_categoria, 1)`
+        `INSERT INTO subcategorias (nombre, descripcion, id_categoria, activo) OUTPUT INSERTED.* 
+        VALUES (@nombre, @descripcion, @id_categoria, 1)`
       );
       return resp.recordset[0];
     });
@@ -79,7 +82,7 @@ const crear = async (req, res) => {
 // Actualizar subcategoría existente
 const actualizar = async (req, res) => {
   const { id } = req.params;//traemos el id
-  const { nombre, id_categoria } = req.body;//los datos
+  const { nombre, descripcion, id_categoria, activo } = req.body;//los datos
 
   //validamos
   if (!nombre || !id_categoria) return res.status(400).json({ ok: false, mensaje: 'Nombre e id_categoria son obligatorios' });
@@ -98,10 +101,19 @@ const actualizar = async (req, res) => {
     }
     
     //realizamos una consulta
-    const result = await query(`UPDATE subcategorias SET nombre = @nombre, id_categoria = @id_categoria OUTPUT INSERTED.* WHERE id_subcategoria = @id AND activo = 1`, {
+    const result = await query(
+      `UPDATE subcategorias 
+          SET nombre = @nombre, 
+              descripcion = @descripcion, 
+              id_categoria = @id_categoria,
+              activo = @activo
+          OUTPUT INSERTED.* 
+          WHERE id_subcategoria = @id`, {
       id: { type: sql.Int, value: id },
       nombre: { type: sql.VarChar, value: nombre },
-      id_categoria: { type: sql.Int, value: id_categoria }
+      descripcion: { type: sql.VarChar, value: descripcion || null },
+      id_categoria: { type: sql.Int, value: id_categoria },
+      activo: { type: sql.Bit, value: activo !== undefined ? (activo ? 1 : 0) : 1 }
     });
     //guardamos
     const sub = result.recordset[0];
