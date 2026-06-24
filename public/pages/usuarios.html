@@ -1,0 +1,1007 @@
+<!--
+Lista de usuarios — Tabla con usuario, empleado vinculado, rol y estado.
+Nuevo usuario — Formulario para crear acceso a un empleado.
+Roles — Lista de roles y sus descripciones.
+Formulario para agregar nuevo rol.
+-->
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuarios — Ferretería</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/fontawesome.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/solid.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/regular.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/brands.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/public/css/global.css">
+    <link rel="stylesheet" href="/public/css/sub_global.css">
+</head>
+
+<body>
+    <div id="app-wrapper" class="d-flex">
+
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="d-flex flex-column flex-shrink-0">
+            <div id="sidebar-header" class="d-flex align-items-center justify-content-between p-3">
+                <a href="/public/pages/index.html" id="sidebar-brand"
+                    class="d-flex align-items-center gap-2 text-decoration-none">
+                    <i class="fa-solid fa-screwdriver-wrench fa-lg" aria-hidden="true"></i>
+                    <span class="sidebar-brand-name fw-semibold">Ferretería</span>
+                </a>
+                <!--Btn colapsable-->
+                <button id="sidebar-toggle-btn" class="btn btn-sm p-1" type="button" aria-label="Colapsar sidebar"
+                    aria-expanded="true">
+                    <i class="fa-solid fa-bars" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <!--Buscador de modulos-->
+            <div id="sidebar-search-wrapper" class="px-3 pb-2">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text" id="sidebar-search-icon"><i class="fa-solid fa-magnifying-glass"
+                            aria-hidden="true"></i></span>
+                    <input type="search" id="sidebar-search" class="form-control" placeholder="Buscar módulo..."
+                        aria-label="Buscar módulo" autocomplete="off">
+                </div>
+            </div>
+            <!--Nav de modulos-->
+            <nav id="sidebar-nav" class="flex-grow-1 overflow-y-auto px-2" aria-label="Navegación principal">
+                <p class="sidebar-nav-label text-uppercase px-2 mb-1 mt-2">Principal</p>
+                <ul class="nav flex-column mb-2" role="list">
+                    <li class="nav-item" role="listitem"><a href="/public/pages/index.html"
+                            class="nav-link sidebar-nav-link d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-gauge fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Dashboard</span></a>
+                    </li>
+                </ul>
+                <p class="sidebar-nav-label text-uppercase px-2 mb-1 mt-2">Gestión</p>
+                <ul class="nav flex-column mb-2" role="list">
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-empleados">
+                            <i class="fa-solid fa-users fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Empleados</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-empleados"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/empleados.html#section-lista-empleados"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Lista
+                                    de empleados</a></li>
+                            <li role="listitem"><a href="/public/pages/empleados.html#btn-nuevo-empleado"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Nuevo
+                                    empleado</a></li>
+                            <li role="listitem"><a href="/public/pages/empleados.html#cargos-tabla-card"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Cargos</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2 active"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-usuarios">
+                            <i class="fa-solid fa-user-shield fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Usuarios</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-usuarios"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/usuarios.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Lista
+                                    de usuarios</a></li>
+                            <li role="listitem"><a href="/public/pages/usuarios.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Roles</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-clientes">
+                            <i class="fa-solid fa-address-book fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Clientes</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-clientes"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/clientes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Lista
+                                    de clientes</a></li>
+                            <li role="listitem"><a href="/public/pages/clientes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Nuevo
+                                    cliente</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <p class="sidebar-nav-label text-uppercase px-2 mb-1 mt-2">Catálogo</p>
+                <ul class="nav flex-column mb-2" role="list">
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-productos">
+                            <i class="fa-solid fa-boxes-stacked fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Productos</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-productos"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/productos.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Lista
+                                    de productos</a></li>
+                            <li role="listitem"><a href="/public/pages/productos.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Nuevo
+                                    producto</a></li>
+                            <li role="listitem"><a href="/public/pages/productos.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Categorías</a></li>
+                            <li role="listitem"><a href="/public/pages/productos.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Subcategorías</a>
+                            </li>
+                            <li role="listitem"><a href="/public/pages/productos.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Marcas</a></li>
+                            <li role="listitem"><a href="/public/pages/productos.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Unidades de
+                                    medida</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-proveedores">
+                            <i class="fa-solid fa-truck fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Proveedores</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-proveedores"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/proveedores.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Lista
+                                    de proveedores</a></li>
+                            <li role="listitem"><a href="/public/pages/proveedores.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Nuevo
+                                    proveedor</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <p class="sidebar-nav-label text-uppercase px-2 mb-1 mt-2">Operaciones</p>
+                <ul class="nav flex-column mb-2" role="list">
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-inventario">
+                            <i class="fa-solid fa-warehouse fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Inventario</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-inventario"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/inventario.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Stock
+                                    general</a></li>
+                            <li role="listitem"><a href="/public/pages/inventario.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Kardex</a></li>
+                            <li role="listitem"><a href="/public/pages/inventario.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Ajuste
+                                    de inventario</a></li>
+                            <li role="listitem"><a href="/public/pages/inventario.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Almacenes</a></li>
+                            <li role="listitem"><a href="/public/pages/inventario.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Transferencias</a>
+                            </li>
+                            <li role="listitem"><a href="/public/pages/inventario.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Lotes</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-compras">
+                            <i class="fa-solid fa-cart-flatbed fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Compras</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-compras"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/compras.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Órdenes
+                                    de compra</a></li>
+                            <li role="listitem"><a href="/public/pages/compras.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Nueva
+                                    orden</a></li>
+                            <li role="listitem"><a href="/public/pages/compras.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Recepciones</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-ventas">
+                            <i class="fa-solid fa-cash-register fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Ventas</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-ventas"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/ventas.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Nueva
+                                    venta</a></li>
+                            <li role="listitem"><a href="/public/pages/ventas.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Lista
+                                    de ventas</a></li>
+                            <li role="listitem"><a href="/public/pages/ventas.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Series</a></li>
+                            <li role="listitem"><a href="/public/pages/ventas.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Tipos
+                                    de pago</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-devoluciones">
+                            <i class="fa-solid fa-rotate-left fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Devoluciones</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-devoluciones"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/devoluciones.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Lista
+                                    de devoluciones</a></li>
+                            <li role="listitem"><a href="/public/pages/devoluciones.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Nueva
+                                    devolución</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-caja">
+                            <i class="fa-solid fa-sack-dollar fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Caja</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-caja" role="list">
+                            <li role="listitem"><a href="/public/pages/caja.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Estado
+                                    del turno</a></li>
+                            <li role="listitem"><a href="/public/pages/caja.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Movimientos</a></li>
+                            <li role="listitem"><a href="/public/pages/caja.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Historial</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <p class="sidebar-nav-label text-uppercase px-2 mb-1 mt-2">Análisis</p>
+                <ul class="nav flex-column mb-2" role="list">
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-reportes">
+                            <i class="fa-solid fa-chart-line fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Reportes</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-reportes"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/reportes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Ventas</a></li>
+                            <li role="listitem"><a href="/public/pages/reportes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Productos más vendidos</a></li>
+                            <li role="listitem"><a href="/public/pages/reportes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Stock
+                                    crítico</a></li>
+                            <li role="listitem"><a href="/public/pages/reportes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Kardex</a></li>
+                            <li role="listitem"><a href="/public/pages/reportes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Compras</a></li>
+                            <li role="listitem"><a href="/public/pages/reportes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Caja</a></li>
+                            <li role="listitem"><a href="/public/pages/reportes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Devoluciones</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <p class="sidebar-nav-label text-uppercase px-2 mb-1 mt-2">Sistema</p>
+                <ul class="nav flex-column mb-2" role="list">
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-config">
+                            <i class="fa-solid fa-gear fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Configuración</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-config"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/config_Auditoria.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Parámetros</a></li>
+                            <li role="listitem"><a href="/public/pages/config_Auditoria.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Auditoría</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+            <div id="sidebar-footer" class="p-3 border-top d-flex align-items-center gap-2">
+                <span id="sidebar-user-avatar"
+                    class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                    aria-hidden="true"><i class="fa-solid fa-user fa-sm"></i></span>
+                <div class="sidebar-nav-text overflow-hidden">
+                    <p class="mb-0 fw-semibold text-truncate small" id="sidebar-user-name">Juan Pérez</p>
+                    <p class="mb-0 text-truncate sidebar-nav-label" id="sidebar-user-role">Administrador</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN WRAPPER -->
+        <div id="main-wrapper" class="d-flex flex-column flex-grow-1 overflow-hidden">
+
+
+            <!-- TOPBAR -->
+            <header id="topbar" class="d-flex align-items-center justify-content-between px-4 py-2 flex-shrink-0">
+                <div id="topbar-left" class="d-flex align-items-center gap-3">
+                    <button id="topbar-sidebar-toggle" class="btn btn-sm p-1 d-none" type="button"
+                        aria-label="Abrir sidebar"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>
+                    <nav aria-label="Breadcrumb">
+                        <ol class="breadcrumb mb-0 small">
+                            <li class="breadcrumb-item"><a href="/public/pages/index.html">Ferretería</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Inicio</li>
+                        </ol>
+                    </nav>
+                </div>
+                <nav id="topbar-quicklinks" class="d-none d-lg-flex align-items-center gap-1"
+                    aria-label="Accesos rápidos">
+                    <a href="/public/pages/empleados.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Empleados</a>
+                    <a href="/public/pages/usuarios.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Usuarios</a>
+                    <a href="/public/pages/clientes.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Clientes</a>
+                    <a href="/public/pages/ventas.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Ventas</a>
+                    <a href="/public/pages/caja.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Caja</a>
+                    <a href="/public/pages/inventario.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Inventario</a>
+                    <a href="/public/pages/compras.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Compras</a>
+                    <a href="/public/pages/proveedores.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Proveedores</a>
+                    <a href="/public/pages/reportes.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Reportes</a>
+                    <a href="/public/pages/devoluciones.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Devoluciones</a>
+                    <a href="/public/pages/productos.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Productos</a>
+                    <a href="/public/pages/config_Auditoria.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Configuración</a>
+                </nav>
+                <div id="topbar-right" class="d-flex align-items-center gap-2">
+                    <div class="dropdown" id="topbar-notifications">
+                        <button class="btn btn-sm position-relative topbar-icon-btn" type="button"
+                            id="topbar-notifications-btn" aria-label="Notificaciones" aria-haspopup="true"
+                            aria-expanded="false">
+                            <i class="fa-solid fa-bell" aria-hidden="true"></i>
+                            <span
+                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill topbar-badge">3</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" id="topbar-notifications-menu"
+                            aria-labelledby="topbar-notifications-btn">
+                            <li>
+                                <h6 class="dropdown-header">Notificaciones</h6>
+                            </li>
+                            <li><a class="dropdown-item d-flex align-items-start gap-2 py-2"
+                                    href="/public/pages/inventario.html"><i
+                                        class="fa-solid fa-triangle-exclamation text-warning mt-1 flex-shrink-0"
+                                        aria-hidden="true"></i><span class="small">5 productos con stock
+                                        crítico</span></a></li>
+                            <li><a class="dropdown-item d-flex align-items-start gap-2 py-2"
+                                    href="/public/pages/compras.html"><i
+                                        class="fa-solid fa-circle-info text-info mt-1 flex-shrink-0"
+                                        aria-hidden="true"></i><span class="small">2 órdenes de compra
+                                        pendientes</span></a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item text-center small" href="#">Ver todas</a></li>
+                        </ul>
+                    </div>
+                    <div class="vr topbar-separator" aria-hidden="true"></div>
+                    <div class="dropdown" id="topbar-user-menu">
+                        <button class="btn btn-sm d-flex align-items-center gap-2 topbar-user-btn" type="button"
+                            id="topbar-user-btn" aria-expanded="false" aria-label="Menú de usuario">
+                            <span class="rounded-circle d-flex align-items-center justify-content-center topbar-avatar"
+                                aria-hidden="true"><i class="fa-solid fa-user fa-sm"></i></span>
+                            <span class="d-none d-md-block small fw-semibold">Juan Pérez</span>
+                            <i class="fa-solid fa-chevron-down fa-xs d-none d-md-block" aria-hidden="true"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="topbar-user-btn">
+                            <li>
+                                <div class="dropdown-header">
+                                    <p class="mb-0 fw-semibold">Juan Pérez</p>
+                                    <p class="mb-0 small text-muted">Administrador</p>
+                                </div>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item d-flex align-items-center gap-2" href="#"><i
+                                        class="fa-regular fa-user fa-fw" aria-hidden="true"></i>Mi perfil</a></li>
+                            <li><a class="dropdown-item d-flex align-items-center gap-2"
+                                    href="/public/pages/config_Auditoria.html"><i class="fa-solid fa-gear fa-fw"
+                                        aria-hidden="true"></i>Configuración</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item d-flex align-items-center gap-2 text-danger" id="btn-logout"
+                                    href="/public/pages/login.html"><i class="fa-solid fa-right-from-bracket fa-fw"
+                                        aria-hidden="true"></i>Cerrar sesión</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+            <!-- CONTENIDO -->
+            <main id="main-content" class="flex-grow-1 overflow-y-auto" aria-label="Contenido principal">
+
+                <div id="page-header" class="d-flex align-items-center justify-content-between mb-4">
+                    <img id="page-header-img" src='https://image.slidesdocs.com/responsive-images/background/white-3d-rendering-of-isolated-tools-powerpoint-background_7ae0ce836a__960_540.jpg' alt="" aria-hidden="true">
+                    <div>
+                        <h1 class="h4 fw-bold mb-0">USUARIOS Y ROLES</h1>
+                        <p class="text-muted small mb-0">Gestión de acceso al sistema</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-primary" type="button" id="btn-nuevo-usuario"
+                            data-bs-toggle="modal" data-bs-target="#modal-nuevo-usuario"
+                            aria-label="Crear nuevo usuario">
+                            <i class="fa-solid fa-plus me-1" aria-hidden="true"></i>Nuevo usuario
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TABS -->
+                <ul class="nav nav-tabs mb-4" id="usuarios-tabs" role="tablist" aria-label="Secciones de usuarios">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-lista-usuarios" role="tab" data-bs-toggle="tab"
+                            data-bs-target="#section-lista-usuarios" aria-controls="section-lista-usuarios"
+                            aria-selected="true" type="button">
+                            <i aria-hidden="true"></i>Usuarios
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-roles" role="tab" aria-controls="section-roles"
+                            data-bs-toggle="tab" data-bs-target="#section-roles" aria-selected="false" type="button">
+                            <i saria-hidden="true"></i>Roles
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="usuarios-tab-content">
+
+                    <!-- TAB: Lista de usuarios -->
+                    <section class="tab-pane fade show active" id="section-lista-usuarios" role="tabpanel"
+                        aria-labelledby="tab-lista-usuarios">
+
+                        <!-- Filtros -->
+                        <div class="card mb-3 contenido-header" id="filtros-usuario">
+                            <div class="card-body py-2">
+                                <fieldset>
+                                    <legend class="visually-hidden">Filtros de usuarios</legend>
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-12 col-sm-6 col-md-4">
+                                            <label for="filtro-usuario-nombre"
+                                                class="form-label form-label-sm mb-1">Buscar</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"
+                                                        aria-hidden="true"></i></span>
+                                                <input type="search" id="filtro-usuario-nombre" class="form-control busca-busca"
+                                                    placeholder="Usuario o empleado..." autocomplete="off"
+                                                    aria-label="Buscar usuario">
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-sm-6 col-md-3">
+                                            <label for="filtro-usuario-rol"
+                                                class="form-label form-label-sm mb-1">Rol</label>
+                                            <select id="filtro-usuario-rol" class="form-select form-select-sm"
+                                                aria-label="Filtrar por rol">
+                                                
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-sm-6 col-md-3">
+                                            <label for="filtro-usuario-estado"
+                                                class="form-label form-label-sm mb-1">Estado</label>
+                                            <select id="filtro-usuario-estado" class="form-select form-select-sm"
+                                                aria-label="Filtrar por estado">
+                                                <option value="">Todos</option>
+                                                <option value="1">Activo</option>
+                                                <option value="0">Bloqueado</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-sm-6 col-md-2 d-flex gap-2">
+                                            <button type="button" class="btn btn-sm btn-primary w-100"
+                                                id="btn-filtrar-usuarios"><i class="fa-solid fa-filter me-1"
+                                                    aria-hidden="true"></i>Filtrar</button>
+                                            <button type="button" class="btn btn-sm w-100"
+                                                id="btn-limpiar-filtros-usuarios"><i class="fa-solid fa-xmark"
+                                                    aria-hidden="true"></i></button>
+                                        </div>
+                                    </div>
+                                </fieldset>
+                            </div>
+                        </div>
+
+                        <!-- Tabla -->
+                        <div class="card">
+                            <div class="card-header d-flex align-items-center justify-content-between">
+                                <h2 class="h6 fw-semibold mb-0"><i aria-hidden="true"></i>Usuarios registrados</h2>
+                                <span class="badge" id="usuarios-total-badge" aria-live="polite">3 usuarios</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0" id="tabla-usuarios"
+                                        aria-label="Lista de usuarios del sistema">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Usuario</th>
+                                                <th scope="col">Empleado vinculado</th>
+                                                <th scope="col">Rol</th>
+                                                <th scope="col">Último acceso</th>
+                                                <th scope="col">Creado</th>
+                                                <th scope="col">Estado</th>
+                                                <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabla-usuarios-body">
+                                            
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="card-footer d-flex align-items-center justify-content-between">
+                                
+                                <nav aria-label="Paginación de usuarios">
+                                    <ul class="pagination pagination-sm mb-0">
+                                        <li class="page-item disabled"><a class="page-link" href="#" tabindex="-1"
+                                                aria-disabled="true" aria-label="Anterior"><i
+                                                    class="fa-solid fa-chevron-left fa-xs" aria-hidden="true"></i></a>
+                                        </li>
+                                        <li class="page-item active" aria-current="page"><a class="page-link"
+                                                href="#">1</a></li>
+                                        <li class="page-item"><a class="page-link" href="#" aria-label="Siguiente"><i
+                                                    class="fa-solid fa-chevron-right fa-xs" aria-hidden="true"></i></a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- TAB: Roles -->
+                    <section class="tab-pane fade" id="section-roles" role="tabpanel" aria-labelledby="tab-roles">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h2 class="h6 fw-semibold mb-0">Roles del sistema</h2>
+                            <button type="button" class="btn btn-sm btn-primary" id="btn-nuevo-rol"
+                                data-bs-toggle="modal" data-bs-target="#modal-nuevo-rol" aria-label="Crear nuevo rol">
+                                <i class="fa-solid fa-plus me-1" aria-hidden="true"></i>Nuevo rol
+                            </button>
+                        </div>
+                        <div class="card">
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0" id="tabla-roles"
+                                        aria-label="Roles del sistema">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">#</th>
+                                                <th scope="col">Nombre del rol</th>
+                                                <th scope="col">Descripción</th>
+                                                <th scope="col">Usuarios asignados</th>
+                                                <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabla-roles-body">
+
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                </div>
+            </main>
+
+            <footer id="main-footer" class="d-flex align-items-center justify-content-between px-4 py-2 flex-shrink-0">
+                <p class="mb-0 small text-muted">© <time datetime="2026">2026</time> Ferretería — Sistema de Gestión</p>
+                <p class="mb-0 small text-muted">v1.0.0</p>
+            </footer>
+        </div>
+    </div>
+
+    <!-- MODALES -->
+
+    <!-- MODAL: Ver usuario -->
+    <div class="modal fade" id="modal-ver-usuario" tabindex="-1" aria-labelledby="modal-ver-usuario-title"
+        aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="modal-ver-usuario-title">
+                        <i aria-hidden="true"></i>Detalle de usuario
+                    </h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+
+                    <!-- Cabecera con avatar y username -->
+                    <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+                        <span
+                            class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 fw-semibold"
+                            id="ver-usr-avatar"
+                            style="width:48px;height:48px;background-color:var(--color-accent-bg);color:var(--color-accent);font-size:16px;">
+                            JP
+                        </span>
+                        <div>
+                            <p class="mb-0 fw-semibold" id="ver-usr-username" style="font-size:15px;">juan.perez</p>
+                            <span class="badge mt-1" id="ver-usr-estado-badge" data-status="activo">Activo</span>
+                        </div>
+                    </div>
+
+                    <!-- Campos del schema -->
+                    <div class="row g-3">
+                        <!-- id_empleado → nombre completo -->
+                        <div class="col-6">
+                            <p class="text-muted mb-1"
+                                style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Empleado vinculado
+                            </p>
+                            <p class="mb-0 fw-medium" id="ver-usr-empleado">Juan Pérez</p>
+                        </div>
+                        <!-- id_rol → nombre del rol -->
+                        <div class="col-6">
+                            <p class="text-muted mb-1"
+                                style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Rol</p>
+                            <p class="mb-0" id="ver-usr-rol">Administrador</p>
+                        </div>
+                        <!-- activo -->
+                        <div class="col-6">
+                            <p class="text-muted mb-1"
+                                style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Estado</p>
+                            <p class="mb-0" id="ver-usr-estado">Activo</p>
+                        </div>
+                        <!-- ultimo_acceso -->
+                        <div class="col-6">
+                            <p class="text-muted mb-1"
+                                style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Último acceso</p>
+                            <p class="mb-0" id="ver-usr-ultimo-acceso">19/05/2026 08:30</p>
+                        </div>
+                        <!-- creado_en -->
+                        <div class="col-6">
+                            <p class="text-muted mb-1"
+                                style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Creado en</p>
+                            <p class="mb-0" id="ver-usr-creado-en">10/01/2023</p>
+                        </div>
+                        <!-- id_usuario (PK, referencia interna) -->
+                        <div class="col-6">
+                            <p class="text-muted mb-1"
+                                style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;">ID de usuario</p>
+                            <p class="mb-0 text-muted" id="ver-usr-id">#1</p>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="ver-usr-btn-editar" data-bs-toggle="modal"
+                        data-bs-target="#modal-editar-usuario">
+                        <i class="fa-regular fa-pen-to-square me-1" aria-hidden="true"></i>Editar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Nuevo usuario -->
+    <div class="modal fade" id="modal-nuevo-usuario" tabindex="-1" aria-labelledby="modal-nuevo-usuario-title"
+        aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="modal-nuevo-usuario-title"><i
+                            aria-hidden="true"></i>Nuevo usuario</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" id="btn-cerrar-modal-nuevo-usuario"
+                        aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-nuevo-usuario" novalidate>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label for="nuevo-usr-empleado" class="form-label">Empleado <span class="text-danger"
+                                        aria-hidden="true">*</span></label>
+                                <select id="nuevo-usr-empleado" name="id_empleado" class="form-select" required
+                                    aria-required="true" aria-describedby="nuevo-usr-empleado-help">
+                                    <option value="" disabled selected>Seleccionar empleado</option>
+                                    <option value="1">Juan Pérez — Administrador</option>
+                                    <option value="2">María González — Cajero</option>
+                                </select>
+                                <div id="nuevo-usr-empleado-help" class="form-text">Solo empleados sin usuario asignado
+                                </div>
+                                <div class="invalid-feedback">Seleccione un empleado.</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="nuevo-usr-rol" class="form-label">Rol <span class="text-danger"
+                                        aria-hidden="true">*</span></label>
+                                <select id="nuevo-usr-rol" name="id_rol" class="form-select" required
+                                    aria-required="true">
+                                </select>
+                                <div class="invalid-feedback">Seleccione un rol.</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="nuevo-usr-username" class="form-label">Nombre de usuario <span
+                                        class="text-danger" aria-hidden="true">*</span></label>
+                                <input type="text" id="nuevo-usr-username" name="username" class="form-control"
+                                    placeholder="ej: juan.perez" maxlength="50" required aria-required="true"
+                                    autocomplete="username" aria-describedby="nuevo-usr-username-help">
+                                <div id="nuevo-usr-username-help" class="form-text">Sin espacios ni caracteres
+                                    especiales</div>
+                                <div class="invalid-feedback">Ingrese un nombre de usuario válido.</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="nuevo-usr-contrasena" class="form-label">Contraseña <span
+                                        class="text-danger" aria-hidden="true">*</span></label>
+                                <div class="input-group">
+                                    <input type="password" id="nuevo-usr-contrasena" name="contrasena"
+                                        class="form-control" maxlength="255" required aria-required="true"
+                                        autocomplete="new-password" aria-describedby="nuevo-usr-pass-help">
+                                    <button class="btn btn-outline-secondary" type="button" id="btn-toggle-pass-nuevo"
+                                        aria-label="Mostrar u ocultar contraseña">
+                                        <i class="fa-regular fa-eye" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                <div id="nuevo-usr-pass-help" class="form-text">Mínimo 8 caracteres</div>
+                                <div class="invalid-feedback">Ingrese una contraseña.</div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="nuevo-usr-activo"
+                                        name="activo" checked>
+                                    <label class="form-check-label" for="nuevo-usr-activo">Usuario activo</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm" data-bs-dismiss="modal"
+                        id="btn-cancelar-nuevo-usuario">Cancelar</button>
+                    <button type="submit" form="form-nuevo-usuario" class="btn btn-sm btn-primary"
+                        id="btn-guardar-nuevo-usuario">
+                        <i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i>Crear usuario
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Editar usuario -->
+    <div class="modal fade" id="modal-editar-usuario" tabindex="-1" aria-labelledby="modal-editar-usuario-title"
+        aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="modal-editar-usuario-title"><i
+                             aria-hidden="true"></i>Editar usuario</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" id="btn-cerrar-modal-editar-usuario"
+                        aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-editar-usuario" novalidate>
+                        <input type="hidden" id="editar-usr-id" name="id_usuario">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label for="editar-usr-empleado" class="form-label">Empleado</label>
+                                <input type="text" id="editar-usr-empleado" class="form-control" readonly
+                                    aria-readonly="true" aria-describedby="editar-usr-empleado-help">
+                                <div id="editar-usr-empleado-help" class="form-text">El empleado vinculado no puede
+                                    cambiarse</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="editar-usr-rol" class="form-label">Rol <span class="text-danger"
+                                        aria-hidden="true">*</span></label>
+                                <select id="editar-usr-rol" name="id_rol" class="form-select" required
+                                    aria-required="true">
+                                    
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="editar-usr-username" class="form-label">Nombre de usuario <span
+                                        class="text-danger" aria-hidden="true">*</span></label>
+                                <input type="text" id="editar-usr-username" name="username" class="form-control"
+                                    maxlength="50" required aria-required="true" autocomplete="username">
+                                <div class="invalid-feedback">Ingrese un nombre de usuario válido.</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="editar-usr-nueva-contrasena" class="form-label">Nueva contraseña</label>
+                                <div class="input-group">
+                                    <input type="password" id="editar-usr-nueva-contrasena" name="contrasena"
+                                        class="form-control" maxlength="255" autocomplete="new-password"
+                                        aria-describedby="editar-usr-pass-help">
+                                    <button class="btn btn-outline-secondary" type="button" id="btn-toggle-pass-editar"
+                                        aria-label="Mostrar u ocultar contraseña">
+                                        <i class="fa-regular fa-eye" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                <div id="editar-usr-pass-help" class="form-text">Dejar en blanco para mantener la
+                                    contraseña actual</div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="editar-usr-activo"
+                                        name="activo">
+                                    <label class="form-check-label" for="editar-usr-activo">Usuario activo</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm" data-bs-dismiss="modal"
+                        id="btn-cancelar-editar-usuario">Cancelar</button>
+                    <button type="submit" form="form-editar-usuario" class="btn btn-sm btn-primary"
+                        id="btn-guardar-editar-usuario">
+                        <i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i>Guardar cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Nuevo rol -->
+    <div class="modal fade" id="modal-nuevo-rol" tabindex="-1" aria-labelledby="modal-nuevo-rol-title" aria-modal="true"
+        role="dialog">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="modal-nuevo-rol-title"><i
+                            aria-hidden="true"></i>Nuevo rol</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" id="btn-cerrar-modal-nuevo-rol"
+                        aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-nuevo-rol" novalidate>
+                        <div class="mb-3">
+                            <label for="nuevo-rol-nombre" class="form-label">Nombre del rol <span class="text-danger"
+                                    aria-hidden="true">*</span></label>
+                            <input type="text" id="nuevo-rol-nombre" name="nombre" class="form-control"
+                                placeholder="Ej: Supervisor" maxlength="40" required aria-required="true">
+                            <div class="invalid-feedback">Ingrese un nombre para el rol.</div>
+                        </div>
+                        <div class="mb-0">
+                            <label for="nuevo-rol-descripcion" class="form-label">Descripción</label>
+                            <textarea id="nuevo-rol-descripcion" name="descripcion" class="form-control" rows="2"
+                                maxlength="150" placeholder="Permisos y alcance del rol..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm" data-bs-dismiss="modal"
+                        id="btn-cancelar-nuevo-rol">Cancelar</button>
+                    <button type="submit" form="form-nuevo-rol" class="btn btn-sm btn-primary"
+                        id="btn-guardar-nuevo-rol">
+                        <i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i>Guardar rol
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Editar rol -->
+    <div class="modal fade" id="modal-editar-rol" tabindex="-1" aria-labelledby="modal-editar-rol-title"
+        aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="modal-editar-rol-title"><i 
+                            aria-hidden="true"></i>Editar rol</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" id="btn-cerrar-modal-editar-rol"
+                        aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-editar-rol" novalidate>
+                        <input type="hidden" id="editar-rol-id" name="id_rol">
+                        <div class="mb-3">
+                            <label for="editar-rol-nombre" class="form-label">Nombre del rol <span class="text-danger"
+                                    aria-hidden="true">*</span></label>
+                            <input type="text" id="editar-rol-nombre" name="nombre" class="form-control" maxlength="40"
+                                required aria-required="true">
+                            <div class="invalid-feedback">Ingrese un nombre para el rol.</div>
+                        </div>
+                        <div class="mb-0">
+                            <label for="editar-rol-descripcion" class="form-label">Descripción</label>
+                            <textarea id="editar-rol-descripcion" name="descripcion" class="form-control" rows="2"
+                                maxlength="150"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm" data-bs-dismiss="modal"
+                        id="btn-cancelar-editar-rol">Cancelar</button>
+                    <button type="submit" form="form-editar-rol" class="btn btn-sm btn-primary"
+                        id="btn-guardar-editar-rol">
+                        <i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i>Guardar cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Confirmar eliminar rol -->
+    <div class="modal fade" id="modal-eliminar-rol" tabindex="-1" aria-labelledby="modal-eliminar-rol-title"
+        aria-modal="true" role="alertdialog">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="modal-eliminar-rol-title"><i
+                            class="fa-regular fa-trash-can me-2 text-danger" aria-hidden="true"></i>Eliminar rol</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" id="btn-cerrar-modal-eliminar-rol"
+                        aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-1">¿Desea eliminar el rol <strong id="eliminar-rol-nombre">Vendedor</strong>?</p>
+                    <p class="small text-muted mb-0">Solo es posible si no hay usuarios asignados a este rol.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm" data-bs-dismiss="modal"
+                        id="btn-cancelar-eliminar-rol">Cancelar</button>
+                    <button type="button" class="btn btn-sm btn-danger" id="btn-confirmar-eliminar-rol" data-rol-id="">
+                        <i class="fa-regular fa-trash-can me-1" aria-hidden="true"></i>Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal confirmación global -->
+    <div class="modal fade" id="modal-confirm" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title fw-semibold">Confirmar acción</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="modal-confirm-message" class="mb-0">¿Estás seguro de realizar esta acción?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger btn-sm" id="modal-confirm-btn">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast container global -->
+    <div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3"
+        aria-live="polite" aria-atomic="true">
+    </div>
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/public/js/global.js"></script>
+    <script src="/public/js/usuarios.js"></script>
+</body>
+
+</html>

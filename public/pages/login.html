@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Iniciar Sesión</title>
+  <link rel="stylesheet" href="/public/css/login.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <main class="main-layout">
+
+    <!-- Form Side -->
+    <section class="form-side">
+      <div class="form-container">
+
+        <!-- Welcome Header -->
+        <div class="fade-up stagger-1">
+          <h1 class="hero-title">Bienvenido</h1>
+          <p class="hero-subtitle">Accede a nose.</p>
+        </div>
+
+        <!-- Alert Feedback -->
+        <div class="alert-box hidden fade-up stagger-2" id="demo-alert">
+          <span class="material-symbols-outlined alert-icon">error</span>
+          <span class="alert-text">Credenciales incorrectas. Por favor, inténtalo de nuevo.</span>
+        </div>
+
+        <!-- Login Form -->
+        <form class="login-form" id="login-form">
+
+          <div class="field-group fade-up stagger-2">
+            <label class="field-label" for="nameUser">Nombre de usuario</label>
+            <input class="glass-input" id="nameUser" placeholder="nombre de usuario" type="text"/>
+          </div>
+
+          <div class="field-group fade-up stagger-3">
+            <div class="field-label-row">
+              <label class="field-label" for="password">Contraseña</label>
+            </div>
+            <input class="glass-input" id="password" placeholder="••••••••" type="password"/>
+          </div>
+
+          <button class="submit-btn fade-up stagger-5" type="submit">Sign In</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Media Side -->
+    <section class="media-side">
+      <div class="media-inner">
+        <img
+          alt="Nexus Auth Abstract Branding"
+          class="media-img"
+          src="https://lh3.googleusercontent.com/aida-public/AB6AXuCxwUnKnNxUT1oDw9dV5DN6Bg5nnuUxHdA2vy7Ek_jGJrmpIb6suDuC3DOu5brotBDE1NqLvlR9iqvNLSjLb6qP9Q11FGKx4mx915IeuFjZmgRo0RsVzA8kmQliqGAacR0l0UXiyZwgzFpBwWCXToXXdcmrUBXyc5TdZnkLeuoXTtDwEvsZQX7Bg_4R-ijkT_yYrSgrR5XmahI90ETHsNgZH8uhed5mc77y1sOURIM_1Y26JkOlZGz0VGM4sBriF7MDw_ZVAjql3rQ"
+        />
+        <div class="media-overlay"></div>
+
+        <!-- Floating Card -->
+        <div class="media-card fade-up stagger-4">
+          <div class="card-header">
+            <span class="card-badge">Ferreteria linda</span>
+          </div>
+          <h2 class="card-title">Nose nose nose.</h2>
+          <p class="card-body">que se puede hacer nose.</p>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Success Overlay -->
+  <div class="success-overlay" id="success-overlay">
+    <div class="success-content">
+      <div class="success-icon-wrap">
+        <span class="material-symbols-outlined success-icon" style="font-variation-settings:'FILL' 1;">check_circle</span>
+      </div>
+      <h2 class="success-title">¡Acceso concedido!</h2>
+      <p class="success-subtitle">Redirigiendo a tu Portal...</p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p class="footer-copy">© 2024 - Página desarrollada por estudiantes.</p>
+  </footer>
+
+  <script src="/public/js/login.js"></script>
+</body>
+</html>

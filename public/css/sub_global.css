@@ -1,0 +1,47 @@
+.contenido-header {
+    background-color: transparent !important;
+    border: none !important;
+    border-radius: none !important;
+    box-shadow: none !important;
+}
+
+select {
+    background-color: #e8edf0 !important;
+    min-width: 14% !important;
+}
+
+/*oño*/
+.busca-busca:hover {
+    background-color: rgb(33, 36, 37) !important;
+    color: #fff !important;
+}
+
+/*botones*/
+.btn-color {
+    background-color: #1f3e57 !important;
+    margin: 0.4rem !important;
+    border: 0 !important;
+    border-radius: 0.20rem !important;
+    color: #fff !important;
+}
+
+.btn-color:hover,
+.btn-color:focus {
+    background-color: #d3c6bd !important;
+    margin: 0.4rem !important;
+    border: 0 !important;
+    border-radius: 0.20rem !important;
+    color: #1c1e22 !important;
+}
+
+.card-avisos {
+    background-color: #f1efee;
+    border: none !important;
+    box-shadow: none !important;
+}
+/*imagen*/
+.np-imagen-thumb {
+    width: 140px;
+    height: 140px;
+    object-fit: cover;
+}

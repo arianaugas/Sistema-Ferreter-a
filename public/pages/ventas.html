@@ -1,0 +1,1771 @@
+<!--
+Nueva venta (POS) — Esta es la pantalla más importante del sistema. Debería ser ágil y fácil de usar porque se usa decenas de veces al día. 
+Tiene que tener:
+
+Buscador de productos por código, nombre o categoría
+Lista del carrito con cantidades y subtotales
+Selector de cliente (opcional)
+Selector de tipo de comprobante
+Selector de medio de pago (con soporte para pago mixto)
+Botón de confirmar venta
+Vista previa del comprobante generado (opción de descargar boleta)
+
+
+Lista de ventas — Historial de todas las ventas con filtros por fecha, empleado, tipo de comprobante y estado.
+Detalle de venta — Ver el comprobante completo con productos, cantidades, precios y forma de pago.
+Anular venta — Opción dentro del detalle de venta con motivo obligatorio.
+Series de comprobantes — Gestión de las series B001, F001, NV01.
+Tipos de pago — Gestión de los medios de pago disponibles.
+-->
+
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ventas — Ferretería</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/fontawesome.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/solid.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/regular.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/brands.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/public/css/global.css">
+    <link rel="stylesheet" href="/public/css/sub_global.css">
+</head>
+
+<body>
+    <div id="app-wrapper" class="d-flex">
+
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="d-flex flex-column flex-shrink-0">
+            <div id="sidebar-header" class="d-flex align-items-center justify-content-between p-3">
+                <a href="/public/pages/index.html" id="sidebar-brand"
+                    class="d-flex align-items-center gap-2 text-decoration-none">
+                    <i class="fa-solid fa-screwdriver-wrench fa-lg" aria-hidden="true"></i>
+                    <span class="sidebar-brand-name fw-semibold">Ferretería</span>
+                </a>
+                <!--Btn colapsable-->
+                <button id="sidebar-toggle-btn" class="btn btn-sm p-1" type="button" aria-label="Colapsar sidebar"
+                    aria-expanded="true">
+                    <i class="fa-solid fa-bars" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <!--Buscador de modulos-->
+            <div id="sidebar-search-wrapper" class="px-3 pb-2">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text" id="sidebar-search-icon"><i class="fa-solid fa-magnifying-glass"
+                            aria-hidden="true"></i></span>
+                    <input type="search" id="sidebar-search" class="form-control" placeholder="Buscar módulo..."
+                        aria-label="Buscar módulo" autocomplete="off">
+                </div>
+            </div>
+            <!--Nav de modulos-->
+            <nav id="sidebar-nav" class="flex-grow-1 overflow-y-auto px-2" aria-label="Navegación principal">
+                <p class="sidebar-nav-label text-uppercase px-2 mb-1 mt-2">Principal</p>
+                <ul class="nav flex-column mb-2" role="list">
+                    <li class="nav-item" role="listitem"><a href="/public/pages/index.html"
+                            class="nav-link sidebar-nav-link d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-gauge fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Dashboard</span></a>
+                    </li>
+                </ul>
+                <p class="sidebar-nav-label text-uppercase px-2 mb-1 mt-2">Gestión</p>
+                <ul class="nav flex-column mb-2" role="list">
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-empleados">
+                            <i class="fa-solid fa-users fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Empleados</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-empleados"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/empleados.html#section-lista-empleados"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Lista
+                                    de empleados</a></li>
+                            <li role="listitem"><a href="/public/pages/empleados.html#btn-nuevo-empleado"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Nuevo
+                                    empleado</a></li>
+                            <li role="listitem"><a href="/public/pages/empleados.html#cargos-tabla-card"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Cargos</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2 active"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-usuarios">
+                            <i class="fa-solid fa-user-shield fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Usuarios</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-usuarios"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/usuarios.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Lista
+                                    de usuarios</a></li>
+                            <li role="listitem"><a href="/public/pages/usuarios.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Roles</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-clientes">
+                            <i class="fa-solid fa-address-book fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Clientes</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-clientes"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/clientes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Lista
+                                    de clientes</a></li>
+                            <li role="listitem"><a href="/public/pages/clientes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Nuevo
+                                    cliente</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <p class="sidebar-nav-label text-uppercase px-2 mb-1 mt-2">Catálogo</p>
+                <ul class="nav flex-column mb-2" role="list">
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-productos">
+                            <i class="fa-solid fa-boxes-stacked fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Productos</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-productos"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/productos.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Lista
+                                    de productos</a></li>
+                            <li role="listitem"><a href="/public/pages/productos.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Nuevo
+                                    producto</a></li>
+                            <li role="listitem"><a href="/public/pages/productos.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Categorías</a></li>
+                            <li role="listitem"><a href="/public/pages/productos.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Subcategorías</a>
+                            </li>
+                            <li role="listitem"><a href="/public/pages/productos.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Marcas</a></li>
+                            <li role="listitem"><a href="/public/pages/productos.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Unidades de
+                                    medida</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-proveedores">
+                            <i class="fa-solid fa-truck fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Proveedores</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-proveedores"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/proveedores.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Lista
+                                    de proveedores</a></li>
+                            <li role="listitem"><a href="/public/pages/proveedores.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Nuevo
+                                    proveedor</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <p class="sidebar-nav-label text-uppercase px-2 mb-1 mt-2">Operaciones</p>
+                <ul class="nav flex-column mb-2" role="list">
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-inventario">
+                            <i class="fa-solid fa-warehouse fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Inventario</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-inventario"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/inventario.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Stock
+                                    general</a></li>
+                            <li role="listitem"><a href="/public/pages/inventario.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Kardex</a></li>
+                            <li role="listitem"><a href="/public/pages/inventario.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Ajuste
+                                    de inventario</a></li>
+                            <li role="listitem"><a href="/public/pages/inventario.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Almacenes</a></li>
+                            <li role="listitem"><a href="/public/pages/inventario.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Transferencias</a>
+                            </li>
+                            <li role="listitem"><a href="/public/pages/inventario.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Lotes</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-compras">
+                            <i class="fa-solid fa-cart-flatbed fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Compras</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-compras"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/compras.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Órdenes
+                                    de compra</a></li>
+                            <li role="listitem"><a href="/public/pages/compras.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Nueva
+                                    orden</a></li>
+                            <li role="listitem"><a href="/public/pages/compras.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Recepciones</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-ventas">
+                            <i class="fa-solid fa-cash-register fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Ventas</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-ventas"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/ventas.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Nueva
+                                    venta</a></li>
+                            <li role="listitem"><a href="/public/pages/ventas.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Lista
+                                    de ventas</a></li>
+                            <li role="listitem"><a href="/public/pages/ventas.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Series</a></li>
+                            <li role="listitem"><a href="/public/pages/ventas.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Tipos
+                                    de pago</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-devoluciones">
+                            <i class="fa-solid fa-rotate-left fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Devoluciones</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-devoluciones"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/devoluciones.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Lista
+                                    de devoluciones</a></li>
+                            <li role="listitem"><a href="/public/pages/devoluciones.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Nueva
+                                    devolución</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-caja">
+                            <i class="fa-solid fa-sack-dollar fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Caja</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-caja" role="list">
+                            <li role="listitem"><a href="/public/pages/caja.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Estado
+                                    del turno</a></li>
+                            <li role="listitem"><a href="/public/pages/caja.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Movimientos</a></li>
+                            <li role="listitem"><a href="/public/pages/caja.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Historial</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <p class="sidebar-nav-label text-uppercase px-2 mb-1 mt-2">Análisis</p>
+                <ul class="nav flex-column mb-2" role="list">
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-reportes">
+                            <i class="fa-solid fa-chart-line fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Reportes</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-reportes"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/reportes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Ventas</a></li>
+                            <li role="listitem"><a href="/public/pages/reportes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Productos más vendidos</a></li>
+                            <li role="listitem"><a href="/public/pages/reportes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Stock
+                                    crítico</a></li>
+                            <li role="listitem"><a href="/public/pages/reportes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Kardex</a></li>
+                            <li role="listitem"><a href="/public/pages/reportes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Compras</a></li>
+                            <li role="listitem"><a href="/public/pages/reportes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Caja</a></li>
+                            <li role="listitem"><a href="/public/pages/reportes.html" class="nav-link sidebar-submenu-link"><i
+                                        aria-hidden="true"></i>Devoluciones</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <p class="sidebar-nav-label text-uppercase px-2 mb-1 mt-2">Sistema</p>
+                <ul class="nav flex-column mb-2" role="list">
+                    <li class="nav-item" role="listitem">
+                        <button
+                            class="nav-link sidebar-nav-link sidebar-accordion-btn w-100 d-flex align-items-center gap-2"
+                            type="button" aria-expanded="false" aria-controls="sidebar-submenu-config">
+                            <i class="fa-solid fa-gear fa-fw" aria-hidden="true"></i><span
+                                class="sidebar-nav-text">Configuración</span><i
+                                class="fa-solid fa-chevron-down fa-xs ms-auto sidebar-chevron sidebar-nav-text"
+                                aria-hidden="true"></i>
+                        </button>
+                        <ul class="collapse nav flex-column ps-4 sidebar-submenu" id="sidebar-submenu-config"
+                            role="list">
+                            <li role="listitem"><a href="/public/pages/config_Auditoria.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Parámetros</a></li>
+                            <li role="listitem"><a href="/public/pages/config_Auditoria.html"
+                                    class="nav-link sidebar-submenu-link"><i aria-hidden="true"></i>Auditoría</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+            <div id="sidebar-footer" class="p-3 border-top d-flex align-items-center gap-2">
+                <span id="sidebar-user-avatar"
+                    class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                    aria-hidden="true"><i class="fa-solid fa-user fa-sm"></i></span>
+                <div class="sidebar-nav-text overflow-hidden">
+                    <p class="mb-0 fw-semibold text-truncate small" id="sidebar-user-name">Juan Pérez</p>
+                    <p class="mb-0 text-truncate sidebar-nav-label" id="sidebar-user-role">Administrador</p>
+                </div>
+            </div>
+        </aside>
+
+        <div id="main-wrapper" class="d-flex flex-column flex-grow-1 overflow-hidden">
+
+
+            <!-- TOPBAR -->
+            <header id="topbar" class="d-flex align-items-center justify-content-between px-4 py-2 flex-shrink-0">
+                <div id="topbar-left" class="d-flex align-items-center gap-3">
+                    <button id="topbar-sidebar-toggle" class="btn btn-sm p-1 d-none" type="button"
+                        aria-label="Abrir sidebar"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>
+                    <nav aria-label="Breadcrumb">
+                        <ol class="breadcrumb mb-0 small">
+                            <li class="breadcrumb-item"><a href="/public/pages/index.html">Ferretería</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Inicio</li>
+                        </ol>
+                    </nav>
+                </div>
+                <nav id="topbar-quicklinks" class="d-none d-lg-flex align-items-center gap-1"
+                    aria-label="Accesos rápidos">
+                    <a href="/public/pages/empleados.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Empleados</a>
+                    <a href="/public/pages/usuarios.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Usuarios</a>
+                    <a href="/public/pages/clientes.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Clientes</a>
+                    <a href="/public/pages/ventas.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Ventas</a>
+                    <a href="/public/pages/caja.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Caja</a>
+                    <a href="/public/pages/inventario.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Inventario</a>
+                    <a href="/public/pages/compras.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Compras</a>
+                    <a href="/public/pages/proveedores.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Proveedores</a>
+                    <a href="/public/pages/reportes.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Reportes</a>
+                    <a href="/public/pages/devoluciones.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Devoluciones</a>
+                    <a href="/public/pages/productos.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Productos</a>
+                    <a href="/public/pages/config_Auditoria.html" class="btn btn-sm topbar-quicklink"><i
+                            aria-hidden="true"></i>Configuración</a>
+                </nav>
+                <div id="topbar-right" class="d-flex align-items-center gap-2">
+                    <div class="dropdown" id="topbar-notifications">
+                        <button class="btn btn-sm position-relative topbar-icon-btn" type="button"
+                            id="topbar-notifications-btn" aria-label="Notificaciones" aria-haspopup="true"
+                            aria-expanded="false">
+                            <i class="fa-solid fa-bell" aria-hidden="true"></i>
+                            <span
+                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill topbar-badge">3</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" id="topbar-notifications-menu"
+                            aria-labelledby="topbar-notifications-btn">
+                            <li>
+                                <h6 class="dropdown-header">Notificaciones</h6>
+                            </li>
+                            <li><a class="dropdown-item d-flex align-items-start gap-2 py-2"
+                                    href="/public/pages/inventario.html"><i
+                                        class="fa-solid fa-triangle-exclamation text-warning mt-1 flex-shrink-0"
+                                        aria-hidden="true"></i><span class="small">5 productos con stock
+                                        crítico</span></a></li>
+                            <li><a class="dropdown-item d-flex align-items-start gap-2 py-2"
+                                    href="/public/pages/compras.html"><i
+                                        class="fa-solid fa-circle-info text-info mt-1 flex-shrink-0"
+                                        aria-hidden="true"></i><span class="small">2 órdenes de compra
+                                        pendientes</span></a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item text-center small" href="#">Ver todas</a></li>
+                        </ul>
+                    </div>
+                    <div class="vr topbar-separator" aria-hidden="true"></div>
+                    <div class="dropdown" id="topbar-user-menu">
+                        <button class="btn btn-sm d-flex align-items-center gap-2 topbar-user-btn" type="button"
+                            id="topbar-user-btn" aria-expanded="false" aria-label="Menú de usuario">
+                            <span class="rounded-circle d-flex align-items-center justify-content-center topbar-avatar"
+                                aria-hidden="true"><i class="fa-solid fa-user fa-sm"></i></span>
+                            <span class="d-none d-md-block small fw-semibold">Juan Pérez</span>
+                            <i class="fa-solid fa-chevron-down fa-xs d-none d-md-block" aria-hidden="true"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="topbar-user-btn">
+                            <li>
+                                <div class="dropdown-header">
+                                    <p class="mb-0 fw-semibold">Juan Pérez</p>
+                                    <p class="mb-0 small text-muted">Administrador</p>
+                                </div>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item d-flex align-items-center gap-2" href="#"><i
+                                        class="fa-regular fa-user fa-fw" aria-hidden="true"></i>Mi perfil</a></li>
+                            <li><a class="dropdown-item d-flex align-items-center gap-2"
+                                    href="/public/pages/config_Auditoria.html"><i class="fa-solid fa-gear fa-fw"
+                                        aria-hidden="true"></i>Configuración</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item d-flex align-items-center gap-2 text-danger" id="btn-logout"
+                                    href="/public/pages/login.html"><i class="fa-solid fa-right-from-bracket fa-fw"
+                                        aria-hidden="true"></i>Cerrar sesión</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+
+            <main id="main-content" class="flex-grow-1 overflow-y-auto" aria-label="Contenido principal">
+
+                <div id="page-header" class="d-flex align-items-center justify-content-between mb-4">
+                    <img id="page-header-img" src='https://image.slidesdocs.com/responsive-images/background/white-3d-rendering-of-isolated-tools-powerpoint-background_7ae0ce836a__960_540.jpg' alt="" aria-hidden="true">
+                    <div>
+                        <h1 class="h4 fw-bold mb-0" id="page-title">VENTAS</h1>
+                        <p class="text-muted small mb-0" id="page-subtitle">Registro de ventas y comprobantes</p>
+                    </div>
+                    <div class="d-flex gap-2" id="page-actions">
+                        <a href="#section-nueva-venta" class="btn btn-sm btn-primary" id="btn-ir-nueva-venta">
+                            <i class="fa-solid fa-plus me-1" aria-hidden="true"></i>Nueva venta
+                        </a>
+                    </div>
+                </div>
+
+                <!-- TABS -->
+                <ul class="nav nav-tabs mb-4" id="ventas-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-nueva-venta" data-bs-toggle="tab"
+                            data-bs-target="#section-nueva-venta" type="button" role="tab"
+                            aria-controls="section-nueva-venta" aria-selected="true">
+                            <i aria-hidden="true"></i>Nueva venta
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-lista-ventas" data-bs-toggle="tab"
+                            data-bs-target="#section-lista-ventas" type="button" role="tab"
+                            aria-controls="section-lista-ventas" aria-selected="false">
+                            <i aria-hidden="true"></i>Lista de ventas
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-series" data-bs-toggle="tab" data-bs-target="#section-series"
+                            type="button" role="tab" aria-controls="section-series" aria-selected="false">
+                            <i aria-hidden="true"></i>Series
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-tipos-pago" data-bs-toggle="tab"
+                            data-bs-target="#section-tipos-pago" type="button" role="tab"
+                            aria-controls="section-tipos-pago" aria-selected="false">
+                            <i aria-hidden="true"></i>Tipos de pago
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="ventas-tab-content">
+
+                    <!-- TAB 1: NUEVA VENTA (POS) -->
+                    <section class="tab-pane fade show active" id="section-nueva-venta" role="tabpanel"
+                        aria-labelledby="tab-nueva-venta">
+                        <div class="row g-4">
+
+                            <!-- Columna izquierda: buscador + carrito -->
+                            <div class="col-12 col-xl-7">
+
+                                <!-- Buscador de productos -->
+                                <div class="card mb-3 contenido-header" id="pos-buscador-card">
+                                    <div class="card-header">
+                                        <h2 class="h6 fw-semibold mb-0"><i class="fa-solid fa-magnifying-glass me-2"
+                                                aria-hidden="true"></i>Buscar producto</h2>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-2">
+                                            <div class="col-12 col-sm-8">
+                                                <label for="pos-buscar-producto"
+                                                    class="form-label form-label-sm mb-1">Código, nombre o
+                                                    categoría</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text"><i class="fa-solid fa-barcode"
+                                                            aria-hidden="true"></i></span>
+                                                    <input type="search" id="pos-buscar-producto" class="form-control"
+                                                        placeholder="Ej: Cable THW, 001234, Eléctrico..."
+                                                        autocomplete="off"
+                                                        aria-label="Buscar producto por código, nombre o categoría">
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-sm-4">
+                                                <label for="pos-filtro-categoria"
+                                                    class="form-label form-label-sm mb-1">Categoría</label>
+                                                <select id="pos-filtro-categoria" class="form-select form-select-sm"
+                                                    aria-label="Filtrar por categoría">
+                                                    <option value="">Todas</option>
+                                                    <option value="electrico">Eléctrico</option>
+                                                    <option value="plomeria">Plomería</option>
+                                                    <option value="herramientas">Herramientas</option>
+                                                    <option value="pinturas">Pinturas</option>
+                                                    <option value="construccion">Construcción</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <!-- Resultados de búsqueda -->
+                                        <div id="pos-resultados-busqueda" class="mt-3">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-hover mb-0" id="tabla-pos-productos"
+                                                    aria-label="Resultados de búsqueda de productos">
+                                                    <thead>
+                                                        <tr>
+                                                            <th scope="col">Código</th>
+                                                            <th scope="col">Producto</th>
+                                                            <th scope="col">Stock</th>
+                                                            <th scope="col">Precio</th>
+                                                            <th scope="col"><span class="visually-hidden">Agregar</span>
+                                                            </th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="pos-productos-body">
+                                                        <!-- Fila ejemplo -->
+                                                        <tr>
+                                                            <td><span class="fw-semibold small">001001</span></td>
+                                                            <td>
+                                                                <div>Cable THW 2.5mm</div>
+                                                                <small class="text-muted">Eléctrico / Cables ·
+                                                                    Indeco</small>
+                                                            </td>
+                                                            <td><span class="badge text-bg-success">120.5 m</span></td>
+                                                            <td>S/ 2.50 / m</td>
+                                                            <td>
+                                                                <button type="button" class="btn btn-sm btn-primary"
+                                                                    aria-label="Agregar Cable THW 2.5mm al carrito">
+                                                                    <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><span class="fw-semibold small">002045</span></td>
+                                                            <td>
+                                                                <div>Tomacorriente doble</div>
+                                                                <small class="text-muted">Eléctrico / Tomacorrientes ·
+                                                                    Bticino</small>
+                                                            </td>
+                                                            <td><span class="badge text-bg-warning">3 und</span></td>
+                                                            <td>S/ 12.90 / und</td>
+                                                            <td>
+                                                                <button type="button" class="btn btn-sm btn-primary"
+                                                                    aria-label="Agregar Tomacorriente doble al carrito">
+                                                                    <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><span class="fw-semibold small">005012</span></td>
+                                                            <td>
+                                                                <div>Pintura látex blanco 4L</div>
+                                                                <small class="text-muted">Pinturas / Pinturas de pared ·
+                                                                    Tekno</small>
+                                                            </td>
+                                                            <td><span class="badge text-bg-success">18 und</span></td>
+                                                            <td>S/ 45.00 / und</td>
+                                                            <td>
+                                                                <button type="button" class="btn btn-sm btn-primary"
+                                                                    aria-label="Agregar Pintura látex al carrito">
+                                                                    <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Carrito -->
+                                <div class="card" id="pos-carrito-card">
+                                    <div class="card-header d-flex align-items-center justify-content-between">
+                                        <h2 class="h6 fw-semibold mb-0"><i class="fa-solid fa-cart-shopping me-2"
+                                                aria-hidden="true"></i>Carrito</h2>
+                                        <span class="badge" id="pos-carrito-count" aria-live="polite">0 ítems</span>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm mb-0" id="tabla-carrito"
+                                                aria-label="Productos en el carrito">
+                                                <thead>
+                                                    <tr>
+                                                        <th scope="col">Producto</th>
+                                                        <th scope="col">Precio</th>
+                                                        <th scope="col">Cantidad</th>
+                                                        <th scope="col">Subtotal</th>
+                                                        <th scope="col"><span class="visually-hidden">Quitar</span></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="carrito-body">
+                                                    <!-- Fila vacía -->
+                                                    <tr id="carrito-empty-row">
+                                                        <td colspan="5" class="text-center text-muted py-4">
+                                                            <i
+                                                                aria-hidden="true"></i>
+                                                            Agrega productos desde el buscador
+                                                        </td>
+                                                    </tr>
+                                                    <!-- Ejemplo de ítem en carrito -->
+                                                    <tr id="carrito-item-001001" class="d-none">
+                                                        <td>
+                                                            <div class="fw-semibold small">Cable THW 2.5mm</div>
+                                                            <small class="text-muted">001001</small>
+                                                        </td>
+                                                        <td class="small">S/ 2.50</td>
+                                                        <td>
+                                                            <div class="input-group input-group-sm"
+                                                                style="width: 100px;">
+                                                                <button type="button" class="btn btn-sm"
+                                                                    aria-label="Restar cantidad">-</button>
+                                                                <input type="number" class="form-control text-center"
+                                                                    value="5" min="0.01" step="0.01"
+                                                                    aria-label="Cantidad de Cable THW 2.5mm">
+                                                                <button type="button" class="btn btn-sm"
+                                                                    aria-label="Sumar cantidad">+</button>
+                                                            </div>
+                                                        </td>
+                                                        <td class="fw-semibold">S/ 12.50</td>
+                                                        <td>
+                                                            <button type="button" class="btn btn-sm text-danger"
+                                                                aria-label="Quitar Cable THW 2.5mm del carrito">
+                                                                <i class="fa-regular fa-trash-can"
+                                                                    aria-hidden="true"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer">
+                                        <div class="d-flex justify-content-between small text-muted mb-1">
+                                            <span>Subtotal</span>
+                                            <span id="pos-subtotal">S/ 0.00</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between small text-muted mb-1">
+                                            <span>IGV (18%)</span>
+                                            <span id="pos-igv">S/ 0.00</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between fw-bold">
+                                            <span>Total</span>
+                                            <span id="pos-total">S/ 0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <!-- Columna derecha: datos de venta -->
+                            <div class="col-12 col-xl-5">
+                                <div class="card" id="pos-datos-card">
+                                    <div class="card-header">
+                                        <h2 class="h6 fw-semibold mb-0"><i class="fa-solid fa-file-invoice me-2"
+                                                aria-hidden="true"></i>Datos de la venta</h2>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="form-nueva-venta" novalidate>
+
+                                            <!-- Cliente, añadir lista desplegable de todos los clientes (clientes son opcionales) -->
+                                            <fieldset class="mb-3">
+                                                <legend class="form-label fw-semibold mb-2">Cliente</legend>
+                                                <div class="input-group input-group-sm mb-2">
+                                                    <span class="input-group-text"><i class="fa-solid fa-user"
+                                                            aria-hidden="true"></i></span>
+                                                    <input type="text" id="pos-buscar-cliente" class="form-control"
+                                                        placeholder="Buscar por nombre o documento..."
+                                                        list="pos-clientes-lista" autocomplete="off"
+                                                        aria-label="Buscar cliente">
+                                                    <datalist id="pos-clientes-lista">
+                                                        <option value="Juan García — DNI 12345678">
+                                                        <option value="Empresa Eléctrica SAC — RUC 20512345678">
+                                                        <option value="María Torres — DNI 87654321">
+                                                        <option value="Constructora Norte EIRL — RUC 20612345679">
+                                                    </datalist>
+                                                    <button type="button" class="btn btn-sm"
+                                                        id="btn-pos-cliente-anonimo"
+                                                        aria-label="Continuar sin cliente registrado">Anónimo</button>
+                                                </div>
+                                                <div id="pos-cliente-seleccionado"
+                                                    class="alert alert-sm py-2 px-3 d-none" role="status"
+                                                    aria-live="polite">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div>
+                                                            <p class="mb-0 fw-semibold small" id="pos-cliente-nombre">—
+                                                            </p>
+                                                            <p class="mb-0 small text-muted" id="pos-cliente-doc">—</p>
+                                                        </div>
+                                                        <button type="button" class="btn btn-sm p-0"
+                                                            id="btn-pos-quitar-cliente"
+                                                            aria-label="Quitar cliente seleccionado">
+                                                            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </fieldset>
+
+                                            <!-- Resumen de productos del carrito (se puede mejorar)-->
+                                            <fieldset class="mb-3">
+                                                <legend class="form-label fw-semibold mb-2">
+                                                    <i aria-hidden="true"></i>Productos en carrito
+                                                </legend>
+                                                <div id="pos-resumen-carrito" aria-live="polite">
+                                                    <!-- Estado vacío -->
+                                                    <p class="small text-muted mb-0" id="pos-resumen-vacio">
+                                                        <i class="fa-solid fa-circle-info me-1" aria-hidden="true"></i>
+                                                        Sin productos aún. Agrega desde el buscador.
+                                                    </p>
+                                                    <!-- Lista de productos (se llena dinámicamente) -->
+                                                    <ul class="list-unstyled mb-0" id="pos-resumen-lista">
+                                                        <!-- Ejemplo de ítem -->
+                                                        <li
+                                                            class="d-flex justify-content-between align-items-center py-1 border-bottom small">
+                                                            <span class="text-truncate me-2">Cable THW 2.5mm</span>
+                                                            <span class="text-muted flex-shrink-0">5 m · <strong>S/
+                                                                    12.50</strong></span>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                                <!-- Total rápido -->
+                                                <div class="d-flex justify-content-between fw-semibold small mt-2 pt-1">
+                                                    <span>Total estimado</span>
+                                                    <span id="pos-resumen-total">S/ 0.00</span>
+                                                </div>
+                                            </fieldset>
+
+                                            <!-- Comprobante -->
+                                            <fieldset class="mb-3">
+                                                <legend class="form-label fw-semibold mb-2">Comprobante</legend>
+                                                <div class="row g-2">
+                                                    <div class="col-7">
+                                                        <label for="pos-tipo-comprobante"
+                                                            class="form-label form-label-sm mb-1">Tipo</label>
+                                                        <select id="pos-tipo-comprobante" name="tipo_comprobante"
+                                                            class="form-select form-select-sm" required
+                                                            aria-required="true">
+                                                            <option value="nota_venta">Nota de venta</option>
+                                                            <option value="boleta">Boleta</option>
+                                                            <option value="factura">Factura</option>
+                                                        </select>
+                                                    </div>
+                                                    <!--<div class="col-5"> esto se asignará automaticamente , sinq el usuario vea
+                                                    <label for="pos-serie" class="form-label form-label-sm mb-1">Serie</label>
+                                                    <select id="pos-serie" name="id_serie" class="form-select form-select-sm" required aria-required="true">
+                                                        <option value="1">NV01</option>
+                                                        <option value="2">B001</option>
+                                                        <option value="3">F001</option>
+                                                    </select>
+                                                </div>-->
+                                                    <div class="col-12">
+                                                        <label for="pos-observacion"
+                                                            class="form-label form-label-sm mb-1">Observación</label>
+                                                        <textarea id="pos-observacion" name="observacion"
+                                                            class="form-control form-control-sm" rows="2"
+                                                            placeholder="Opcional..." maxlength="500"></textarea>
+                                                    </div>
+                                                </div>
+                                            </fieldset>
+
+                                            <!-- Pagos -->
+                                            <fieldset class="mb-3">
+                                                <legend class="form-label fw-semibold mb-2">Medio(s) de pago</legend>
+                                                <div id="pos-pagos-lista">
+                                                    <!-- Fila de pago 1 (siempre visible) -->
+                                                    <div class="row g-2 mb-2 align-items-end pos-pago-row"
+                                                        data-pago-index="0">
+                                                        <div class="col-5">
+                                                            <label class="form-label form-label-sm mb-1">Tipo</label>
+                                                            <select class="form-select form-select-sm pos-pago-tipo"
+                                                                name="tipo_pago[]" aria-label="Tipo de pago 1">
+                                                                <option value="1">Efectivo</option>
+                                                                <option value="2">Tarjeta</option>
+                                                                <option value="3">Yape</option>
+                                                                <option value="4">Plin</option>
+                                                                <option value="5">Transferencia</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <label class="form-label form-label-sm mb-1">Monto</label>
+                                                            <input type="number"
+                                                                class="form-control form-control-sm pos-pago-monto"
+                                                                name="monto[]" placeholder="0.00" min="0.01" step="0.01"
+                                                                aria-label="Monto pago 1">
+                                                        </div>
+                                                        <div class="col-3">
+                                                            <button type="button" class="btn btn-sm w-100"
+                                                                id="btn-agregar-pago"
+                                                                aria-label="Agregar otro medio de pago">
+                                                                <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <!-- Campo número de operación (aparece cuando aplica) -->
+                                                <div id="pos-voucher-row" class="d-none">
+                                                    <label for="pos-numero-operacion"
+                                                        class="form-label form-label-sm mb-1">N° de operación /
+                                                        voucher</label>
+                                                    <input type="text" id="pos-numero-operacion"
+                                                        name="numero_operacion[]" class="form-control form-control-sm"
+                                                        placeholder="Código de operación..." maxlength="50">
+                                                </div>
+                                            </fieldset>
+
+                                            <!-- Resumen y confirmar -->
+                                            <div class="d-grid gap-2">
+                                                <button type="submit" class="btn btn-primary" id="btn-confirmar-venta">
+                                                    <i aria-hidden="true"></i>Confirmar venta
+                                                </button>
+                                                <button type="button" class="btn btn-sm" id="btn-limpiar-carrito">
+                                                    <i aria-hidden="true"></i>Limpiar todo
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+
+                    <!-- TAB 2: LISTA DE VENTAS -->
+                    <section class="tab-pane fade" id="section-lista-ventas" role="tabpanel"
+                        aria-labelledby="tab-lista-ventas">
+
+                        <!-- Filtros -->
+                        <div class="card mb-3 contenido-header" id="ventas-filtros-card">
+                            <div class="card-body py-2">
+                                <fieldset>
+                                    <legend class="visually-hidden">Filtros de ventas</legend>
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-12 col-sm-6 col-md-3">
+                                            <label for="filtro-venta-desde"
+                                                class="form-label form-label-sm mb-1">Desde</label>
+                                            <input type="date" id="filtro-venta-desde"
+                                                class="form-control form-control-sm" aria-label="Fecha desde">
+                                        </div>
+                                        <div class="col-12 col-sm-6 col-md-3">
+                                            <label for="filtro-venta-hasta"
+                                                class="form-label form-label-sm mb-1">Hasta</label>
+                                            <input type="date" id="filtro-venta-hasta"
+                                                class="form-control form-control-sm" aria-label="Fecha hasta">
+                                        </div>
+                                        <div class="col-12 col-sm-6 col-md-2">
+                                            <label for="filtro-venta-comprobante"
+                                                class="form-label form-label-sm mb-1">Comprobante</label>
+                                            <select id="filtro-venta-comprobante" class="form-select form-select-sm"
+                                                aria-label="Filtrar por tipo de comprobante">
+                                                <option value="">Todos</option>
+                                                <option value="boleta">Boleta</option>
+                                                <option value="factura">Factura</option>
+                                                <option value="nota_venta">Nota de venta</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-sm-6 col-md-2">
+                                            <label for="filtro-venta-estado"
+                                                class="form-label form-label-sm mb-1">Estado</label>
+                                            <select id="filtro-venta-estado" class="form-select form-select-sm"
+                                                aria-label="Filtrar por estado">
+                                                <option value="">Todos</option>
+                                                <option value="pendiente">Pendiente</option>
+                                                <option value="pagada">Pagada</option>
+                                                <option value="anulada">Anulada</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-sm-6 col-md-2 d-flex gap-2">
+                                            <button type="button" class="btn btn-sm btn-primary w-100"
+                                                id="btn-filtrar-ventas">
+                                                <i class="fa-solid fa-filter me-1" aria-hidden="true"></i>Filtrar
+                                            </button>
+                                            <button type="button" class="btn btn-sm w-100"
+                                                id="btn-limpiar-filtros-ventas" aria-label="Limpiar filtros">
+                                                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </fieldset>
+                            </div>
+                        </div>
+
+                        <!-- Tabla de ventas expandible (estilo logs) -->
+                        <div class="card" id="ventas-tabla-card">
+                            <div class="card-header d-flex align-items-center justify-content-between">
+                                <h2 class="h6 fw-semibold mb-0"><i 
+                                        aria-hidden="true"></i>Historial de ventas</h2>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge" id="ventas-total-badge" aria-live="polite">0 ventas</span>
+                                    <button type="button" class="btn btn-sm" id="btn-exportar-ventas"
+                                        aria-label="Exportar ventas">
+                                        <i class="fa-solid fa-file-export me-1" aria-hidden="true"></i>Exportar
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0" id="tabla-ventas"
+                                        aria-label="Lista de ventas">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col" style="width: 2rem;"><span
+                                                        class="visually-hidden">Expandir</span></th>
+                                                <th scope="col">Comprobante</th>
+                                                <th scope="col">Fecha</th>
+                                                <th scope="col">Cliente</th>
+                                                <th scope="col">Vendedor</th>
+                                                <th scope="col">Total</th>
+                                                <th scope="col">Estado</th>
+                                                <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabla-ventas-body">
+                                            <!-- Venta 1 — fila principal -->
+                                            <tr id="venta-row-1" data-expand-trigger="venta-detail-1" >
+                                                <td>
+                                                    <i class="fa-solid fa-chevron-down fa-xs" data-expand-icon
+                                                            aria-hidden="true"></i>
+                                                </td>
+                                                <td><span class="fw-semibold">B001-000001</span></td>
+                                                <td><time datetime="2026-05-20T09:30:00">20/05/2026 09:30</time></td>
+                                                <td>Juan García</td>
+                                                <td>María González</td>
+                                                <td class="fw-semibold">S/ 150.00</td>
+                                                <td><span class="badge rounded-pill text-bg-success">Pagada</span></td>
+                                                <td class="text-end">
+                                                    <div class="d-flex gap-1 justify-content-end">
+                                                        <button type="button" class="btn btn-sm" data-bs-toggle="modal"
+                                                            data-bs-target="#modal-detalle-venta" data-venta-id="1"
+                                                            aria-label="Ver comprobante de B001-000001">
+                                                            <i class="fa-regular fa-eye" aria-hidden="true"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <!-- Venta 1 — fila de detalle expandible -->
+                                            <tr id="venta-detail-1" class="detail-row collapse">
+                                                <td colspan="8" class="p-0">
+                                                    <div class="px-4 py-3">
+                                                        <div class="row g-3">
+                                                            <div class="col-12 col-md-8">
+                                                                <p class="small fw-semibold mb-2">Productos vendidos</p>
+                                                                <table class="table table-sm mb-0"
+                                                                    aria-label="Detalle de productos de la venta B001-000001">
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th scope="col">Producto</th>
+                                                                            <th scope="col">Cant.</th>
+                                                                            <th scope="col">P. Unit.</th>
+                                                                            <th scope="col">Subtotal</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        <tr>
+                                                                            <td>Cable THW 2.5mm</td>
+                                                                            <td>50 m</td>
+                                                                            <td>S/ 2.50</td>
+                                                                            <td>S/ 125.00</td>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td>Interruptor simple</td>
+                                                                            <td>2 und</td>
+                                                                            <td>S/ 12.50</td>
+                                                                            <td>S/ 25.00</td>
+                                                                        </tr>
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                            <div class="col-12 col-md-4">
+                                                                <p class="small fw-semibold mb-2">Pago</p>
+                                                                <dl class="row g-1 small">
+                                                                    <dt class="col-6 text-muted fw-normal">Efectivo</dt>
+                                                                    <dd class="col-6 mb-0">S/ 100.00</dd>
+                                                                    <dt class="col-6 text-muted fw-normal">Yape</dt>
+                                                                    <dd class="col-6 mb-0">S/ 50.00</dd>
+                                                                    <dt class="col-6 text-muted fw-normal">Subtotal</dt>
+                                                                    <dd class="col-6 mb-0">S/ 127.12</dd>
+                                                                    <dt class="col-6 text-muted fw-normal">IGV</dt>
+                                                                    <dd class="col-6 mb-0">S/ 22.88</dd>
+                                                                    <dt class="col-6 fw-semibold">Total</dt>
+                                                                    <dd class="col-6 fw-semibold mb-0">S/ 150.00</dd>
+                                                                </dl>
+                                                            </div>
+                                                        </div>
+                                                        <div class="mt-2 d-flex gap-2">
+                                                            <button type="button" class="btn btn-sm"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#modal-detalle-venta" data-venta-id="1">
+                                                                <i class="fa-regular fa-eye me-1"
+                                                                    aria-hidden="true"></i>Ver comprobante completo
+                                                            </button>
+                                                            <button type="button" class="btn btn-sm btn-rojo"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#modal-anular-venta" data-venta-id="1">
+                                                                <i class="fa-solid fa-ban me-1"
+                                                                    aria-hidden="true"></i>Anular venta
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                            <!-- Venta 2 — anulada -->
+                                            <tr id="venta-row-2" data-expand-trigger="venta-detail-2" style="cursor: pointer;">
+                                                <td>
+                                                    <i class="fa-solid fa-chevron-down fa-xs" data-expand-icon
+                                                            aria-hidden="true"></i>
+                                                </td>
+                                                <td><span class="fw-semibold">NV01-000002</span></td>
+                                                <td><time datetime="2026-05-20T10:15:00">20/05/2026 10:15</time></td>
+                                                <td class="text-muted fst-italic">Anónimo</td>
+                                                <td>María González</td>
+                                                <td class="fw-semibold">S/ 45.00</td>
+                                                <td><span class="badge rounded-pill text-bg-danger">Anulada</span></td>
+                                                <td class="text-end">
+                                                    <div class="d-flex gap-1 justify-content-end">
+                                                        <button type="button" class="btn btn-sm" data-bs-toggle="modal"
+                                                            data-bs-target="#modal-detalle-venta" data-venta-id="2"
+                                                            aria-label="Ver comprobante de NV01-000002">
+                                                            <i class="fa-regular fa-eye" aria-hidden="true"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr id="venta-detail-2" class="detail-row collapse">
+                                                <td colspan="8" class="p-0">
+                                                    <div class="px-4 py-3">
+                                                        <p class="small text-muted mb-0">Motivo de anulación: <span
+                                                                class="fw-semibold text-danger">Producto incorrecto
+                                                                registrado</span></p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="card-footer d-flex align-items-center justify-content-between">
+                                <p class="small text-muted mb-0" id="ventas-paginacion-info">Mostrando 2 de 2 ventas</p>
+                                <nav aria-label="Paginación de ventas">
+                                    <ul class="pagination pagination-sm mb-0">
+                                        <li class="page-item disabled"><a class="page-link" href="#" tabindex="-1"
+                                                aria-disabled="true"><i class="fa-solid fa-chevron-left fa-xs"
+                                                    aria-hidden="true"></i></a></li>
+                                        <li class="page-item active" aria-current="page"><a class="page-link"
+                                                href="#">1</a></li>
+                                        <li class="page-item"><a class="page-link" href="#"><i
+                                                    class="fa-solid fa-chevron-right fa-xs" aria-hidden="true"></i></a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+
+                    </section>
+
+
+                    <!-- TAB 3: SERIES DE COMPROBANTES -->
+                    <section class="tab-pane fade" id="section-series" role="tabpanel" aria-labelledby="tab-series">
+
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h2 class="h6 fw-semibold mb-0">Series de comprobantes</h2>
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                data-bs-target="#modal-nueva-serie">
+                                <i class="fa-solid fa-plus me-1" aria-hidden="true"></i>Nueva serie
+                            </button>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0" id="tabla-series"
+                                        aria-label="Series de comprobantes">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">#</th>
+                                                <th scope="col">Tipo</th>
+                                                <th scope="col">Serie</th>
+                                                <th scope="col">Correlativo actual</th>
+                                                <th scope="col">Próximo número</th>
+                                                <th scope="col">Estado</th>
+                                                <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabla-series-body">
+                                            <tr>
+                                                <td>1</td>
+                                                <td>Nota de venta</td>
+                                                <td><span class="fw-semibold">NV01</span></td>
+                                                <td>2</td>
+                                                <td>NV01-000003</td>
+                                                <td><span class="badge rounded-pill text-bg-success">Activa</span></td>
+                                                <td class="text-end">
+                                                    <button type="button" class="btn btn-sm" data-bs-toggle="modal"
+                                                        data-bs-target="#modal-editar-serie" data-serie-id="1"
+                                                        aria-label="Editar serie NV01">
+                                                        <i class="fa-regular fa-pen-to-square" aria-hidden="true"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>2</td>
+                                                <td>Boleta</td>
+                                                <td><span class="fw-semibold">B001</span></td>
+                                                <td>1</td>
+                                                <td>B001-000002</td>
+                                                <td><span class="badge rounded-pill text-bg-success">Activa</span></td>
+                                                <td class="text-end">
+                                                    <button type="button" class="btn btn-sm" data-bs-toggle="modal"
+                                                        data-bs-target="#modal-editar-serie" data-serie-id="2"
+                                                        aria-label="Editar serie B001">
+                                                        <i class="fa-regular fa-pen-to-square" aria-hidden="true"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>3</td>
+                                                <td>Factura</td>
+                                                <td><span class="fw-semibold">F001</span></td>
+                                                <td>0</td>
+                                                <td>F001-000001</td>
+                                                <td><span class="badge rounded-pill text-bg-success">Activa</span></td>
+                                                <td class="text-end">
+                                                    <button type="button" class="btn btn-sm" data-bs-toggle="modal"
+                                                        data-bs-target="#modal-editar-serie" data-serie-id="3"
+                                                        aria-label="Editar serie F001">
+                                                        <i class="fa-regular fa-pen-to-square" aria-hidden="true"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+
+                    <!-- TAB 4: TIPOS DE PAGO -->
+                    <section class="tab-pane fade" id="section-tipos-pago" role="tabpanel"
+                        aria-labelledby="tab-tipos-pago">
+
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h2 class="h6 fw-semibold mb-0">Tipos de pago</h2>
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                data-bs-target="#modal-nuevo-tipo-pago">
+                                <i class="fa-solid fa-plus me-1" aria-hidden="true"></i>Nuevo tipo
+                            </button>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0" id="tabla-tipos-pago"
+                                        aria-label="Tipos de pago disponibles">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">#</th>
+                                                <th scope="col">Nombre</th>
+                                                <th scope="col">Requiere voucher</th>
+                                                <th scope="col">Estado</th>
+                                                <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabla-tipos-pago-body">
+                                            <tr>
+                                                <td>1</td>
+                                                <td><span class="fw-semibold">Efectivo</span></td>
+                                                <td><span class="badge rounded-pill text-bg-secondary">No</span></td>
+                                                <td><span class="badge rounded-pill text-bg-success">Activo</span></td>
+                                                <td class="text-end">
+                                                    <div class="d-flex gap-1 justify-content-end">
+                                                        <button type="button" class="btn btn-sm" data-bs-toggle="modal"
+                                                            data-bs-target="#modal-editar-tipo-pago" data-tipo-id="1"
+                                                            aria-label="Editar tipo de pago Efectivo">
+                                                            <i class="fa-regular fa-pen-to-square"
+                                                                aria-hidden="true"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm text-danger"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#modal-eliminar-tipo-pago" data-tipo-id="1"
+                                                            aria-label="Eliminar tipo de pago Efectivo">
+                                                            <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>2</td>
+                                                <td><span class="fw-semibold">Tarjeta</span></td>
+                                                <td><span class="badge rounded-pill text-bg-primary">Sí</span></td>
+                                                <td><span class="badge rounded-pill text-bg-success">Activo</span></td>
+                                                <td class="text-end">
+                                                    <div class="d-flex gap-1 justify-content-end">
+                                                        <button type="button" class="btn btn-sm" data-bs-toggle="modal"
+                                                            data-bs-target="#modal-editar-tipo-pago" data-tipo-id="2"
+                                                            aria-label="Editar tipo de pago Tarjeta">
+                                                            <i class="fa-regular fa-pen-to-square"
+                                                                aria-hidden="true"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm text-danger"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#modal-eliminar-tipo-pago" data-tipo-id="2"
+                                                            aria-label="Eliminar tipo de pago Tarjeta">
+                                                            <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>3</td>
+                                                <td><span class="fw-semibold">Yape</span></td>
+                                                <td><span class="badge rounded-pill text-bg-primary">Sí</span></td>
+                                                <td><span class="badge rounded-pill text-bg-success">Activo</span></td>
+                                                <td class="text-end">
+                                                    <div class="d-flex gap-1 justify-content-end">
+                                                        <button type="button" class="btn btn-sm" data-bs-toggle="modal"
+                                                            data-bs-target="#modal-editar-tipo-pago" data-tipo-id="3"
+                                                            aria-label="Editar tipo de pago Yape">
+                                                            <i class="fa-regular fa-pen-to-square"
+                                                                aria-hidden="true"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm text-danger"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#modal-eliminar-tipo-pago" data-tipo-id="3"
+                                                            aria-label="Eliminar tipo de pago Yape">
+                                                            <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>4</td>
+                                                <td><span class="fw-semibold">Plin</span></td>
+                                                <td><span class="badge rounded-pill text-bg-primary">Sí</span></td>
+                                                <td><span class="badge rounded-pill text-bg-success">Activo</span></td>
+                                                <td class="text-end">
+                                                    <div class="d-flex gap-1 justify-content-end">
+                                                        <button type="button" class="btn btn-sm" data-bs-toggle="modal"
+                                                            data-bs-target="#modal-editar-tipo-pago" data-tipo-id="4"
+                                                            aria-label="Editar Plin">
+                                                            <i class="fa-regular fa-pen-to-square"
+                                                                aria-hidden="true"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm text-danger"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#modal-eliminar-tipo-pago" data-tipo-id="4"
+                                                            aria-label="Eliminar Plin">
+                                                            <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>5</td>
+                                                <td><span class="fw-semibold">Transferencia</span></td>
+                                                <td><span class="badge rounded-pill text-bg-primary">Sí</span></td>
+                                                <td><span class="badge rounded-pill text-bg-success">Activo</span></td>
+                                                <td class="text-end">
+                                                    <div class="d-flex gap-1 justify-content-end">
+                                                        <button type="button" class="btn btn-sm" data-bs-toggle="modal"
+                                                            data-bs-target="#modal-editar-tipo-pago" data-tipo-id="5"
+                                                            aria-label="Editar Transferencia">
+                                                            <i class="fa-regular fa-pen-to-square"
+                                                                aria-hidden="true"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm text-danger"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#modal-eliminar-tipo-pago" data-tipo-id="5"
+                                                            aria-label="Eliminar Transferencia">
+                                                            <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                </div>
+                <!-- /tab-content -->
+
+            </main>
+
+            <footer id="main-footer" class="d-flex align-items-center justify-content-between px-4 py-2 flex-shrink-0"
+                aria-label="Pie de página">
+                <p class="mb-0 small text-muted">© <time datetime="2026">2026</time> Ferretería — Sistema de Gestión</p>
+                <p class="mb-0 small text-muted">v1.0.0</p>
+            </footer>
+
+        </div>
+    </div>
+
+
+    <!-- MODALES -->
+
+    <!-- MODAL: Detalle/comprobante de venta -->
+    <div class="modal fade" id="modal-detalle-venta" tabindex="-1" aria-labelledby="modal-detalle-venta-title"
+        aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="modal-detalle-venta-title">
+                        <i aria-hidden="true"></i>Comprobante de venta
+                    </h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Encabezado del comprobante -->
+                    <div class="d-flex justify-content-between align-items-start mb-3" id="comprobante-header">
+                        <div>
+                            <h3 class="h5 fw-bold mb-0" id="comprobante-numero">B001-000001</h3>
+                            <p class="text-muted small mb-0">Boleta de venta</p>
+                        </div>
+                        <span class="badge rounded-pill text-bg-success" id="comprobante-estado">Pagada</span>
+                    </div>
+                    <dl class="row g-1 small mb-3" id="comprobante-meta">
+                        <dt class="col-sm-4 text-muted fw-normal">Fecha</dt>
+                        <dd class="col-sm-8 mb-0" id="comprobante-fecha">20/05/2026 09:30</dd>
+                        <dt class="col-sm-4 text-muted fw-normal">Cliente</dt>
+                        <dd class="col-sm-8 mb-0" id="comprobante-cliente">Juan García (DNI 12345678)</dd>
+                        <dt class="col-sm-4 text-muted fw-normal">Vendedor</dt>
+                        <dd class="col-sm-8 mb-0" id="comprobante-vendedor">María González</dd>
+                    </dl>
+                    <hr>
+                    <!-- Tabla de productos -->
+                    <div class="table-responsive mb-3" id="comprobante-productos-wrapper">
+                        <table class="table table-sm mb-0" id="tabla-comprobante-productos"
+                            aria-label="Productos del comprobante">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Producto</th>
+                                    <th scope="col">Cant.</th>
+                                    <th scope="col">P. Unit.</th>
+                                    <th scope="col" class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comprobante-productos-body">
+                                <tr>
+                                    <td>Cable THW 2.5mm</td>
+                                    <td>50 m</td>
+                                    <td>S/ 2.50</td>
+                                    <td class="text-end">S/ 125.00</td>
+                                </tr>
+                                <tr>
+                                    <td>Interruptor simple</td>
+                                    <td>2 und</td>
+                                    <td>S/ 12.50</td>
+                                    <td class="text-end">S/ 25.00</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end text-muted small">Subtotal</td>
+                                    <td class="text-end small" id="comprobante-subtotal">S/ 127.12</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-end text-muted small">IGV (18%)</td>
+                                    <td class="text-end small" id="comprobante-igv">S/ 22.88</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-end fw-bold">Total</td>
+                                    <td class="text-end fw-bold" id="comprobante-total">S/ 150.00</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <hr>
+                    <!-- Forma de pago -->
+                    <p class="small fw-semibold mb-2">Forma de pago</p>
+                    <div id="comprobante-pagos">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>Efectivo</span>
+                            <span>S/ 100.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span>Yape <span class="text-muted">· Op. #12345</span></span>
+                            <span>S/ 50.00</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-sm" id="btn-descargar-comprobante">
+                        <i aria-hidden="true"></i>Descargar
+                    </button>
+                    <button type="button" class="btn btn-sm btn-rojo" id="btn-anular-desde-modal"
+                        data-bs-toggle="modal" data-bs-target="#modal-anular-venta">
+                        <i class="fa-solid fa-ban me-1" aria-hidden="true"></i>Anular venta
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- MODAL: Confirmar venta (preview antes de confirmar) -->
+    <div class="modal fade" id="modal-confirmar-venta" tabindex="-1" aria-labelledby="modal-confirmar-venta-title"
+        aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="modal-confirmar-venta-title">
+                        <i class="fa-solid fa-check-circle me-2 text-success" aria-hidden="true"></i>Confirmar venta
+                    </h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Resumen de la venta a confirmar:</p>
+                    <dl class="row g-1 small" id="confirm-resumen">
+                        <dt class="col-6 text-muted fw-normal">Comprobante</dt>
+                        <dd class="col-6 mb-0 fw-semibold" id="confirm-comprobante">B001-000002</dd>
+                        <dt class="col-6 text-muted fw-normal">Cliente</dt>
+                        <dd class="col-6 mb-0" id="confirm-cliente">Anónimo</dd>
+                        <dt class="col-6 text-muted fw-normal">Total</dt>
+                        <dd class="col-6 mb-0 fw-bold" id="confirm-total">S/ 0.00</dd>
+                        <dt class="col-6 text-muted fw-normal">Pago</dt>
+                        <dd class="col-6 mb-0" id="confirm-pago">Efectivo</dd>
+                    </dl>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm" data-bs-dismiss="modal">Revisar</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="btn-ejecutar-venta">
+                        <i class="fa-solid fa-check me-1" aria-hidden="true"></i>Confirmar y emitir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- MODAL: Anular venta -->
+    <div class="modal fade" id="modal-anular-venta" tabindex="-1" aria-labelledby="modal-anular-venta-title"
+        aria-modal="true" role="alertdialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="modal-anular-venta-title">
+                        <i aria-hidden="true"></i>Anular venta
+                    </h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">¿Desea anular la venta <strong id="anular-venta-numero">B001-000001</strong>? Esta
+                        acción no se puede deshacer.</p>
+                    <form id="form-anular-venta" novalidate>
+                        <input type="hidden" id="anular-venta-id" name="id_venta">
+                        <div>
+                            <label for="anular-venta-motivo" class="form-label">Motivo de anulación <span
+                                    class="text-danger" aria-hidden="true">*</span></label>
+                            <textarea id="anular-venta-motivo" name="motivo" class="form-control" rows="3"
+                                placeholder="Describa el motivo de la anulación..." required aria-required="true"
+                                maxlength="300"></textarea>
+                            <div class="invalid-feedback">El motivo es obligatorio para anular una venta.</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="form-anular-venta" class="btn btn-sm btn-rojo"
+                        id="btn-confirmar-anular-venta">
+                        <i class="fa-solid fa-ban me-1" aria-hidden="true"></i>Anular venta
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- MODAL: Nueva serie -->
+    <div class="modal fade" id="modal-nueva-serie" tabindex="-1" aria-labelledby="modal-nueva-serie-title"
+        aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="modal-nueva-serie-title">
+                        <i class="fa-solid fa-plus me-2" aria-hidden="true"></i>Nueva serie
+                    </h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-nueva-serie" novalidate>
+                        <div class="mb-3">
+                            <label for="nueva-serie-tipo" class="form-label">Tipo de comprobante <span
+                                    class="text-danger" aria-hidden="true">*</span></label>
+                            <select id="nueva-serie-tipo" name="tipo_comprobante" class="form-select" required
+                                aria-required="true">
+                                <option value="" disabled selected>Seleccionar</option>
+                                <option value="boleta">Boleta</option>
+                                <option value="factura">Factura</option>
+                                <option value="nota_venta">Nota de venta</option>
+                            </select>
+                            <div class="invalid-feedback">Seleccione el tipo de comprobante.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="nueva-serie-codigo" class="form-label">Serie <span class="text-danger"
+                                    aria-hidden="true">*</span></label>
+                            <input type="text" id="nueva-serie-codigo" name="serie" class="form-control"
+                                placeholder="Ej: B002" maxlength="4" required aria-required="true"
+                                aria-describedby="nueva-serie-help">
+                            <div id="nueva-serie-help" class="form-text">4 caracteres (ej: B001, F001, NV01)</div>
+                            <div class="invalid-feedback">Ingrese la serie.</div>
+                        </div>
+                        <div class="mb-0">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="nueva-serie-activa"
+                                    name="activo" checked>
+                                <label class="form-check-label" for="nueva-serie-activa">Serie activa</label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="form-nueva-serie" class="btn btn-sm btn-primary">
+                        <i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i>Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- MODAL: Editar serie -->
+    <div class="modal fade" id="modal-editar-serie" tabindex="-1" aria-labelledby="modal-editar-serie-title"
+        aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="modal-editar-serie-title">
+                        <i aria-hidden="true"></i>Editar serie
+                    </h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-editar-serie" novalidate>
+                        <input type="hidden" id="editar-serie-id" name="id_serie">
+                        <div class="mb-3">
+                            <label for="editar-serie-tipo" class="form-label">Tipo de comprobante</label>
+                            <select id="editar-serie-tipo" name="tipo_comprobante" class="form-select" required
+                                aria-required="true">
+                                <option value="boleta">Boleta</option>
+                                <option value="factura">Factura</option>
+                                <option value="nota_venta">Nota de venta</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editar-serie-codigo" class="form-label">Serie</label>
+                            <input type="text" id="editar-serie-codigo" name="serie" class="form-control" maxlength="4"
+                                required aria-required="true">
+                        </div>
+                        <div class="mb-0">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="editar-serie-activa"
+                                    name="activo">
+                                <label class="form-check-label" for="editar-serie-activa">Serie activa</label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="form-editar-serie" class="btn btn-sm btn-primary">
+                        <i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i>Guardar cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- MODAL: Nuevo tipo de pago -->
+    <div class="modal fade" id="modal-nuevo-tipo-pago" tabindex="-1" aria-labelledby="modal-nuevo-tipo-pago-title"
+        aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="modal-nuevo-tipo-pago-title">
+                        <i aria-hidden="true"></i>Nuevo tipo de pago
+                    </h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-nuevo-tipo-pago" novalidate>
+                        <div class="mb-3">
+                            <label for="nuevo-tipo-pago-nombre" class="form-label">Nombre <span class="text-danger"
+                                    aria-hidden="true">*</span></label>
+                            <input type="text" id="nuevo-tipo-pago-nombre" name="nombre" class="form-control"
+                                placeholder="Ej: Depósito bancario" maxlength="40" required aria-required="true">
+                            <div class="invalid-feedback">Ingrese el nombre del tipo de pago.</div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                    id="nuevo-tipo-pago-voucher" name="requiere_voucher">
+                                <label class="form-check-label" for="nuevo-tipo-pago-voucher">Requiere número de
+                                    operación / voucher</label>
+                            </div>
+                        </div>
+                        <div class="mb-0">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                    id="nuevo-tipo-pago-activo" name="activo" checked>
+                                <label class="form-check-label" for="nuevo-tipo-pago-activo">Activo</label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="form-nuevo-tipo-pago" class="btn btn-sm btn-primary">
+                        <i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i>Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- MODAL: Editar tipo de pago -->
+    <div class="modal fade" id="modal-editar-tipo-pago" tabindex="-1" aria-labelledby="modal-editar-tipo-pago-title"
+        aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="modal-editar-tipo-pago-title">
+                        <i class="fa-regular fa-pen-to-square me-2" aria-hidden="true"></i>Editar tipo de pago
+                    </h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-editar-tipo-pago" novalidate>
+                        <input type="hidden" id="editar-tipo-pago-id" name="id_tipo_pago">
+                        <div class="mb-3">
+                            <label for="editar-tipo-pago-nombre" class="form-label">Nombre <span class="text-danger"
+                                    aria-hidden="true">*</span></label>
+                            <input type="text" id="editar-tipo-pago-nombre" name="nombre" class="form-control"
+                                maxlength="40" required aria-required="true">
+                            <div class="invalid-feedback">Ingrese el nombre.</div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                    id="editar-tipo-pago-voucher" name="requiere_voucher">
+                                <label class="form-check-label" for="editar-tipo-pago-voucher">Requiere número de
+                                    operación / voucher</label>
+                            </div>
+                        </div>
+                        <div class="mb-0">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                    id="editar-tipo-pago-activo" name="activo">
+                                <label class="form-check-label" for="editar-tipo-pago-activo">Activo</label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="form-editar-tipo-pago" class="btn btn-sm btn-primary">
+                        <i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i>Guardar cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- MODAL: Eliminar tipo de pago -->
+    <div class="modal fade" id="modal-eliminar-tipo-pago" tabindex="-1" aria-labelledby="modal-eliminar-tipo-pago-title"
+        aria-modal="true" role="alertdialog">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="modal-eliminar-tipo-pago-title">
+                        <i class="fa-regular fa-trash-can me-2 text-danger" aria-hidden="true"></i>Eliminar tipo de pago
+                    </h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Desea eliminar el tipo de pago <strong id="eliminar-tipo-pago-nombre">Efectivo</strong>?</p>
+                    <p class="small text-muted mb-0">Solo es posible si no hay ventas que lo usen.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-sm btn-danger" id="btn-confirmar-eliminar-tipo-pago">
+                        <i class="fa-regular fa-trash-can me-1" aria-hidden="true"></i>Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Toast container -->
+    <div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3" aria-live="polite"
+        aria-atomic="true"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/public/js/global.js"></script>
+    <script src="/public/js/ventas.js"></script>
+</body>
+
+</html>
