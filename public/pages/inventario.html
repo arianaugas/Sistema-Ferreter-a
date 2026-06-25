@@ -1281,11 +1281,11 @@ Lotes — Lista de lotes activos con fecha de vencimiento, con alerta de los que
                 </div>
 
                 <div class="mb-3">
-                    <label for="transf-motivo" class="form-label">Motivo</label>
+                    <label for="transf-motivo" class="form-label">Motivo <span class="text-danger" aria-hidden="true">*</span></label>
                     <input type="text" id="transf-motivo" name="motivo" class="form-control"
                         placeholder="Ej: Reposición de stock, descongestionamiento..." maxlength="200"
-                        aria-describedby="transf-motivo-help">
-                    <div id="transf-motivo-help" class="form-text">Opcional. Máx. 200 caracteres.</div>
+                        required aria-required="true" aria-describedby="transf-motivo-help">
+                    <div id="transf-motivo-help" class="form-text">Obligatorio. Máx. 200 caracteres.</div>
                 </div>
 
                 <!-- Agregar productos al detalle de la transferencia (PONER TAMBIEN DESPLEGABLE DE LOS PRODUCTOS)-->

@@ -152,7 +152,7 @@ const ventasController = {
                     reqKardex.input('id_usuario', sql.Int, id_usuario);
                     await reqKardex.query(`
                         INSERT INTO kardex (id_producto, id_almacen, tipo_movimiento, motivo, referencia_id, referencia_tipo, cantidad, stock_anterior, stock_posterior, id_usuario, registrado_en)
-                        VALUES (@id_producto, @id_almacen, 'salida', 'Venta', @referencia_id, 'ventas', @cantidad, @stock_anterior, @stock_posterior, @id_usuario, GETDATE())
+                        VALUES (@id_producto, @id_almacen, 'salida', 'Venta', @referencia_id, 'ventas', -@cantidad, @stock_anterior, @stock_posterior, @id_usuario, GETDATE())
                     `);
                 }
 

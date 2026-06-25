@@ -332,10 +332,15 @@ const ajustarStock = async (req, res) => {
             // Actualizar stock general en tabla productos (sumando cantidad de ajuste)
             const reqStockGral = transaction.request();
             reqStockGral.input('id_producto', sql.Int, id_producto);
-            reqStockGral.input('cantidad', sql.Decimal(10, 2), cantidad);
-            await reqStockGral.query(
-                `UPDATE productos SET stock_actual = stock_actual + @cantidad WHERE id_producto = @id_producto`
-            );
+            await reqStockGral.query(`
+                UPDATE productos
+                SET stock_actual = (
+                    SELECT ISNULL(SUM(stock), 0)
+                    FROM productos_almacen
+                    WHERE id_producto = @id_producto
+                )
+                WHERE id_producto = @id_producto
+            `);
         });
 
         return res.status(201).json({
@@ -675,7 +680,20 @@ const completarTransferencia = async (req, res) => {
                      WHERE id_producto = @id_producto AND id_almacen = @id_almacen`
                 );
 
-                // 3. Sumar stock en almacén destino (upsert)
+                // 3. Obtener stock en almacén destino ANTES del upsert (para el Kardex de entrada)
+                const stockDestinoRes = await query(
+                    `SELECT stock FROM productos_almacen WHERE id_producto = @id_producto AND id_almacen = @id_almacen`,
+                    {
+                        id_producto: { type: sql.Int, value: item.id_producto },
+                        id_almacen:  { type: sql.Int, value: transferencia.id_almacen_destino }
+                    }
+                );
+                const stockDestinoAntes = stockDestinoRes.recordset.length > 0
+                    ? parseFloat(stockDestinoRes.recordset[0].stock)
+                    : 0;
+                const stockDestinoDespues = stockDestinoAntes + cantidad;
+
+                // 4. Sumar stock en almacén destino (upsert)
                 const reqAgregar = transaction.request();
                 reqAgregar.input('id_producto', sql.Int, item.id_producto);
                 reqAgregar.input('id_almacen',  sql.Int, transferencia.id_almacen_destino);
@@ -689,23 +707,40 @@ const completarTransferencia = async (req, res) => {
                          VALUES (@id_producto, @id_almacen, @cantidad)`
                 );
 
-                // 4. El stock global (productos.stock_actual) no cambia: la transferencia solo mueve entre almacenes
+                // 5. El stock global (productos.stock_actual) no cambia: la transferencia solo mueve entre almacenes
 
-                // 5. Registrar en Kardex (salida del origen)
-                const reqKardex = transaction.request();
-                reqKardex.input('id_producto',       sql.Int, item.id_producto);
-                reqKardex.input('id_almacen',         sql.Int, transferencia.id_almacen_origen);
-                reqKardex.input('id_almacen_destino', sql.Int, transferencia.id_almacen_destino);
-                reqKardex.input('referencia_id',      sql.Int, id);
-                reqKardex.input('cantidad',           sql.Decimal(10, 2), cantidad);
-                reqKardex.input('stock_antes',        sql.Decimal(10, 2), stockOrigenAntes);
-                reqKardex.input('stock_despues',      sql.Decimal(10, 2), stockOrigenDespues);
-                reqKardex.input('id_usuario',         sql.Int, id_usuario);
-                await reqKardex.query(
+                // 6. Registrar en Kardex la SALIDA del origen (cantidad negativa: el stock de ese almacén baja)
+                const reqKardexSalida = transaction.request();
+                reqKardexSalida.input('id_producto',       sql.Int, item.id_producto);
+                reqKardexSalida.input('id_almacen',         sql.Int, transferencia.id_almacen_origen);
+                reqKardexSalida.input('id_almacen_destino', sql.Int, transferencia.id_almacen_destino);
+                reqKardexSalida.input('referencia_id',      sql.Int, id);
+                reqKardexSalida.input('cantidad',           sql.Decimal(10, 2), cantidad);
+                reqKardexSalida.input('stock_antes',        sql.Decimal(10, 2), stockOrigenAntes);
+                reqKardexSalida.input('stock_despues',      sql.Decimal(10, 2), stockOrigenDespues);
+                reqKardexSalida.input('id_usuario',         sql.Int, id_usuario);
+                await reqKardexSalida.query(
                     `INSERT INTO kardex (id_producto, id_almacen, tipo_movimiento, motivo, referencia_id, referencia_tipo, cantidad, stock_anterior, stock_posterior, id_usuario)
                      VALUES (@id_producto, @id_almacen, 'transferencia',
                      'Transferencia al almacén ' + CAST(@id_almacen_destino AS VARCHAR(10)),
                      @referencia_id, 'transferencia', -@cantidad, @stock_antes, @stock_despues, @id_usuario)`
+                );
+
+                // 7. Registrar en Kardex la ENTRADA al destino (cantidad positiva: el stock de ese almacén sube)
+                const reqKardexEntrada = transaction.request();
+                reqKardexEntrada.input('id_producto',     sql.Int, item.id_producto);
+                reqKardexEntrada.input('id_almacen',       sql.Int, transferencia.id_almacen_destino);
+                reqKardexEntrada.input('id_almacen_origen', sql.Int, transferencia.id_almacen_origen);
+                reqKardexEntrada.input('referencia_id',    sql.Int, id);
+                reqKardexEntrada.input('cantidad',         sql.Decimal(10, 2), cantidad);
+                reqKardexEntrada.input('stock_antes',      sql.Decimal(10, 2), stockDestinoAntes);
+                reqKardexEntrada.input('stock_despues',    sql.Decimal(10, 2), stockDestinoDespues);
+                reqKardexEntrada.input('id_usuario',       sql.Int, id_usuario);
+                await reqKardexEntrada.query(
+                    `INSERT INTO kardex (id_producto, id_almacen, tipo_movimiento, motivo, referencia_id, referencia_tipo, cantidad, stock_anterior, stock_posterior, id_usuario)
+                     VALUES (@id_producto, @id_almacen, 'transferencia',
+                     'Transferencia desde el almacén ' + CAST(@id_almacen_origen AS VARCHAR(10)),
+                     @referencia_id, 'transferencia', @cantidad, @stock_antes, @stock_despues, @id_usuario)`
                 );
             }
 
@@ -797,4 +832,4 @@ module.exports = {
     crearTransferencia,
     completarTransferencia,
     getAllLotes
-};
+};

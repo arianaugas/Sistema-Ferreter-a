@@ -185,6 +185,19 @@ CREATE TABLE almacenes (
         REFERENCES empleados (id_empleado)
 );
 
+CREATE TABLE productos_almacen (
+    id_producto INT NOT NULL,
+    id_almacen INT NOT NULL,
+    stock DECIMAL(10,2) NOT NULL DEFAULT 0,
+    CONSTRAINT pk_productos_almacen PRIMARY KEY (id_producto, id_almacen),
+    CONSTRAINT fk_prod_alm_prod FOREIGN KEY (id_producto)
+        REFERENCES productos (id_producto),
+    CONSTRAINT fk_prod_alm_alm FOREIGN KEY (id_almacen)
+        REFERENCES almacenes (id_almacen),
+    CONSTRAINT chk_prod_alm_stock CHECK (stock >= 0)
+);
+
+
 CREATE TABLE lotes (
     id_lote INT NOT NULL IDENTITY(1,1),
     id_producto INT NOT NULL,

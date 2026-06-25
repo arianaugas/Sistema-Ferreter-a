@@ -45,3 +45,18 @@ select {
     height: 140px;
     object-fit: cover;
 }
+
+#alerta-critico-card {
+    background-color: #fdecea;
+    border-left: 4px solid #dc3545 !important;
+}
+
+#alerta-normal-card {
+    background-color: #eaf6ef;
+    border-left: 4px solid #198754 !important;
+}
+
+#alerta-sobrestock-card {
+    background-color: #fff8e6;
+    border-left: 4px solid #ffc107 !important;
+}

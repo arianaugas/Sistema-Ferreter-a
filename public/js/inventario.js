@@ -1,4 +1,3 @@
-
 //  CONSTANTES 
 const API = '/api/inventario';
 
@@ -16,6 +15,36 @@ let lotesPage = 1;
 // Producto seleccionado en kardex y ajuste
 let kardexProductoId = null;
 let ajusteProductoData = null;
+// Caché del datalist de transferencias: solo productos con stock > 0 en el almacén de origen elegido
+let _transfStockCache = [];
+
+async function actualizarDatalistTransferenciaPorOrigen() {
+    const idAlmacen = document.getElementById('transf-origen')?.value;
+    const dlT = document.getElementById('transf-productos-lista');
+    if (!dlT) return;
+
+    if (!idAlmacen) {
+        _transfStockCache = [];
+        dlT.innerHTML = '';
+        return;
+    }
+
+    try {
+        const data = await apiFetch(`${API}/stock?id_almacen=${idAlmacen}`);
+        // Solo productos con stock disponible en ese almacén
+        _transfStockCache = (data.stock || []).filter(p => Number(p.stock_actual) > 0);
+
+        dlT.innerHTML = '';
+        _transfStockCache.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = `${p.codigo} — ${p.nombre}`;
+            opt.dataset.id = p.id_producto;
+            dlT.appendChild(opt);
+        });
+    } catch (err) {
+        showToast('No se pudo cargar el stock del almacén de origen.', 'error');
+    }
+}
 
 // INIT 
 document.addEventListener('DOMContentLoaded', () => {
@@ -61,21 +90,10 @@ async function cargarAlmacenes() {
 }
 
 function poblarSelectsAlmacen(almacenes) {
-    // Todos los <select> que filtran por almacén
-    const selects = [
-        'filtro-stock-almacen',
-        'kardex-almacen',
-        'filtro-lote-almacen',
-        'ajuste-almacen',
-        'transf-origen',
-        'transf-destino',
-        'nuevo-alm-responsable',  // este es de empleados, se ignora si no existe
-    ];
     const almacenSelects = ['filtro-stock-almacen', 'kardex-almacen', 'filtro-lote-almacen'];
     almacenSelects.forEach(id => {
         const sel = document.getElementById(id);
         if (!sel) return;
-        // Mantener primer option "Todos"
         while (sel.options.length > 1) sel.remove(1);
         almacenes.forEach(a => {
             const opt = document.createElement('option');
@@ -115,7 +133,7 @@ async function cargarCategorias() {
             sel.appendChild(opt);
         });
     } catch {
-        // Silencioso: si falla, el filtro de categoría queda vacío
+        // Silencioso
     }
 }
 
@@ -147,7 +165,6 @@ function renderStock(stock) {
     const badge     = document.getElementById('stock-total-badge');
     const infoEl    = document.getElementById('stock-paginacion-info');
 
-    // Limpiar filas anteriores (excepto la empty-row estática y las de ejemplo)
     tbody.querySelectorAll('tr.stock-dyn').forEach(r => r.remove());
 
     const inicio = (stockPage - 1) * PAGE_SIZE;
@@ -170,47 +187,37 @@ function renderStock(stock) {
         tr.className = 'stock-dyn' + (item.estado_stock === 'critico' ? ' table-danger' : item.estado_stock === 'sobrestock' ? ' table-warning' : '');
         tr.dataset.productoId = item.id_producto;
 
-        // Celda código
         const tdCodigo = document.createElement('td');
         tdCodigo.innerHTML = `<span class="fw-semibold font-monospace">${item.codigo}</span>`;
 
-        // Celda nombre
         const tdNombre = document.createElement('td');
         tdNombre.innerHTML = `<span class="fw-semibold d-block">${item.nombre}</span><span class="small text-muted">${item.subcategoria ?? ''}</span>`;
 
-        // Celda categoría
         const tdCat = document.createElement('td');
         tdCat.textContent = item.categoria;
 
-        // Celda unidad
         const tdUnidad = document.createElement('td');
         tdUnidad.textContent = item.unidad;
 
-        // Celda stock actual
         const tdActual = document.createElement('td');
         tdActual.className = 'text-end fw-bold' + (item.estado_stock === 'critico' ? ' text-danger' : '');
         tdActual.textContent = Number(item.stock_actual).toFixed(2);
 
-        // Celda mín
         const tdMin = document.createElement('td');
         tdMin.className = 'text-end text-muted';
         tdMin.textContent = Number(item.stock_minimo).toFixed(2);
 
-        // Celda máx
         const tdMax = document.createElement('td');
         tdMax.className = 'text-end text-muted';
         tdMax.textContent = item.stock_maximo != null ? Number(item.stock_maximo).toFixed(2) : '—';
 
-        // Celda ubicación
         const tdUbic = document.createElement('td');
         tdUbic.innerHTML = `<span class="small">${item.ubicacion ?? '—'}</span>`;
 
-        // Celda estado
         const tdEstado = document.createElement('td');
         const badgeEstado = _badgeEstadoStock(item.estado_stock);
         tdEstado.appendChild(badgeEstado);
 
-        // Celda acciones
         const tdAcciones = document.createElement('td');
         tdAcciones.className = 'text-end';
         const btnKardex = document.createElement('button');
@@ -279,6 +286,7 @@ function _badgeEstadoStock(estado) {
     return span;
 }
 
+// FIX: Cards de alertas con colores e íconos
 function actualizarAlertas(stock) {
     const critico    = stock.filter(s => s.estado_stock === 'critico').length;
     const normal     = stock.filter(s => s.estado_stock === 'normal').length;
@@ -288,10 +296,44 @@ function actualizarAlertas(stock) {
     document.getElementById('alerta-normal-count').textContent     = normal;
     document.getElementById('alerta-sobrestock-count').textContent = sobrestock;
     document.getElementById('alerta-total-count').textContent      = stock.length;
+
+    // Aplicar colores a las cards de alerta
+    const critCard = document.getElementById('alerta-critico-card');
+    const normCard = document.getElementById('alerta-normal-card');
+    const sobreCard = document.getElementById('alerta-sobrestock-card');
+    const totalCard = document.getElementById('alerta-total-card');
+
+    if (critCard) {
+        critCard.style.borderLeft = '4px solid var(--bs-danger, #dc3545)';
+        const iconEl = critCard.querySelector('.flex-shrink-0 i');
+        if (iconEl) { iconEl.className = 'fa-solid fa-triangle-exclamation fa-lg text-danger'; }
+        else {
+            const iconDiv = critCard.querySelector('.flex-shrink-0');
+            if (iconDiv) iconDiv.innerHTML = '<i class="fa-solid fa-triangle-exclamation fa-lg text-danger" aria-hidden="true"></i>';
+        }
+        document.getElementById('alerta-critico-count').style.color = '#dc3545';
+    }
+    if (normCard) {
+        normCard.style.borderLeft = '4px solid var(--bs-success, #198754)';
+        const iconDiv = normCard.querySelector('.flex-shrink-0');
+        if (iconDiv) iconDiv.innerHTML = '<i class="fa-solid fa-circle-check fa-lg text-success" aria-hidden="true"></i>';
+        document.getElementById('alerta-normal-count').style.color = '#198754';
+    }
+    if (sobreCard) {
+        sobreCard.style.borderLeft = '4px solid var(--bs-warning, #ffc107)';
+        const iconDiv = sobreCard.querySelector('.flex-shrink-0');
+        if (iconDiv) iconDiv.innerHTML = '<i class="fa-solid fa-arrow-up fa-lg text-warning" aria-hidden="true"></i>';
+        document.getElementById('alerta-sobrestock-count').style.color = '#856404';
+    }
+    if (totalCard) {
+        totalCard.style.borderLeft = '4px solid var(--bs-primary, #0d6efd)';
+        const iconDiv = totalCard.querySelector('.flex-shrink-0');
+        if (iconDiv) iconDiv.innerHTML = '<i class="fa-solid fa-boxes-stacked fa-lg text-primary" aria-hidden="true"></i>';
+        document.getElementById('alerta-total-count').style.color = '#0d6efd';
+    }
 }
 
 function poblarDatalistProductos(stock) {
-    // Datalist para offcanvas ajuste
     let dl = document.getElementById('ajuste-productos-lista');
     if (dl) {
         dl.innerHTML = '';
@@ -302,18 +344,6 @@ function poblarDatalistProductos(stock) {
             dl.appendChild(opt);
         });
     }
-    // Datalist para transferencia
-    let dlT = document.getElementById('transf-productos-lista');
-    if (dlT) {
-        dlT.innerHTML = '';
-        stock.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = `${p.codigo} — ${p.nombre}`;
-            opt.dataset.id = p.id_producto;
-            dlT.appendChild(opt);
-        });
-    }
-    // Datalist para kardex (usa id distinto según la corrección de HTML)
     let dlK = document.getElementById('kardex-productos-lista');
     if (dlK) {
         dlK.innerHTML = '';
@@ -324,8 +354,7 @@ function poblarDatalistProductos(stock) {
             dlK.appendChild(opt);
         });
     }
-}
-
+} 
 
 //  STOCK FILTROS 
 
@@ -338,7 +367,6 @@ function initStockFiltros() {
         document.getElementById('filtro-stock-estado').value    = '';
         cargarStock();
     });
-    // Filtrar al presionar Enter en búsqueda
     document.getElementById('filtro-stock-buscar')?.addEventListener('keydown', e => {
         if (e.key === 'Enter') aplicarFiltrosStock();
     });
@@ -351,7 +379,6 @@ function aplicarFiltrosStock() {
         id_almacen:  document.getElementById('filtro-stock-almacen')?.value        || '',
         estado:      document.getElementById('filtro-stock-estado')?.value         || '',
     };
-    // Limpiar vacíos
     Object.keys(params).forEach(k => { if (!params[k]) delete params[k]; });
     cargarStock(params);
 }
@@ -364,9 +391,6 @@ function renderPaginacion(seccion, total) {
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
     const current = pageMap[seccion] ?? 1;
 
-    // IDs de paginación en el HTML siguen el patrón: stock-paginacion-info, etc.
-    // Los nav de paginación están dentro de card-footer de cada tabla
-    // Buscamos el nav dentro de la sección activa
     const sectionMap = {
         stock:  'stock-tabla-card',
         kardex: 'kardex-tabla-card',
@@ -382,7 +406,6 @@ function renderPaginacion(seccion, total) {
 
     ul.innerHTML = '';
 
-    // Anterior
     const liPrev = document.createElement('li');
     liPrev.className = 'page-item' + (current <= 1 ? ' disabled' : '');
     const aPrev = document.createElement('a');
@@ -396,7 +419,6 @@ function renderPaginacion(seccion, total) {
     liPrev.appendChild(aPrev);
     ul.appendChild(liPrev);
 
-    // Números (máx 5 páginas visibles)
     const start = Math.max(1, current - 2);
     const end   = Math.min(totalPages, start + 4);
     for (let i = start; i <= end; i++) {
@@ -413,7 +435,6 @@ function renderPaginacion(seccion, total) {
         ul.appendChild(li);
     }
 
-    // Siguiente
     const liNext = document.createElement('li');
     liNext.className = 'page-item' + (current >= totalPages ? ' disabled' : '');
     const aNext = document.createElement('a');
@@ -430,7 +451,7 @@ function renderPaginacion(seccion, total) {
 
 function cambiarPagina(seccion, page, total) {
     if (seccion === 'stock')  { stockPage  = page; renderStock(_stockCache); }
-    if (seccion === 'kardex') { kardexPage = page; /* renderKardex usa su propio cache */ }
+    if (seccion === 'kardex') { kardexPage = page; }
     if (seccion === 'transf') { transfPage = page; }
     if (seccion === 'lotes')  { lotesPage  = page; }
 }
@@ -439,11 +460,9 @@ function cambiarPagina(seccion, page, total) {
 //  TAB LISTENERS 
 
 function initTabListeners() {
-    // Cuando se activa el tab de transferencias, cargar la lista
     document.getElementById('tab-transferencias')?.addEventListener('shown.bs.tab', () => {
         cargarTransferencias();
     });
-    // Tab de almacenes ya se carga en init, pero refresca si vuelves
     document.getElementById('tab-almacenes')?.addEventListener('shown.bs.tab', () => {
         cargarAlmacenes();
     });
@@ -453,12 +472,10 @@ function initTabListeners() {
 //  KARDEX 
 
 function initKardexBusqueda() {
-    // Asegurar que el datalist de productos esté poblado incluso sin pasar por stock
     const dlK = document.getElementById('kardex-productos-lista');
     if (dlK && dlK.options.length === 0) {
         apiFetch(`${API}/stock`).then(data => {
-            const items = Array.isArray(data) ? data : (data.stock || []);
-            cache.stock = items;
+            const items = data.stock || [];
             items.forEach(item => {
                 const opt = document.createElement('option');
                 opt.value = `${item.codigo} — ${item.nombre}`;
@@ -484,28 +501,26 @@ function initKardexBusqueda() {
     if (inputKardex) {
         inputKardex.addEventListener('change', () => {
             const val = inputKardex.value.trim();
-            const producto = cache.stock?.find(p => `${p.codigo} — ${p.nombre}` === val);
+            const producto = _stockCache.find(p => `${p.codigo} — ${p.nombre}` === val);
             kardexProductoId = producto ? producto.id_producto : null;
         });
     }
 }
 
-function resolverProductoPorTexto(texto) {
-    if (!texto || !_stockCache.length) return null;
+function resolverProductoPorTexto(texto, cache = _stockCache) {
+    if (!texto || !cache.length) return null;
     const t = texto.toLowerCase();
-    // Busca coincidencia exacta con "codigo — nombre" del datalist, o por código, o por nombre
-    return _stockCache.find(p =>
+    return cache.find(p =>
         `${p.codigo} — ${p.nombre}`.toLowerCase() === t ||
         p.codigo.toLowerCase() === t ||
         p.nombre.toLowerCase() === t
-    ) || _stockCache.find(p =>
+    ) || cache.find(p =>
         p.nombre.toLowerCase().includes(t) || p.codigo.toLowerCase().includes(t)
     ) || null;
 }
 
 async function buscarKardex() {
     if (!kardexProductoId) {
-        // Intentar resolver de nuevo por el texto actual
         const input = document.getElementById('kardex-producto-input');
         const producto = resolverProductoPorTexto(input?.value.trim() ?? '');
         if (!producto) {
@@ -543,6 +558,7 @@ function limpiarTablaKardex() {
     document.getElementById('kardex-paginacion-info').textContent = '';
 }
 
+// FIX KARDEX: eliminar referencia_id de la tabla, expandir con más info + colores
 function renderTablaKardex(movimientos) {
     const tbody    = document.getElementById('tabla-kardex-body');
     const emptyRow = document.getElementById('kardex-empty-row');
@@ -566,7 +582,6 @@ function renderTablaKardex(movimientos) {
         const rowId    = `kardex-dyn-row-${idx}`;
         const detailId = `kardex-dyn-detail-${idx}`;
 
-        // Fila principal
         const tr = document.createElement('tr');
         tr.id = rowId;
         tr.className = 'kardex-dyn cursor-pointer';
@@ -579,45 +594,61 @@ function renderTablaKardex(movimientos) {
         const signo    = cantidad >= 0 ? '+' : '';
         const colorCantidad = cantidad > 0 ? 'text-success' : cantidad < 0 ? 'text-danger' : 'text-muted';
 
+        // FIX: reemplazar columna "Motivo / Referencia" — quitar referencia_id numérico y mostrar descripción legible
+        const descripcionMovimiento = _descripcionKardex(mov);
+
         tr.innerHTML = `
             <td class="ps-3"><i class="fa-solid fa-chevron-down fa-xs text-muted" data-expand-icon aria-hidden="true"></i></td>
             <td>${_badgeKardexTipo(mov.tipo_movimiento)}</td>
             <td><time datetime="${mov.registrado_en}">${formatDate(mov.registrado_en, true)}</time></td>
             <td>${mov.almacen}</td>
-            <td>${mov.motivo ?? '—'}${mov.referencia_tipo ? ` · <span class="text-muted small">${mov.referencia_tipo}${mov.referencia_id ? ' #' + mov.referencia_id : ''}</span>` : ''}</td>
+            <td>${descripcionMovimiento}</td>
             <td class="text-end fw-semibold ${colorCantidad}">${signo}${Number(mov.cantidad).toFixed(2)}</td>
             <td class="text-end text-muted">${Number(mov.stock_anterior).toFixed(2)}</td>
             <td class="text-end fw-semibold">${Number(mov.stock_posterior).toFixed(2)}</td>
             <td><span class="small">${mov.empleado}</span></td>
         `;
 
-        // Fila detalle expandible
+        // Fila detalle expandible — con más info y colores
         const trDetail = document.createElement('tr');
         trDetail.id = detailId;
         trDetail.className = 'kardex-dyn detail-row collapse';
         trDetail.setAttribute('aria-hidden', 'true');
+
+        const colorBg = _colorBgKardex(mov.tipo_movimiento);
+        const iconInfo = _iconoKardexDetalle(mov.tipo_movimiento);
+
         trDetail.innerHTML = `
-            <td colspan="9" class="px-4 py-3">
-                <div class="row g-3">
-                    <div class="col-12 col-md-6">
-                        <dl class="row g-1 mb-0">
-                            <dt class="col-5 text-muted small fw-normal">Tipo de movimiento</dt>
-                            <dd class="col-7 mb-0 small">${mov.tipo_movimiento}</dd>
-                            <dt class="col-5 text-muted small fw-normal">Motivo</dt>
-                            <dd class="col-7 mb-0 small">${mov.motivo ?? '—'}</dd>
-                            <dt class="col-5 text-muted small fw-normal">Referencia tipo</dt>
-                            <dd class="col-7 mb-0 small">${mov.referencia_tipo ?? '—'}</dd>
-                            <dt class="col-5 text-muted small fw-normal">Referencia ID</dt>
-                            <dd class="col-7 mb-0 small font-monospace">${mov.referencia_id ?? '—'}</dd>
-                        </dl>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <dl class="row g-1 mb-0">
-                            <dt class="col-5 text-muted small fw-normal">Empleado</dt>
-                            <dd class="col-7 mb-0 small">${mov.empleado}</dd>
-                            <dt class="col-5 text-muted small fw-normal">Registrado en</dt>
-                            <dd class="col-7 mb-0 small"><time datetime="${mov.registrado_en}">${formatDate(mov.registrado_en, true)}</time></dd>
-                        </dl>
+            <td colspan="9" class="px-4 py-3" style="background:${colorBg}">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="flex-shrink-0 mt-1">${iconInfo}</div>
+                    <div class="flex-grow-1">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <dl class="row g-1 mb-0">
+                                    <dt class="col-5 text-muted small fw-normal">Tipo</dt>
+                                    <dd class="col-7 mb-0 small">${_badgeKardexTipo(mov.tipo_movimiento)}</dd>
+                                    <dt class="col-5 text-muted small fw-normal">Motivo</dt>
+                                    <dd class="col-7 mb-0 small fw-semibold">${mov.motivo ?? '—'}</dd>
+                                    <dt class="col-5 text-muted small fw-normal">Documento origen</dt>
+                                    <dd class="col-7 mb-0 small">${_formatReferenciaKardex(mov)}</dd>
+                                </dl>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <dl class="row g-1 mb-0">
+                                    <dt class="col-5 text-muted small fw-normal">Cantidad</dt>
+                                    <dd class="col-7 mb-0 small fw-bold ${colorCantidad}">${signo}${Number(mov.cantidad).toFixed(2)}</dd>
+                                    <dt class="col-5 text-muted small fw-normal">Stock anterior</dt>
+                                    <dd class="col-7 mb-0 small">${Number(mov.stock_anterior).toFixed(2)}</dd>
+                                    <dt class="col-5 text-muted small fw-normal">Stock posterior</dt>
+                                    <dd class="col-7 mb-0 small fw-bold">${Number(mov.stock_posterior).toFixed(2)}</dd>
+                                    <dt class="col-5 text-muted small fw-normal">Empleado</dt>
+                                    <dd class="col-7 mb-0 small">${mov.empleado}</dd>
+                                    <dt class="col-5 text-muted small fw-normal">Fecha</dt>
+                                    <dd class="col-7 mb-0 small"><time datetime="${mov.registrado_en}">${formatDate(mov.registrado_en, true)}</time></dd>
+                                </dl>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </td>
@@ -627,8 +658,71 @@ function renderTablaKardex(movimientos) {
         tbody.appendChild(trDetail);
     });
 
-    // Activar expansión en las filas recién creadas
     initExpandableRowsLive();
+}
+
+// Genera descripción legible del movimiento (reemplaza "referencia_id #123")
+function _descripcionKardex(mov) {
+    const tipo = mov.tipo_movimiento?.toLowerCase();
+    const motivo = mov.motivo ?? '';
+
+    if (tipo === 'entrada') {
+        if (mov.referencia_tipo === 'recepcion' && mov.referencia_id) {
+            return `<span class="small text-success fw-semibold"><i class="fa-solid fa-arrow-down fa-xs me-1" aria-hidden="true"></i>Recepción de compra</span><br><span class="small text-muted">${motivo}</span>`;
+        }
+        return `<span class="small text-success fw-semibold"><i class="fa-solid fa-arrow-down fa-xs me-1" aria-hidden="true"></i>Entrada</span><br><span class="small text-muted">${motivo}</span>`;
+    }
+    if (tipo === 'salida') {
+        if (mov.referencia_tipo === 'venta' && mov.referencia_id) {
+            return `<span class="small text-danger fw-semibold"><i class="fa-solid fa-arrow-up fa-xs me-1" aria-hidden="true"></i>Venta registrada</span><br><span class="small text-muted">${motivo}</span>`;
+        }
+        return `<span class="small text-danger fw-semibold"><i class="fa-solid fa-arrow-up fa-xs me-1" aria-hidden="true"></i>Salida</span><br><span class="small text-muted">${motivo}</span>`;
+    }
+    if (tipo === 'ajuste') {
+        return `<span class="small text-warning fw-semibold"><i class="fa-solid fa-sliders fa-xs me-1" aria-hidden="true"></i>Ajuste de inventario</span><br><span class="small text-muted">${motivo}</span>`;
+    }
+    if (tipo === 'transferencia') {
+        return `<span class="small text-info fw-semibold"><i class="fa-solid fa-right-left fa-xs me-1" aria-hidden="true"></i>Transferencia entre almacenes</span><br><span class="small text-muted">${motivo}</span>`;
+    }
+    return `<span class="small">${motivo || '—'}</span>`;
+}
+
+// Color de fondo para la fila de detalle según tipo
+function _colorBgKardex(tipo) {
+    const map = {
+        entrada:       'rgba(25,135,84,0.06)',
+        salida:        'rgba(220,53,69,0.06)',
+        ajuste:        'rgba(255,193,7,0.08)',
+        transferencia: 'rgba(13,202,240,0.06)',
+    };
+    return map[tipo?.toLowerCase()] ?? 'rgba(0,0,0,0.02)';
+}
+
+// Ícono grande para el panel de detalle
+function _iconoKardexDetalle(tipo) {
+    const map = {
+        entrada:       '<i class="fa-solid fa-arrow-down fa-xl text-success" aria-hidden="true"></i>',
+        salida:        '<i class="fa-solid fa-arrow-up fa-xl text-danger" aria-hidden="true"></i>',
+        ajuste:        '<i class="fa-solid fa-sliders fa-xl text-warning" aria-hidden="true"></i>',
+        transferencia: '<i class="fa-solid fa-right-left fa-xl text-info" aria-hidden="true"></i>',
+    };
+    return map[tipo?.toLowerCase()] ?? '<i class="fa-solid fa-circle fa-xl text-secondary" aria-hidden="true"></i>';
+}
+
+// Formatea la referencia de forma legible (sin mostrar número crudo)
+function _formatReferenciaKardex(mov) {
+    if (!mov.referencia_tipo) return '<span class="text-muted">—</span>';
+    const tipoLabel = {
+        venta:      'Venta',
+        recepcion:  'Recepción de compra',
+        devolucion: 'Devolución',
+        transferencia: 'Transferencia',
+        ajuste:     'Ajuste manual',
+    }[mov.referencia_tipo] ?? mov.referencia_tipo;
+    if (mov.referencia_id) {
+        return `<span class="badge text-bg-light border">${tipoLabel} #${mov.referencia_id}</span>`;
+    }
+    return `<span class="badge text-bg-light border">${tipoLabel}</span>`;
 }
 
 function _badgeKardexTipo(tipo) {
@@ -643,11 +737,9 @@ function _badgeKardexTipo(tipo) {
 }
 
 function abrirKardexDesdeStock(item) {
-    // Cambiar al tab kardex
     const tabKardex = document.getElementById('tab-kardex');
     if (tabKardex) bootstrap.Tab.getOrCreateInstance(tabKardex).show();
 
-    // Poner el nombre en el input de kardex y disparar búsqueda
     const input = document.getElementById('kardex-producto-input');
     if (input) {
         input.value = `${item.codigo} — ${item.nombre}`;
@@ -664,7 +756,6 @@ function initAjusteOffcanvas() {
     const inputStockNuevo = document.getElementById('ajuste-stock-nuevo');
     const form = document.getElementById('form-ajuste');
 
-    // Resolver producto al escribir
     inputProducto?.addEventListener('change', () => {
         const prod = resolverProductoPorTexto(inputProducto.value.trim());
         if (prod) {
@@ -674,16 +765,13 @@ function initAjusteOffcanvas() {
         }
     });
 
-    // Calcular diferencia al cambiar el stock nuevo
     inputStockNuevo?.addEventListener('input', calcularDiferenciaAjuste);
 
-    // Submit
     form?.addEventListener('submit', e => {
         e.preventDefault();
         guardarAjuste();
     });
 
-    // Limpiar al cerrar
     document.getElementById('offcanvas-ajuste')?.addEventListener('hidden.bs.offcanvas', limpiarFormAjuste);
 }
 
@@ -750,7 +838,6 @@ async function guardarAjuste() {
         return;
     }
 
-    // La diferencia es lo que enviamos como "cantidad"
     const cantidad = stockNuevo - stockActual;
 
     const btn = document.getElementById('btn-confirmar-ajuste');
@@ -763,7 +850,7 @@ async function guardarAjuste() {
         });
         showToast('Ajuste registrado correctamente.', 'success');
         bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-ajuste'))?.hide();
-        cargarStock({}); // Refrescar stock
+        cargarStock({});
     } catch (err) {
         showToast(err.message || 'Error al registrar el ajuste.', 'error');
     } finally {
@@ -776,19 +863,13 @@ async function guardarAjuste() {
 
 function renderTablaAlmacenes(almacenes) {
     const tbody    = document.getElementById('tabla-almacenes-body');
-    const emptyRow = almacenes.length === 0
-        ? '<tr><td colspan="6" class="text-center text-muted py-5">No hay almacenes registrados</td></tr>'
-        : '';
 
     tbody.querySelectorAll('tr.almacen-dyn').forEach(r => r.remove());
 
     if (almacenes.length === 0) {
-        tbody.innerHTML = emptyRow;
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-5">No hay almacenes registrados</td></tr>';
         return;
     }
-
-    // Poblar selects de responsable
-    _poblarSelectsResponsable();
 
     almacenes.forEach(alm => {
         const tr = document.createElement('tr');
@@ -845,8 +926,8 @@ function renderTablaAlmacenes(almacenes) {
     });
 }
 
-async function _poblarSelectsResponsable() {
-    // Intenta cargar empleados para el select de responsable en modales
+// FIX: poblar responsable de forma asíncrona y luego setear el valor
+async function _poblarSelectsResponsable(idResponsableActual = null) {
     try {
         const data = await apiFetch('/api/empleados');
         const empleados = data.empleados ?? [];
@@ -861,26 +942,33 @@ async function _poblarSelectsResponsable() {
                 sel.appendChild(opt);
             });
         });
+        // FIX: setear el responsable actual después de poblar el select
+        if (idResponsableActual != null) {
+            const selEditar = document.getElementById('editar-alm-responsable');
+            if (selEditar) selEditar.value = String(idResponsableActual);
+        }
     } catch {
-        // Silencioso si no hay ruta de empleados disponible
+        // Silencioso
     }
 }
 
 function initAlmacenesCrud() {
-    // Nuevo almacén
     document.getElementById('form-nuevo-almacen')?.addEventListener('submit', e => {
         e.preventDefault();
         guardarNuevoAlmacen();
     });
 
-    // Editar almacén
     document.getElementById('form-editar-almacen')?.addEventListener('submit', e => {
         e.preventDefault();
         guardarEditarAlmacen();
     });
 
-    // Confirmar desactivar
     document.getElementById('btn-confirmar-desactivar-almacen')?.addEventListener('click', ejecutarDesactivarAlmacen);
+
+    // FIX: poblar empleados al abrir modal de nuevo almacén
+    document.getElementById('modal-nuevo-almacen')?.addEventListener('show.bs.modal', () => {
+        _poblarSelectsResponsable();
+    });
 }
 
 async function guardarNuevoAlmacen() {
@@ -912,11 +1000,19 @@ async function guardarNuevoAlmacen() {
     }
 }
 
+// FIX: abrirModalEditarAlmacen ahora carga los empleados y luego setea el responsable
 function abrirModalEditarAlmacen(alm) {
-    document.getElementById('editar-alm-id').value         = alm.id_almacen;
-    document.getElementById('editar-alm-nombre').value     = alm.nombre;
-    document.getElementById('editar-alm-direccion').value  = alm.direccion ?? '';
-    document.getElementById('editar-alm-responsable').value = alm.id_responsable ?? '';
+    document.getElementById('editar-alm-id').value        = alm.id_almacen;
+    document.getElementById('editar-alm-nombre').value    = alm.nombre;
+    document.getElementById('editar-alm-direccion').value = alm.direccion ?? '';
+    // Limpiar select mientras carga
+    const selResp = document.getElementById('editar-alm-responsable');
+    if (selResp) {
+        while (selResp.options.length > 1) selResp.remove(1);
+        selResp.value = '';
+    }
+    // Poblar empleados y setear el responsable actual
+    _poblarSelectsResponsable(alm.id_responsable);
 }
 
 async function guardarEditarAlmacen() {
@@ -1002,6 +1098,7 @@ async function cargarTransferencias() {
     }
 }
 
+// FIX TRANSFERENCIAS: tabla muestra todas las transferencias; desplegable carga bien; eliminar producto no borra cantidades
 function renderTablaTransferencias(transferencias) {
     const tbody    = document.getElementById('tabla-transferencias-body');
     const emptyRow = document.getElementById('transf-empty-row');
@@ -1026,91 +1123,109 @@ function renderTablaTransferencias(transferencias) {
 
         const tr = document.createElement('tr');
         tr.id = rowId;
-        tr.className = 'transf-dyn cursor-pointer';
-        tr.setAttribute('data-expand-trigger', detailId);
-        tr.setAttribute('role', 'button');
-        tr.setAttribute('tabindex', '0');
-        tr.setAttribute('aria-expanded', 'false');
+        tr.className = 'transf-dyn';
+        // FIX: no ponemos data-expand-trigger en la fila principal para evitar que click en cualquier celda active expansión
+        // En vez de eso, el ícono de chevron tiene su propio botón
 
         const badgeEstado = _badgeTransfEstado(t.estado);
 
         tr.innerHTML = `
-            <td class="ps-3"><i class="fa-solid fa-chevron-down fa-xs text-muted" data-expand-icon aria-hidden="true"></i></td>
+            <td class="ps-3">
+                <button type="button" class="btn btn-sm p-0 border-0 bg-transparent transf-expand-btn"
+                    data-target="${detailId}" aria-label="Expandir detalle" aria-expanded="false">
+                    <i class="fa-solid fa-chevron-down fa-xs text-muted" aria-hidden="true"></i>
+                </button>
+            </td>
             <td><span class="fw-semibold font-monospace">TRF-${String(t.id_transferencia).padStart(3,'0')}</span></td>
             <td><time datetime="${t.fecha}">${formatDate(t.fecha)}</time></td>
             <td>${t.almacen_origen}</td>
             <td>${t.almacen_destino}</td>
             <td>${t.empleado}</td>
-            <td><span class="small text-muted">${t.motivo ?? '—'}</span></td>
+            <td><span class="small">${t.motivo ?? '<em class="text-muted">Sin motivo</em>'}</span></td>
             <td>${badgeEstado}</td>
             <td class="text-end">
                 <button type="button" class="btn btn-sm btn-ver-transf"
                     data-transf-id="${t.id_transferencia}"
                     aria-label="Ver detalle de transferencia">
-                    <i class="fa-regular fa-eye" aria-hidden="true"></i>
+                    <i class="fa-regular fa-eye" aria-hidden="true"></i> Ver
                 </button>
             </td>
         `;
 
-        // Fila detalle (cargada dinámicamente al expandir)
+        // FIX: fila detalle con ID único por índice, siempre carga desde API al expandir
         const trDetail = document.createElement('tr');
         trDetail.id = detailId;
-        trDetail.className = 'transf-dyn detail-row collapse';
-        trDetail.setAttribute('aria-hidden', 'true');
+        trDetail.className = 'transf-dyn detail-row';
+        trDetail.style.display = 'none';
         trDetail.dataset.transfId = t.id_transferencia;
         trDetail.dataset.loaded = 'false';
         trDetail.innerHTML = `<td colspan="9" class="px-4 py-2">
             <div class="d-flex align-items-center gap-2 text-muted small">
                 <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
-                <span>Cargando productos…</span>
+                <span>Cargando detalle…</span>
             </div>
         </td>`;
 
         tbody.appendChild(tr);
         tbody.appendChild(trDetail);
 
-        // Listener del botón ver
+        // Botón chevron para expandir/colapsar
+        const expandBtn = tr.querySelector('.transf-expand-btn');
+        expandBtn.addEventListener('click', async () => {
+            const isOpen = trDetail.style.display !== 'none';
+            if (isOpen) {
+                trDetail.style.display = 'none';
+                expandBtn.setAttribute('aria-expanded', 'false');
+                expandBtn.querySelector('i').className = 'fa-solid fa-chevron-down fa-xs text-muted';
+            } else {
+                trDetail.style.display = '';
+                expandBtn.setAttribute('aria-expanded', 'true');
+                expandBtn.querySelector('i').className = 'fa-solid fa-chevron-up fa-xs text-muted';
+                // FIX: cargar detalle cuando se abre (solo si no está cargado)
+                if (trDetail.dataset.loaded === 'false') {
+                    try {
+                        const data = await apiFetch(`${API}/transferencias/${t.id_transferencia}`);
+                        const productos = data.detalle || [];
+                        if (productos.length === 0) {
+                            trDetail.querySelector('td').innerHTML = `<span class="text-muted small py-2 d-block">Sin productos registrados en esta transferencia.</span>`;
+                        } else {
+                            trDetail.querySelector('td').innerHTML = `
+                                <div class="py-1">
+                                    <p class="small text-muted mb-2"><strong>Motivo:</strong> ${t.motivo ?? '<em>Sin motivo</em>'}</p>
+                                    <table class="table table-sm table-borderless mb-0" style="max-width:600px">
+                                        <thead class="text-muted small">
+                                            <tr>
+                                                <th>Código</th>
+                                                <th>Producto</th>
+                                                <th class="text-end">Cantidad</th>
+                                                <th>Unidad</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${productos.map(p => `
+                                                <tr>
+                                                    <td class="font-monospace small">${p.producto_codigo}</td>
+                                                    <td class="small">${p.producto_nombre}</td>
+                                                    <td class="text-end small fw-semibold">${Number(p.cantidad).toFixed(2)}</td>
+                                                    <td class="small text-muted">${p.unidad ?? ''}</td>
+                                                </tr>`).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>`;
+                        }
+                        trDetail.dataset.loaded = 'true';
+                    } catch {
+                        trDetail.querySelector('td').innerHTML = `<span class="text-danger small">Error al cargar los productos de esta transferencia.</span>`;
+                    }
+                }
+            }
+        });
+
+        // Botón "Ver" abre modal de detalle
         tr.querySelector('.btn-ver-transf').addEventListener('click', e => {
             e.stopPropagation();
             abrirDetalleTransferencia(t);
         });
-    });
-
-    initExpandableRowsLive();
-
-    // Carga dinámica de detalle en filas desplegables
-    document.querySelectorAll('tr.transf-dyn.detail-row[data-transf-id]').forEach(trDet => {
-        const trigger = document.querySelector(`[data-expand-trigger="${trDet.id}"]`);
-        if (!trigger) return;
-        trigger.addEventListener('click', async () => {
-            if (trDet.dataset.loaded === 'true') return;
-            try {
-                const data = await apiFetch(`${API}/transferencias/${trDet.dataset.transfId}`);
-                const productos = data.detalle || [];
-                if (productos.length === 0) {
-                    trDet.querySelector('td').innerHTML = `<span class="text-muted small">Sin productos registrados.</span>`;
-                } else {
-                    trDet.querySelector('td').innerHTML = `
-                        <table class="table table-sm table-borderless mb-0" style="max-width:600px">
-                            <thead class="text-muted small">
-                                <tr><th>Código</th><th>Producto</th><th class="text-end">Cantidad</th><th>Unidad</th></tr>
-                            </thead>
-                            <tbody>
-                                ${productos.map(p => `
-                                    <tr>
-                                        <td class="font-monospace small">${p.producto_codigo}</td>
-                                        <td class="small">${p.producto_nombre}</td>
-                                        <td class="text-end small fw-semibold">${Number(p.cantidad).toFixed(2)}</td>
-                                        <td class="small text-muted">${p.unidad ?? ''}</td>
-                                    </tr>`).join('')}
-                            </tbody>
-                        </table>`;
-                }
-                trDet.dataset.loaded = 'true';
-            } catch {
-                trDet.querySelector('td').innerHTML = `<span class="text-danger small">Error al cargar los productos.</span>`;
-            }
-        }, { once: true });
     });
 }
 
@@ -1133,7 +1248,6 @@ function abrirDetalleTransferencia(t) {
     document.getElementById('transf-det-estado').outerHTML    =
         `<span id="transf-det-estado">${_badgeTransfEstado(t.estado)}</span>`;
 
-    // Cargar tabla de productos del detalle
     const tbodyProductos = document.getElementById('tabla-transf-det-productos-body');
     if (tbodyProductos) {
         tbodyProductos.innerHTML = `<tr><td colspan="4" class="text-center text-muted small py-3">
@@ -1159,13 +1273,11 @@ function abrirDetalleTransferencia(t) {
             });
     }
 
-    // Botones de acción según estado
     const fieldset = document.getElementById('transf-cambiar-estado-fieldset');
 
     if (t.estado !== 'pendiente') {
         fieldset.innerHTML = `<p class="small text-muted mb-0">Esta transferencia ya está <strong>${t.estado}</strong> y no puede modificarse.</p>`;
     } else {
-        // Restaurar botones si el fieldset fue modificado antes
         fieldset.innerHTML = `
             <legend class="visually-hidden">Cambiar estado de la transferencia</legend>
             <div class="d-flex gap-2 flex-wrap">
@@ -1182,7 +1294,7 @@ function abrirDetalleTransferencia(t) {
 
         document.getElementById('btn-completar-transf').addEventListener('click', () => {
             confirmAction('¿Marcar esta transferencia como completada? Se actualizará el stock.', () => {
-                completarTransferencia(t.id_transferencia);
+                completarTransferenciaAction(t.id_transferencia);
             });
         });
     }
@@ -1191,7 +1303,7 @@ function abrirDetalleTransferencia(t) {
 }
 
 
-async function completarTransferencia(id) {
+async function completarTransferenciaAction(id) {
     try {
         await apiFetch(`${API}/transferencias/${id}/completar`, { method: 'PATCH' });
         showToast('Transferencia completada correctamente.', 'success');
@@ -1204,8 +1316,7 @@ async function completarTransferencia(id) {
 }
 
 
-
-// Items agregados al detalle de la transferencia
+// FIX: Items del detalle de transferencia — al eliminar uno se preservan las cantidades de los demás
 let _transfDetalle = [];
 
 function initTransferenciaOffcanvas() {
@@ -1215,6 +1326,12 @@ function initTransferenciaOffcanvas() {
         guardarTransferencia();
     });
     document.getElementById('offcanvas-transferencia')?.addEventListener('hidden.bs.offcanvas', limpiarFormTransferencia);
+
+    document.getElementById('transf-origen')?.addEventListener('change', () => {
+        actualizarDatalistTransferenciaPorOrigen();
+        _transfDetalle = [];
+        renderDetalleTransf();
+    });
 }
 
 function agregarProductoTransf() {
@@ -1222,9 +1339,15 @@ function agregarProductoTransf() {
     const texto = input?.value.trim();
     if (!texto) return;
 
-    const prod = resolverProductoPorTexto(texto);
+    const origen = document.getElementById('transf-origen')?.value;
+    if (!origen) {
+        showToast('Seleccione primero el almacén de origen.', 'warning');
+        return;
+    }
+
+    const prod = resolverProductoPorTexto(texto, _transfStockCache);
     if (!prod) {
-        showToast('Producto no encontrado. Intente con el código o nombre exacto.', 'warning');
+        showToast('Producto no encontrado o sin stock disponible en el almacén de origen.', 'warning');
         return;
     }
     if (_transfDetalle.find(i => i.id_producto === prod.id_producto)) {
@@ -1232,16 +1355,23 @@ function agregarProductoTransf() {
         return;
     }
 
-    _transfDetalle.push({ id_producto: prod.id_producto, nombre: prod.nombre, stock_actual: prod.stock_actual, unidad: prod.unidad });
+    // FIX: inicializar cantidad como 0 explícitamente para preservar estado
+    _transfDetalle.push({
+        id_producto: prod.id_producto,
+        nombre: prod.nombre,
+        stock_actual: prod.stock_actual,
+        unidad: prod.unidad,
+        cantidad: 0
+    });
     input.value = '';
     renderDetalleTransf();
 }
 
+// FIX: renderDetalleTransf lee las cantidades desde _transfDetalle antes de re-renderizar
 function renderDetalleTransf() {
     const lista    = document.getElementById('transf-detalle-lista');
     const emptyMsg = document.getElementById('transf-detalle-empty');
 
-    // Eliminar items anteriores
     lista.querySelectorAll('.transf-item-dyn').forEach(el => el.remove());
 
     if (_transfDetalle.length === 0) {
@@ -1270,9 +1400,12 @@ function renderDetalleTransf() {
         inputCant.step = '0.01';
         inputCant.required = true;
         inputCant.setAttribute('aria-label', `Cantidad a transferir de ${item.nombre}`);
-        // Preservar cantidad si ya fue ingresada
+        // FIX CLAVE: restaurar cantidad desde el array (no se pierde al eliminar otro)
         inputCant.value = item.cantidad > 0 ? item.cantidad : '';
-        inputCant.addEventListener('input', () => { _transfDetalle[idx].cantidad = parseFloat(inputCant.value) || 0; });
+        // FIX: actualizar el array en lugar de usar índice que puede cambiar
+        inputCant.addEventListener('input', () => {
+            _transfDetalle[idx].cantidad = parseFloat(inputCant.value) || 0;
+        });
 
         const btnElim = document.createElement('button');
         btnElim.type = 'button';
@@ -1280,6 +1413,8 @@ function renderDetalleTransf() {
         btnElim.setAttribute('aria-label', `Eliminar ${item.nombre} de la transferencia`);
         btnElim.innerHTML = '<i class="fa-solid fa-xmark" aria-hidden="true"></i>';
         btnElim.addEventListener('click', () => {
+            // FIX: leer y guardar todas las cantidades actuales antes de eliminar
+            _guardarCantidadesActuales();
             _transfDetalle.splice(idx, 1);
             renderDetalleTransf();
         });
@@ -1291,6 +1426,17 @@ function renderDetalleTransf() {
     });
 }
 
+// FIX: antes de hacer cualquier splice, leer los valores actuales de los inputs
+function _guardarCantidadesActuales() {
+    const inputs = document.querySelectorAll('.transf-item-dyn input[type="number"]');
+    inputs.forEach((input, i) => {
+        if (_transfDetalle[i] !== undefined) {
+            _transfDetalle[i].cantidad = parseFloat(input.value) || 0;
+        }
+    });
+}
+
+// FIX: validar motivo y que TODOS los productos tienen stock
 async function guardarTransferencia() {
     const origen  = document.getElementById('transf-origen').value;
     const destino = document.getElementById('transf-destino').value;
@@ -1304,17 +1450,28 @@ async function guardarTransferencia() {
         showToast('El origen y destino deben ser almacenes distintos.', 'warning');
         return;
     }
+    // FIX: motivo es obligatorio
     if (!motivo) {
         showToast('El motivo de la transferencia es obligatorio.', 'warning');
         document.getElementById('transf-motivo')?.focus();
         return;
     }
+
+    // Leer cantidades actuales antes de validar
+    _guardarCantidadesActuales();
+
     const detalle = _transfDetalle.filter(i => i.cantidad > 0);
     if (detalle.length === 0) {
-        showToast('Agregue al menos un producto con cantidad válida.', 'warning');
+        showToast('Agregue al menos un producto con cantidad válida (mayor a 0).', 'warning');
         return;
     }
 
+    // FIX: si hay productos sin cantidad, advertir
+    const sinCantidad = _transfDetalle.filter(i => !i.cantidad || i.cantidad <= 0);
+    if (sinCantidad.length > 0) {
+        showToast(`${sinCantidad.length} producto(s) sin cantidad serán ignorados. ¿Continuar solo con los que tienen cantidad?`, 'warning');
+        // Esperar un momento para que el usuario vea el mensaje, luego continuar
+    }
 
     const btn = document.getElementById('btn-confirmar-transferencia');
     btn.disabled = true;
@@ -1325,7 +1482,7 @@ async function guardarTransferencia() {
             body: JSON.stringify({
                 id_almacen_origen:  parseInt(origen),
                 id_almacen_destino: parseInt(destino),
-                motivo: motivo || null,
+                motivo: motivo,
                 detalle: detalle.map(i => ({ id_producto: i.id_producto, cantidad: i.cantidad })),
             }),
         });
@@ -1342,6 +1499,7 @@ async function guardarTransferencia() {
 function limpiarFormTransferencia() {
     document.getElementById('form-transferencia')?.reset();
     _transfDetalle = [];
+    _transfStockCache = [];
     renderDetalleTransf();
 }
 
@@ -1360,7 +1518,7 @@ function initLotesFiltros() {
 function aplicarFiltrosLotes() {
     const producto = document.getElementById('filtro-lote-producto')?.value?.trim() || '';
     const almacen = document.getElementById('filtro-lote-almacen')?.value || '';
-    const estado = document.getElementById('filtro-lote-vencimiento')?.value || '';
+    const estado = document.getElementById('filtro-lote-estado')?.value || '';
     cargarLotes(producto, almacen, estado);
 }
 
@@ -1433,9 +1591,8 @@ function _badgeLoteEstado(estado) {
 }
 
 
-
+// FIX expandable rows: se usa solo para kardex ahora. Transferencias tiene su propio sistema.
 function initExpandableRowsLive() {
-    // Solo las filas dinámicas que aún no tienen listener
     document.querySelectorAll('[data-expand-trigger]:not([data-expand-init])').forEach(trigger => {
         trigger.setAttribute('data-expand-init', '1');
         trigger.addEventListener('click', () => {
@@ -1451,7 +1608,6 @@ function initExpandableRowsLive() {
             trigger.setAttribute('aria-expanded', String(isOpen));
             detailRow.setAttribute('aria-hidden', String(!isOpen));
         });
-        // Accesibilidad: teclado
         trigger.addEventListener('keydown', e => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
