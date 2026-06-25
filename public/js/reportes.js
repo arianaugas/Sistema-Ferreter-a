@@ -126,12 +126,12 @@ async function cargarProveedores() {
 async function cargarProductosPorCategoria(idCategoria = '') {
     const selProd = document.getElementById('rk-producto');
     if (!selProd) return;
-    selProd.innerHTML = '<option value="" disabled selected>Cargando…</option>';
+    selProd.innerHTML = '<option value="">Cargando…</option>';
     try {
         const qs = idCategoria ? `?id_categoria=${idCategoria}` : '';
         const data = await apiFetch(`/api/productos${qs}`);
         const prods = data.productos ?? data.datos ?? data ?? [];
-        selProd.innerHTML = '<option value="" disabled selected>Seleccionar producto…</option>';
+        selProd.innerHTML = '<option value="">Todos los productos</option>';
         prods.forEach(p => {
             const opt = document.createElement('option');
             opt.value = p.id_producto;
@@ -468,20 +468,24 @@ async function generarRepLotes() {
 // ════════════════════════════════════════════════════════════
 
 async function generarRepKardex() {
-    const id_producto = document.getElementById('rk-producto')?.value;
-    const desde       = document.getElementById('rk-desde')?.value;
-    const hasta       = document.getElementById('rk-hasta')?.value;
-
-    if (!id_producto) {
-        showToast('Debes seleccionar un producto para generar el kardex.', 'warning');
-        return;
-    }
+    const id_producto  = document.getElementById('rk-producto')?.value;
+    const desde        = document.getElementById('rk-desde')?.value;
+    const hasta        = document.getElementById('rk-hasta')?.value;
+    const id_categoria = document.getElementById('rk-categoria')?.value;
 
     setTbodyLoading('tbody-rep-kardex', 9);
 
     try {
-        const qs = buildQuery({ desde, hasta });
-        const data = await apiFetch(`/api/reportes/kardex/${id_producto}${qs}`);
+        let data;
+        if (id_producto) {
+            // Kardex de un producto específico
+            const qs = buildQuery({ desde, hasta });
+            data = await apiFetch(`/api/reportes/kardex/${id_producto}${qs}`);
+        } else {
+            // Kardex general — todos los productos
+            const qs = buildQuery({ desde, hasta, id_categoria });
+            data = await apiFetch(`/api/reportes/kardex${qs}`);
+        }
 
         if (!data.ok) throw new Error(data.mensaje || 'Error en el reporte');
 
@@ -500,8 +504,13 @@ async function generarRepKardex() {
             const ref = m.referencia_tipo && m.referencia_id
                 ? `<span class="small text-muted">${m.referencia_tipo} #${m.referencia_id}</span>`
                 : '—';
+            const productoCol = m.producto
+                ? `<td class="small fw-medium">${m.producto}<br><span class="text-muted font-monospace">${m.codigo ?? ''}</span></td>`
+                : '';
+            const colCount = m.producto ? 10 : 9;
             const tr = document.createElement('tr');
             tr.innerHTML = `
+                ${productoCol}
                 <td class="small text-nowrap">${formatDate(m.registrado_en, true)}</td>
                 <td>${badgeEstado(m.tipo_movimiento)}</td>
                 <td class="small">${m.motivo ?? '—'}</td>
@@ -790,14 +799,30 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-generar-rep-caja')        ?.addEventListener('click', generarRepCaja);
     document.getElementById('btn-generar-rep-devoluciones')?.addEventListener('click', generarRepDevoluciones);
 
-    //  Stock crítico: cargar automáticamente al entrar a la pestaña 
-    document.getElementById('rep-stock-btn')?.addEventListener('shown.bs.tab', () => {
-        generarRepStock();
+    //  Cargar automáticamente al cambiar de pestaña (todos los reportes)
+    const tabReportes = {
+        'rep-ventas-btn':       generarRepVentas,
+        'rep-ganancias-btn':    generarRepGanancias,
+        'rep-productos-btn':    generarRepProductos,
+        'rep-stock-btn':        generarRepStock,
+        'rep-lotes-btn':        generarRepLotes,
+        'rep-compras-btn':      generarRepCompras,
+        'rep-gastos-btn':       generarRepGastos,
+        'rep-caja-btn':         generarRepCaja,
+        'rep-devoluciones-btn': generarRepDevoluciones,
+    };
+    Object.entries(tabReportes).forEach(([id, fn]) => {
+        document.getElementById(id)?.addEventListener('shown.bs.tab', fn);
     });
 
-    //  Lotes: cargar automáticamente al entrar a la pestaña 
-    document.getElementById('rep-lotes-btn')?.addEventListener('shown.bs.tab', () => {
-        generarRepLotes();
-    });
+    // Cargar el reporte de la pestaña activa al iniciar la página
+    const tabActivoInicial = document.querySelector('.nav-link.active[data-bs-toggle="tab"], .nav-link.active[data-bs-toggle="pill"]');
+    if (tabActivoInicial) {
+        const fnInicial = tabReportes[tabActivoInicial.id];
+        if (fnInicial) fnInicial();
+    } else {
+        // Si no hay pestaña activa identificada, cargar ventas por defecto
+        generarRepVentas();
+    }
 
 });

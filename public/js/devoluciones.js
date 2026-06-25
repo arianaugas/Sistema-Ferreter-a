@@ -25,10 +25,18 @@ async function apiFetch(url, options = {}) {
 
 // Renderizar fila de la tabla de devoluciones 
 function renderFilaDevolucion(d) {
+  const detailId = `dev-detail-${d.id_devolucion}`;
   const tr = document.createElement('tr');
+  tr.style.cursor = 'pointer';
+
+  const tdIco = document.createElement('td');
+  tdIco.className = 'ps-3';
+  const iIco = document.createElement('i');
+  iIco.className = 'fa-solid fa-chevron-down fa-fw fa-xs';
+  iIco.setAttribute('aria-hidden', 'true');
+  tdIco.appendChild(iIco);
 
   const tdId = document.createElement('td');
-  tdId.className = 'ps-3';
   const idSpan = document.createElement('span');
   idSpan.className = 'badge text-bg-light border font-monospace';
   idSpan.textContent = `DEV-${String(d.id_devolucion).padStart(5, '0')}`;
@@ -63,18 +71,15 @@ function renderFilaDevolucion(d) {
 
   const tdAcciones = document.createElement('td');
   tdAcciones.className = 'text-end pe-3';
-
   const divAcc = document.createElement('div');
   divAcc.className = 'd-flex gap-1 justify-content-end';
 
-  // Botón ver detalle
   const btnVer = document.createElement('button');
   btnVer.type = 'button';
   btnVer.className = 'btn btn-sm';
   btnVer.setAttribute('aria-label', 'Ver detalle');
   btnVer.innerHTML = '<i class="fa-regular fa-eye fa-fw" aria-hidden="true"></i>';
-  btnVer.addEventListener('click', () => verDetalleDev(d.id_devolucion));
-
+  btnVer.addEventListener('click', (e) => { e.stopPropagation(); verDetalleDev(d.id_devolucion); });
   divAcc.appendChild(btnVer);
 
   if (d.estado === 'pendiente') {
@@ -83,21 +88,34 @@ function renderFilaDevolucion(d) {
     btnProcesar.className = 'btn btn-sm btn-outline-success';
     btnProcesar.setAttribute('aria-label', 'Procesar devolución');
     btnProcesar.innerHTML = '<i class="fa-solid fa-check fa-fw" aria-hidden="true"></i>';
-    btnProcesar.addEventListener('click', () => procesarDevolucion(d.id_devolucion));
+    btnProcesar.addEventListener('click', (e) => { e.stopPropagation(); procesarDevolucion(d.id_devolucion); });
 
     const btnAnular = document.createElement('button');
     btnAnular.type = 'button';
     btnAnular.className = 'btn btn-sm btn-outline-danger';
     btnAnular.setAttribute('aria-label', 'Anular devolución');
     btnAnular.innerHTML = '<i class="fa-solid fa-ban fa-fw" aria-hidden="true"></i>';
-    btnAnular.addEventListener('click', () => anularDevolucion(d.id_devolucion));
+    btnAnular.addEventListener('click', (e) => { e.stopPropagation(); anularDevolucion(d.id_devolucion); });
 
     divAcc.appendChild(btnProcesar);
     divAcc.appendChild(btnAnular);
   }
 
   tdAcciones.appendChild(divAcc);
-  tr.append(tdId, tdVenta, tdCliente, tdEmpleado, tdTipo, tdEstado, tdMonto, tdFecha, tdAcciones);
+
+  // Fila de detalle expandible
+  tr.addEventListener('click', (e) => {
+    if (e.target.closest('button')) return;
+    const detailRow = document.getElementById(detailId);
+    if (!detailRow) return;
+    const isOpen = detailRow.classList.toggle('show');
+    iIco.classList.toggle('fa-chevron-down', !isOpen);
+    iIco.classList.toggle('fa-chevron-up', isOpen);
+    tr.classList.toggle('table-active', isOpen);
+    if (isOpen && !detailRow.dataset.loaded) cargarDetalleDevExpandible(d.id_devolucion, detailId);
+  });
+
+  tr.append(tdIco, tdId, tdVenta, tdCliente, tdEmpleado, tdTipo, tdMonto, tdFecha, tdEstado, tdAcciones);
   return tr;
 }
 
@@ -115,13 +133,26 @@ function renderTabla() {
   if (pagina.length === 0) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 9;
+    td.colSpan = 8;
     td.className = 'text-center text-muted py-4';
     td.textContent = 'No se encontraron devoluciones.';
     tr.appendChild(td);
     frag.appendChild(tr);
   } else {
-    pagina.forEach(d => frag.appendChild(renderFilaDevolucion(d)));
+    pagina.forEach(d => {
+      frag.appendChild(renderFilaDevolucion(d));
+      // Fila de detalle colapsable
+      const detailId = `dev-detail-${d.id_devolucion}`;
+      const trDetail = document.createElement('tr');
+      trDetail.id = detailId;
+      trDetail.className = 'detail-row collapse';
+      const tdDetail = document.createElement('td');
+      tdDetail.colSpan = 10;
+      tdDetail.className = 'p-0';
+      tdDetail.innerHTML = '<div class="px-4 py-3 text-muted small"><i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando...</div>';
+      trDetail.appendChild(tdDetail);
+      frag.appendChild(trDetail);
+    });
   }
 
   tbody.appendChild(frag);
@@ -249,7 +280,7 @@ async function buscarVentaParaDevolucion(comprobante) {
   if (!comprobante) return;
   try {
     const data = await apiFetch(`/api/ventas?numero_comprobante=${encodeURIComponent(comprobante)}`);
-    const ventas = Array.isArray(data) ? data : [];
+    const ventas = Array.isArray(data) ? data : (data.ventas || []);
     if (ventas.length === 0) {
       showToast('No se encontró ninguna venta con ese comprobante.', 'warning');
       return;
@@ -259,10 +290,10 @@ async function buscarVentaParaDevolucion(comprobante) {
 
     if (panelVenta) {
       const setEl = (sel, val) => { const el = panelVenta.querySelector(sel); if (el) el.textContent = val ?? '—'; };
-      setEl('#dev-venta-comprobante', ventaRes.numero_comprobante);
-      setEl('#dev-venta-cliente', ventaRes.cliente_nombre || 'Sin cliente');
-      setEl('#dev-venta-total', formatMoney(ventaRes.total));
-      setEl('#dev-venta-estado', ventaRes.estado);
+      setEl('#nd-venta-numero', ventaRes.numero_comprobante);
+      setEl('#nd-venta-cliente', ventaRes.cliente_nombre || 'Sin cliente');
+      setEl('#nd-venta-fecha', formatDate(ventaRes.fecha, false));
+      setEl('#nd-venta-total', formatMoney(ventaRes.total));
       panelVenta.classList.remove('d-none');
     }
 
@@ -332,25 +363,59 @@ function renderProductosParaDevolucion(items) {
 
 //  Formulario: nueva devolución 
 function initFormNuevaDevolucion() {
-  // Buscar venta
-  const btnBuscar = document.getElementById('btn-buscar-venta');
-  if (btnBuscar) {
-    btnBuscar.addEventListener('click', () => {
-      const comprobante = document.getElementById('nd-buscar-venta')?.value.trim();
-      buscarVentaParaDevolucion(comprobante);
+  // Cargar ventas en el select
+  const selVenta = document.getElementById('nd-select-venta');
+  if (selVenta) {
+    apiFetch('/api/ventas?estado=pagada').then(data => {
+      const ventas = Array.isArray(data) ? data : (data.ventas || []);
+      selVenta.innerHTML = '<option value="">Seleccionar venta...</option>';
+      ventas.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.id_venta;
+        opt.textContent = `${v.numero_comprobante} — ${v.cliente_nombre || 'Sin cliente'} — ${formatMoney(v.total)}`;
+        selVenta.appendChild(opt);
+      });
+    }).catch(() => {
+      selVenta.innerHTML = '<option value="">Error al cargar ventas</option>';
     });
-  }
-  const inputComp = document.getElementById('nd-buscar-venta');
-  if (inputComp) {
-    inputComp.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        buscarVentaParaDevolucion(inputComp.value.trim());
+
+    selVenta.addEventListener('change', async () => {
+      const id_venta = selVenta.value;
+      const panelVenta = document.getElementById('nd-venta-encontrada');
+      const tbody = document.getElementById('tbody-productos-devolucion');
+      if (!id_venta) {
+        panelVenta?.classList.add('d-none');
+        if (tbody) tbody.innerHTML = '<tr id="dev-productos-empty"><td colspan="5" class="text-center text-muted py-3">Busca una venta para ver sus productos.</td></tr>';
+        DevState.ventaOriginal = null;
+        return;
+      }
+      try {
+        const ventaRes = await apiFetch(`/api/ventas/${id_venta}`);
+        DevState.ventaOriginal = ventaRes;
+        if (panelVenta) {
+          const setEl = (sel, val) => { const el = panelVenta.querySelector(sel); if (el) el.textContent = val ?? '—'; };
+          setEl('#nd-venta-numero', ventaRes.numero_comprobante);
+          setEl('#nd-venta-cliente', ventaRes.cliente_nombre || 'Sin cliente');
+          setEl('#nd-venta-fecha', formatDate(ventaRes.fecha, false));
+          setEl('#nd-venta-total', formatMoney(ventaRes.total));
+          panelVenta.classList.remove('d-none');
+        }
+        renderProductosParaDevolucion(ventaRes.items || []);
+      } catch (err) {
+        showToast('Error al cargar venta: ' + err.message, 'error');
       }
     });
   }
 
-  // Formulario de devolución
+  // Botón limpiar venta
+  document.getElementById('btn-limpiar-venta')?.addEventListener('click', () => {
+    if (selVenta) selVenta.value = '';
+    document.getElementById('nd-venta-encontrada')?.classList.add('d-none');
+    const tbody = document.getElementById('tbody-productos-devolucion');
+    if (tbody) tbody.innerHTML = '<tr id="dev-productos-empty"><td colspan="5" class="text-center text-muted py-3">Busca una venta para ver sus productos.</td></tr>';
+    DevState.ventaOriginal = null;
+  });
+
   const form = document.getElementById('form-nueva-devolucion');
   if (!form) return;
 
@@ -402,7 +467,9 @@ function initFormNuevaDevolucion() {
       form.classList.remove('was-validated');
       DevState.ventaOriginal = null;
       document.getElementById('nd-venta-encontrada')?.classList.add('d-none');
-      document.getElementById('tbdy-productos-devolucion')?.classList.add('d-none');
+      if (selVenta) selVenta.value = '';
+      const tbody = document.getElementById('tbody-productos-devolucion');
+      if (tbody) tbody.innerHTML = '<tr id="dev-productos-empty"><td colspan="5" class="text-center text-muted py-3">Busca una venta para ver sus productos.</td></tr>';
       cargarDevoluciones();
     } catch (err) {
       showToast('Error al registrar devolución: ' + err.message, 'error');
@@ -463,6 +530,47 @@ function renderPaginacion(containerId, total, porPagina, paginaActual, onPageCha
   for (let i = 1; i <= totalPaginas; i++) ul.appendChild(crearLi(String(i), false, i === paginaActual, i));
   ul.appendChild(crearLi('fa-solid fa-chevron-right fa-xs', paginaActual >= totalPaginas, false, paginaActual + 1, true));
   container.replaceChildren(ul);
+}
+// Cargar detalle en fila expandible
+async function cargarDetalleDevExpandible(id, detailId) {
+  const trDetail = document.getElementById(detailId);
+  if (!trDetail) return;
+  const td = trDetail.querySelector('td');
+  try {
+    const data = await apiFetch(`/api/devoluciones/${id}`);
+    trDetail.dataset.loaded = '1';
+    const d = data.devolucion;
+    const detalle = data.detalle || [];
+    td.innerHTML = `
+      <div class="px-4 py-3">
+        <div class="row g-3">
+          <div class="col-12 col-md-8">
+            <p class="small fw-semibold mb-2">Productos devueltos</p>
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Producto</th><th>Cantidad</th><th>P. unitario</th><th>Reingresa stock</th></tr></thead>
+              <tbody>
+                ${detalle.map(it => `<tr>
+                  <td>${it.producto_nombre}</td>
+                  <td>${it.cantidad}</td>
+                  <td>${formatMoney(it.precio_devuelto)}</td>
+                  <td>${it.reingresa_stock ? '<span class="badge text-bg-success">Sí</span>' : '<span class="badge text-bg-secondary">No</span>'}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+          <div class="col-12 col-md-4">
+            <p class="small fw-semibold mb-2">Resumen</p>
+            <ul class="list-unstyled small">
+              <li class="d-flex justify-content-between"><span class="text-muted">Tipo</span><strong>${d.tipo}</strong></li>
+              <li class="d-flex justify-content-between"><span class="text-muted">Motivo</span><strong>${d.motivo || '—'}</strong></li>
+              ${d.tipo === 'reembolso' ? `<li class="d-flex justify-content-between"><span class="text-muted">Monto</span><strong>${formatMoney(d.monto_reembolso)}</strong></li>` : ''}
+            </ul>
+          </div>
+        </div>
+      </div>`;
+  } catch (err) {
+    if (td) td.innerHTML = `<div class="px-4 py-2 text-danger small">Error: ${err.message}</div>`;
+  }
 }
 
 //  Obtener caja activa 

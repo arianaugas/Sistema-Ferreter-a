@@ -25,6 +25,7 @@ router.get('/lotes/:idProducto', revisarToken, invCtrl.getLotes);
 
 //rutas de Transferencias
 router.get('/transferencias', revisarToken, invCtrl.getTransferencias);
+router.get('/transferencias/:id', revisarToken, invCtrl.getTransferenciaById);
 router.post('/transferencias', revisarToken, invCtrl.crearTransferencia);
 router.patch('/transferencias/:id/completar', revisarToken, invCtrl.completarTransferencia);
 

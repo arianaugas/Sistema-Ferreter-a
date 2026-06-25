@@ -120,7 +120,6 @@ const getLogs = async (req, res) => {
                 a.operacion,
                 a.registro_id,
                 a.registrado_en,
-                a.ip,
                 u.username AS usuario_nombre,
                 e.nombre + ' ' + e.apellido AS empleado_nombre
              FROM auditoria a
@@ -154,7 +153,6 @@ const getLogById = async (req, res) => {
                 a.registro_id,
                 a.datos_anteriores,
                 a.datos_nuevos,
-                a.ip,
                 a.registrado_en,
                 u.username AS usuario_nombre,
                 e.nombre + ' ' + e.apellido AS empleado_nombre

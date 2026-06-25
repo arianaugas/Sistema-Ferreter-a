@@ -58,22 +58,27 @@ const ventasController = {
                 const { serie, correlativo_actual } = resSerie.recordset[0];
                 const numero_comprobante = `${serie}-${String(correlativo_actual).padStart(8, '0')}`;
 
-                // 4. Validar stock ANTES de modificar
+                // 4. Validar stock ANTES de modificar (por almacén)
                 for (const item of detalle_venta) {
                     const reqCheck = tx.request();
                     reqCheck.input('id_producto', sql.Int, item.id_producto);
+                    reqCheck.input('id_almacen',  sql.Int, id_almacen);
                     const resCheck = await reqCheck.query(`
-                        SELECT nombre, stock_actual FROM productos
-                        WHERE id_producto = @id_producto AND activo = 1
+                        SELECT p.nombre, ISNULL(pa.stock, 0) AS stock_almacen
+                        FROM productos p
+                        LEFT JOIN productos_almacen pa
+                            ON pa.id_producto = p.id_producto AND pa.id_almacen = @id_almacen
+                        WHERE p.id_producto = @id_producto AND p.activo = 1
                     `);
                     if (resCheck.recordset.length === 0) {
                         throw new Error(`El producto con ID ${item.id_producto} no existe o está inactivo.`);
                     }
-                    const { nombre, stock_actual } = resCheck.recordset[0];
-                    if (stock_actual < item.cantidad) {
-                        throw new Error(`Stock insuficiente para "${nombre}". Disponible: ${stock_actual}, solicitado: ${item.cantidad}.`);
+                    const { nombre, stock_almacen } = resCheck.recordset[0];
+                    if (parseFloat(stock_almacen) < item.cantidad) {
+                        throw new Error(`Stock insuficiente para "${nombre}" en el almacén seleccionado. Disponible: ${parseFloat(stock_almacen).toFixed(2)}, solicitado: ${item.cantidad}.`);
                     }
                 }
+
 
                 // 5. Calcular totales
                 let subtotal = 0;
@@ -115,16 +120,27 @@ const ventasController = {
                         VALUES (@id_venta, @id_producto, @cantidad, @precio_unitario, @subtotal)
                     `);
 
-                    const reqStock = tx.request();
-                    reqStock.input('id_producto', sql.Int, item.id_producto);
-                    reqStock.input('cantidad', sql.Decimal(10, 2), item.cantidad);
-                    const resStock = await reqStock.query(`
-                        UPDATE productos
-                        SET stock_actual = stock_actual - @cantidad
-                        OUTPUT DELETED.stock_actual AS stock_anterior, INSERTED.stock_actual AS stock_posterior
+                    // Descontar stock en productos_almacen
+                    const reqStockAlm = tx.request();
+                    reqStockAlm.input('id_producto', sql.Int, item.id_producto);
+                    reqStockAlm.input('id_almacen',  sql.Int, id_almacen);
+                    reqStockAlm.input('cantidad',    sql.Decimal(10, 2), item.cantidad);
+                    const resStockAlm = await reqStockAlm.query(`
+                        UPDATE productos_almacen
+                        SET stock = stock - @cantidad
+                        OUTPUT DELETED.stock AS stock_anterior, INSERTED.stock AS stock_posterior
+                        WHERE id_producto = @id_producto AND id_almacen = @id_almacen
+                    `);
+                    const { stock_anterior, stock_posterior } = resStockAlm.recordset[0];
+
+                    // Sincronizar stock general en productos
+                    const reqStockGral = tx.request();
+                    reqStockGral.input('id_producto', sql.Int, item.id_producto);
+                    reqStockGral.input('cantidad',    sql.Decimal(10, 2), item.cantidad);
+                    await reqStockGral.query(`
+                        UPDATE productos SET stock_actual = stock_actual - @cantidad
                         WHERE id_producto = @id_producto AND activo = 1
                     `);
-                    const { stock_anterior, stock_posterior } = resStock.recordset[0];
 
                     const reqKardex = tx.request();
                     reqKardex.input('id_producto', sql.Int, item.id_producto);
@@ -331,16 +347,31 @@ const ventasController = {
                 const resItems = await reqItems.query('SELECT id_producto, cantidad FROM detalle_venta WHERE id_venta = @id_venta');
 
                 for (const item of resItems.recordset) {
-                    const reqStock = tx.request();
-                    reqStock.input('id_producto', sql.Int, item.id_producto);
-                    reqStock.input('cantidad', sql.Decimal(10, 2), item.cantidad);
-                    const resStock = await reqStock.query(`
-                        UPDATE productos
-                        SET stock_actual = stock_actual + @cantidad
-                        OUTPUT DELETED.stock_actual AS stock_anterior, INSERTED.stock_actual AS stock_posterior
-                        WHERE id_producto = @id_producto
+                    // Devolver stock a productos_almacen
+                    const reqStockAlm = tx.request();
+                    reqStockAlm.input('id_producto', sql.Int, item.id_producto);
+                    reqStockAlm.input('id_almacen',  sql.Int, id_almacen);
+                    reqStockAlm.input('cantidad',    sql.Decimal(10, 2), item.cantidad);
+                    const resStockAlm = await reqStockAlm.query(`
+                        IF EXISTS (SELECT 1 FROM productos_almacen WHERE id_producto = @id_producto AND id_almacen = @id_almacen)
+                            UPDATE productos_almacen
+                            SET stock = stock + @cantidad
+                            OUTPUT DELETED.stock AS stock_anterior, INSERTED.stock AS stock_posterior
+                            WHERE id_producto = @id_producto AND id_almacen = @id_almacen
+                        ELSE
+                            INSERT INTO productos_almacen (id_producto, id_almacen, stock)
+                            OUTPUT 0 AS stock_anterior, INSERTED.stock AS stock_posterior
+                            VALUES (@id_producto, @id_almacen, @cantidad)
                     `);
-                    const { stock_anterior, stock_posterior } = resStock.recordset[0];
+                    const { stock_anterior, stock_posterior } = resStockAlm.recordset[0];
+
+                    // Sincronizar stock general en productos
+                    const reqStockGral = tx.request();
+                    reqStockGral.input('id_producto', sql.Int, item.id_producto);
+                    reqStockGral.input('cantidad',    sql.Decimal(10, 2), item.cantidad);
+                    await reqStockGral.query(`
+                        UPDATE productos SET stock_actual = stock_actual + @cantidad WHERE id_producto = @id_producto
+                    `);
 
                     const reqKardex = tx.request();
                     reqKardex.input('id_producto', sql.Int, item.id_producto);

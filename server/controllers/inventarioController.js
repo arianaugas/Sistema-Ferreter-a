@@ -8,6 +8,7 @@ const getAlmacenes = async (req, res) => {
                 a.id_almacen,
                 a.nombre,
                 a.direccion,
+                a.responsable AS id_responsable,
                 a.activo,
                 e.nombre + ' ' + e.apellido AS responsable
              FROM almacenes a
@@ -30,6 +31,7 @@ const getAlmacenById = async (req, res) => {
                 a.id_almacen,
                 a.nombre,
                 a.direccion,
+                a.responsable AS id_responsable,
                 a.activo,
                 e.nombre + ' ' + e.apellido AS responsable
              FROM almacenes a
@@ -137,18 +139,24 @@ const getStock = async (req, res) => {
             whereExtra += ' AND (p.nombre LIKE @buscar OR p.codigo LIKE @buscar)';
             params.buscar = { type: sql.VarChar, value: `%${buscar}%` };
         }
-        /*if (id_almacen) {
-            whereExtra += ' AND p.id_almacen = @id_almacen';
-            params.id_almacen = { type: sql.Int, value: id_almacen };
-        }IGNORAR*/
+        
+        let stockSelect = 'p.stock_actual';
+        let joinAlmacen = '';
+        
+        if (id_almacen) {
+            joinAlmacen = 'INNER JOIN productos_almacen pa ON pa.id_producto = p.id_producto';
+            whereExtra += ' AND pa.id_almacen = @id_almacen';
+            params.id_almacen = { type: sql.Int, value: parseInt(id_almacen) };
+            stockSelect = 'pa.stock';
+        }
 
         // El HTML tiene: critico, normal, sobrestock
         if (estado === 'critico' || critico === 'true') {
-            whereExtra += ' AND p.stock_actual <= p.stock_minimo';
+            whereExtra += ` AND ${stockSelect} <= p.stock_minimo`;
         } else if (estado === 'normal') {
-            whereExtra += ' AND p.stock_actual > p.stock_minimo AND (p.stock_maximo IS NULL OR p.stock_actual <= p.stock_maximo)';
+            whereExtra += ` AND ${stockSelect} > p.stock_minimo AND (p.stock_maximo IS NULL OR ${stockSelect} <= p.stock_maximo)`;
         } else if (estado === 'sobrestock') {
-            whereExtra += ' AND p.stock_maximo IS NOT NULL AND p.stock_actual > p.stock_maximo';
+            whereExtra += ` AND p.stock_maximo IS NOT NULL AND ${stockSelect} > p.stock_maximo`;
         }
 
         if (id_categoria) {
@@ -161,7 +169,7 @@ const getStock = async (req, res) => {
                 p.id_producto,
                 p.codigo,
                 p.nombre,
-                p.stock_actual,
+                ${stockSelect} AS stock_actual,
                 p.stock_minimo,
                 p.stock_maximo,
                 p.ubicacion,
@@ -169,17 +177,18 @@ const getStock = async (req, res) => {
                 sc.nombre AS subcategoria,
                 u.abreviatura AS unidad,
                 CASE 
-                    WHEN p.stock_actual <= p.stock_minimo THEN 'critico'
-                    WHEN p.stock_maximo IS NOT NULL AND p.stock_actual > p.stock_maximo THEN 'sobrestock'
+                    WHEN ${stockSelect} <= p.stock_minimo THEN 'critico'
+                    WHEN p.stock_maximo IS NOT NULL AND ${stockSelect} > p.stock_maximo THEN 'sobrestock'
                     ELSE 'normal'
                 END AS estado_stock
              FROM productos p
              INNER JOIN subcategorias sc ON sc.id_subcategoria = p.id_subcategoria
              INNER JOIN categorias c ON c.id_categoria = sc.id_categoria
              INNER JOIN unidades_medida u ON u.id_unidad = p.id_unidad
+             ${joinAlmacen}
              WHERE p.activo = 1 ${whereExtra}
              ORDER BY 
-                CASE WHEN p.stock_actual <= p.stock_minimo THEN 0 ELSE 1 END ASC,
+                CASE WHEN ${stockSelect} <= p.stock_minimo THEN 0 ELSE 1 END ASC,
                 p.nombre ASC`,
             params
         );
@@ -275,11 +284,23 @@ const ajustarStock = async (req, res) => {
             return res.status(404).json({ ok: false, mensaje: 'Producto no encontrado.' });
         }
 
-        const stockAnterior = parseFloat(prodResult.recordset[0].stock_actual);
-        const stockPosterior = stockAnterior + parseFloat(cantidad);
+        // Obtener stock actual en el almacén seleccionado
+        const stockAlmResult = await query(
+            `SELECT stock FROM productos_almacen WHERE id_producto = @id_producto AND id_almacen = @id_almacen`,
+            {
+                id_producto: { type: sql.Int, value: id_producto },
+                id_almacen: { type: sql.Int, value: id_almacen }
+            }
+        );
 
-        if (stockPosterior < 0) {
-            return res.status(400).json({ ok: false, mensaje: 'El ajuste dejaría el stock en negativo.' });
+        const stockAnteriorAlmacen = stockAlmResult.recordset.length > 0
+            ? parseFloat(stockAlmResult.recordset[0].stock)
+            : 0.0;
+
+        const stockPosteriorAlmacen = stockAnteriorAlmacen + parseFloat(cantidad);
+
+        if (stockPosteriorAlmacen < 0) {
+            return res.status(400).json({ ok: false, mensaje: 'El ajuste dejaría el stock del almacén en negativo.' });
         }
 
         await withTransaction(async (transaction) => {
@@ -287,28 +308,41 @@ const ajustarStock = async (req, res) => {
             reqKardex.input('id_producto', sql.Int, id_producto);
             reqKardex.input('id_almacen', sql.Int, id_almacen);
             reqKardex.input('motivo', sql.VarChar, motivo);
-            reqKardex.input('cantidad', sql.Decimal, cantidad);
-            reqKardex.input('stock_anterior', sql.Decimal, stockAnterior);
-            reqKardex.input('stock_posterior', sql.Decimal, stockPosterior);
+            reqKardex.input('cantidad', sql.Decimal(10, 2), cantidad);
+            reqKardex.input('stock_anterior', sql.Decimal(10, 2), stockAnteriorAlmacen);
+            reqKardex.input('stock_posterior', sql.Decimal(10, 2), stockPosteriorAlmacen);
             reqKardex.input('id_usuario', sql.Int, id_usuario);
             await reqKardex.query(
                 `INSERT INTO kardex (id_producto, id_almacen, tipo_movimiento, motivo, cantidad, stock_anterior, stock_posterior, id_usuario)
-         VALUES (@id_producto, @id_almacen, 'ajuste', @motivo, @cantidad, @stock_anterior, @stock_posterior, @id_usuario)`
+                 VALUES (@id_producto, @id_almacen, 'ajuste', @motivo, @cantidad, @stock_anterior, @stock_posterior, @id_usuario)`
             );
 
-            const reqStock = transaction.request();
-            reqStock.input('stock_posterior', sql.Decimal, stockPosterior);
-            reqStock.input('id_producto', sql.Int, id_producto);
-            await reqStock.query(
-                `UPDATE productos SET stock_actual = @stock_posterior WHERE id_producto = @id_producto`
+            // Upsert en productos_almacen
+            const reqStockAlmacen = transaction.request();
+            reqStockAlmacen.input('id_producto', sql.Int, id_producto);
+            reqStockAlmacen.input('id_almacen', sql.Int, id_almacen);
+            reqStockAlmacen.input('stock_posterior', sql.Decimal(10, 2), stockPosteriorAlmacen);
+            await reqStockAlmacen.query(`
+                IF EXISTS (SELECT * FROM productos_almacen WHERE id_producto = @id_producto AND id_almacen = @id_almacen)
+                    UPDATE productos_almacen SET stock = @stock_posterior WHERE id_producto = @id_producto AND id_almacen = @id_almacen
+                ELSE
+                    INSERT INTO productos_almacen (id_producto, id_almacen, stock) VALUES (@id_producto, @id_almacen, @stock_posterior)
+            `);
+
+            // Actualizar stock general en tabla productos (sumando cantidad de ajuste)
+            const reqStockGral = transaction.request();
+            reqStockGral.input('id_producto', sql.Int, id_producto);
+            reqStockGral.input('cantidad', sql.Decimal(10, 2), cantidad);
+            await reqStockGral.query(
+                `UPDATE productos SET stock_actual = stock_actual + @cantidad WHERE id_producto = @id_producto`
             );
         });
 
         return res.status(201).json({
             ok: true,
             mensaje: 'Ajuste registrado correctamente.',
-            stock_anterior: stockAnterior,
-            stock_posterior: stockPosterior
+            stock_anterior: stockAnteriorAlmacen,
+            stock_posterior: stockPosteriorAlmacen
         });
     } catch (err) {
         console.error('Error al ajustar stock:', err);
@@ -419,13 +453,13 @@ const getTransferencias = async (req, res) => {
                 t.fecha,
                 t.motivo,
                 t.estado,
-                ao.nombre AS almacen_origen,
-                ad.nombre AS almacen_destino,
-                e.nombre + ' ' + e.apellido AS empleado
+                ISNULL(ao.nombre, 'Almacén eliminado') AS almacen_origen,
+                ISNULL(ad.nombre, 'Almacén eliminado') AS almacen_destino,
+                ISNULL(e.nombre + ' ' + e.apellido, 'Empleado no disponible') AS empleado
              FROM transferencias_almacen t
-             INNER JOIN almacenes ao ON ao.id_almacen = t.id_almacen_origen
-             INNER JOIN almacenes ad ON ad.id_almacen = t.id_almacen_destino
-             INNER JOIN empleados e ON e.id_empleado = t.id_empleado
+             LEFT JOIN almacenes ao ON ao.id_almacen = t.id_almacen_origen
+             LEFT JOIN almacenes ad ON ad.id_almacen = t.id_almacen_destino
+             LEFT JOIN empleados e ON e.id_empleado = t.id_empleado
              WHERE 1=1 ${whereExtra}
              ORDER BY t.fecha DESC`,
             params
@@ -438,6 +472,56 @@ const getTransferencias = async (req, res) => {
     }
 };
 
+const getTransferenciaById = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const transResult = await query(
+            `SELECT
+                t.id_transferencia,
+                t.fecha,
+                t.motivo,
+                t.estado,
+                t.fecha_completada,
+                ISNULL(ao.nombre, 'Almacén eliminado') AS almacen_origen,
+                ISNULL(ad.nombre, 'Almacén eliminado') AS almacen_destino,
+                ISNULL(e.nombre + ' ' + e.apellido, 'Empleado no disponible') AS empleado
+             FROM transferencias_almacen t
+             LEFT JOIN almacenes ao ON ao.id_almacen = t.id_almacen_origen
+             LEFT JOIN almacenes ad ON ad.id_almacen = t.id_almacen_destino
+             LEFT JOIN empleados e ON e.id_empleado = t.id_empleado
+             WHERE t.id_transferencia = @id`,
+            { id: { type: sql.Int, value: id } }
+        );
+
+        if (transResult.recordset.length === 0) {
+            return res.status(404).json({ ok: false, mensaje: 'Transferencia no encontrada.' });
+        }
+
+        const detalleResult = await query(
+            `SELECT
+                dt.id_producto,
+                dt.cantidad,
+                p.nombre AS producto_nombre,
+                p.codigo AS producto_codigo,
+                u.abreviatura AS unidad
+             FROM detalle_transferencia dt
+             INNER JOIN productos p ON p.id_producto = dt.id_producto
+             INNER JOIN unidades_medida u ON u.id_unidad = p.id_unidad
+             WHERE dt.id_transferencia = @id`,
+            { id: { type: sql.Int, value: id } }
+        );
+
+        return res.json({
+            ok: true,
+            transferencia: transResult.recordset[0],
+            detalle: detalleResult.recordset
+        });
+    } catch (err) {
+        console.error('Error al obtener transferencia por ID:', err);
+        return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor.' });
+    }
+};
+
 
 const crearTransferencia = async (req, res) => {
     const { id_almacen_origen, id_almacen_destino, motivo, detalle } = req.body;
@@ -445,11 +529,35 @@ const crearTransferencia = async (req, res) => {
     if (!id_almacen_origen || !id_almacen_destino || !detalle || !detalle.length) {
         return res.status(400).json({ ok: false, mensaje: 'Complete todos los campos.' });
     }
+    if (!motivo || !motivo.trim()) {
+        return res.status(400).json({ ok: false, mensaje: 'El motivo de la transferencia es obligatorio.' });
+    }
     if (parseInt(id_almacen_origen) === parseInt(id_almacen_destino)) {
         return res.status(400).json({ ok: false, mensaje: 'Los almacenes de origen y destino deben ser diferentes.' });
     }
 
     try {
+        // Validar stock suficiente en el almacén de origen para cada producto
+        for (const item of detalle) {
+            const stockRes = await query(
+                `SELECT pa.stock, p.nombre
+                 FROM productos_almacen pa
+                 INNER JOIN productos p ON p.id_producto = pa.id_producto
+                 WHERE pa.id_producto = @id_producto AND pa.id_almacen = @id_almacen`,
+                {
+                    id_producto: { type: sql.Int, value: item.id_producto },
+                    id_almacen:  { type: sql.Int, value: id_almacen_origen }
+                }
+            );
+            const stockDisp = stockRes.recordset.length > 0 ? parseFloat(stockRes.recordset[0].stock) : 0;
+            const nombreProd = stockRes.recordset[0]?.nombre ?? `ID ${item.id_producto}`;
+            if (stockDisp < parseFloat(item.cantidad)) {
+                return res.status(400).json({
+                    ok: false,
+                    mensaje: `Stock insuficiente para "${nombreProd}" en el almacén de origen. Disponible: ${stockDisp.toFixed(2)}, solicitado: ${parseFloat(item.cantidad).toFixed(2)}.`
+                });
+            }
+        }
 
         //traemos el empleado
         const userResult = await query(
@@ -466,7 +574,7 @@ const crearTransferencia = async (req, res) => {
             reqTrans.input('id_almacen_origen', sql.Int, id_almacen_origen);
             reqTrans.input('id_almacen_destino', sql.Int, id_almacen_destino);
             reqTrans.input('id_empleado', sql.Int, id_empleado);
-            reqTrans.input('motivo', sql.VarChar, motivo || null);
+            reqTrans.input('motivo', sql.VarChar, motivo.trim());
             const transResult = await reqTrans.query(
                 `INSERT INTO transferencias_almacen (id_almacen_origen, id_almacen_destino, id_empleado, motivo, estado)
          OUTPUT INSERTED.*
@@ -496,6 +604,7 @@ const crearTransferencia = async (req, res) => {
 };
 
 
+
 const completarTransferencia = async (req, res) => {
     const { id } = req.params;
     const id_usuario = req.user.id;
@@ -521,31 +630,82 @@ const completarTransferencia = async (req, res) => {
             { id: { type: sql.Int, value: id } }
         );
 
-        await withTransaction(async (transaction) => {
+        // Validar stock suficiente en origen antes de ejecutar la transacción
+        for (const item of detalleResult.recordset) {
+            const stockRes = await query(
+                `SELECT pa.stock, p.nombre
+                 FROM productos_almacen pa
+                 INNER JOIN productos p ON p.id_producto = pa.id_producto
+                 WHERE pa.id_producto = @id_producto AND pa.id_almacen = @id_almacen`,
+                {
+                    id_producto: { type: sql.Int, value: item.id_producto },
+                    id_almacen:  { type: sql.Int, value: transferencia.id_almacen_origen }
+                }
+            );
+            const stockDisp = stockRes.recordset.length > 0 ? parseFloat(stockRes.recordset[0].stock) : 0;
+            const nombreProd = stockRes.recordset[0]?.nombre ?? `ID ${item.id_producto}`;
+            if (stockDisp < parseFloat(item.cantidad)) {
+                throw new Error(`Stock insuficiente para "${nombreProd}". Disponible en origen: ${stockDisp.toFixed(2)}, requerido: ${parseFloat(item.cantidad).toFixed(2)}.`);
+            }
+        }
 
-            //REALIZE UN CAMBIO AQUIII
+        await withTransaction(async (transaction) => {
             for (const item of detalleResult.recordset) {
-                //El stock global no cambia, solo lo leemos para dejarlo como referencia
-                const stockResult = await query(
-                    `SELECT stock_actual FROM productos WHERE id_producto = @id_producto`,
-                    { id_producto: { type: sql.Int, value: item.id_producto } }
+                const cantidad = parseFloat(item.cantidad);
+
+                // 1. Obtener stock en almacén origen para Kardex
+                const stockOrigenRes = await query(
+                    `SELECT stock FROM productos_almacen WHERE id_producto = @id_producto AND id_almacen = @id_almacen`,
+                    {
+                        id_producto: { type: sql.Int, value: item.id_producto },
+                        id_almacen:  { type: sql.Int, value: transferencia.id_almacen_origen }
+                    }
+                );
+                const stockOrigenAntes = parseFloat(stockOrigenRes.recordset[0].stock);
+                const stockOrigenDespues = stockOrigenAntes - cantidad;
+
+                // 2. Restar stock en almacén origen
+                const reqDescontar = transaction.request();
+                reqDescontar.input('id_producto', sql.Int, item.id_producto);
+                reqDescontar.input('id_almacen',  sql.Int, transferencia.id_almacen_origen);
+                reqDescontar.input('cantidad',     sql.Decimal(10, 2), cantidad);
+                await reqDescontar.query(
+                    `UPDATE productos_almacen
+                     SET stock = stock - @cantidad
+                     WHERE id_producto = @id_producto AND id_almacen = @id_almacen`
                 );
 
-                const stockActual = parseFloat(stockResult.recordset[0].stock_actual);
+                // 3. Sumar stock en almacén destino (upsert)
+                const reqAgregar = transaction.request();
+                reqAgregar.input('id_producto', sql.Int, item.id_producto);
+                reqAgregar.input('id_almacen',  sql.Int, transferencia.id_almacen_destino);
+                reqAgregar.input('cantidad',     sql.Decimal(10, 2), cantidad);
+                await reqAgregar.query(
+                    `IF EXISTS (SELECT 1 FROM productos_almacen WHERE id_producto = @id_producto AND id_almacen = @id_almacen)
+                         UPDATE productos_almacen SET stock = stock + @cantidad
+                         WHERE id_producto = @id_producto AND id_almacen = @id_almacen
+                     ELSE
+                         INSERT INTO productos_almacen (id_producto, id_almacen, stock)
+                         VALUES (@id_producto, @id_almacen, @cantidad)`
+                );
 
+                // 4. El stock global (productos.stock_actual) no cambia: la transferencia solo mueve entre almacenes
+
+                // 5. Registrar en Kardex (salida del origen)
                 const reqKardex = transaction.request();
-                reqKardex.input('id_producto', sql.Int, item.id_producto);
-                reqKardex.input('id_almacen', sql.Int, transferencia.id_almacen_origen);
+                reqKardex.input('id_producto',       sql.Int, item.id_producto);
+                reqKardex.input('id_almacen',         sql.Int, transferencia.id_almacen_origen);
                 reqKardex.input('id_almacen_destino', sql.Int, transferencia.id_almacen_destino);
-                reqKardex.input('referencia_id', sql.Int, id);
-                reqKardex.input('cantidad', sql.Decimal, item.cantidad);
-                reqKardex.input('stock_actual', sql.Decimal, stockActual);
-                reqKardex.input('id_usuario', sql.Int, id_usuario);
+                reqKardex.input('referencia_id',      sql.Int, id);
+                reqKardex.input('cantidad',           sql.Decimal(10, 2), cantidad);
+                reqKardex.input('stock_antes',        sql.Decimal(10, 2), stockOrigenAntes);
+                reqKardex.input('stock_despues',      sql.Decimal(10, 2), stockOrigenDespues);
+                reqKardex.input('id_usuario',         sql.Int, id_usuario);
                 await reqKardex.query(
                     `INSERT INTO kardex (id_producto, id_almacen, tipo_movimiento, motivo, referencia_id, referencia_tipo, cantidad, stock_anterior, stock_posterior, id_usuario)
-                    VALUES (@id_producto, @id_almacen, 'transferencia', 
-                    'Transferencia al almacén ' + CAST(@id_almacen_destino AS VARCHAR(10)),
-                    @referencia_id, 'transferencia', @cantidad, @stock_actual, @stock_actual, @id_usuario)`
+                     VALUES (@id_producto, @id_almacen, 'transferencia',
+                     'Transferencia al almacén ' + CAST(@id_almacen_destino AS VARCHAR(10)),
+                     @referencia_id, 'transferencia', -@cantidad, @stock_antes, @stock_despues, @id_usuario)`
                 );
             }
 
@@ -633,7 +793,8 @@ module.exports = {
     ajustarStock,
     getLotes,
     getTransferencias,
+    getTransferenciaById,
     crearTransferencia,
     completarTransferencia,
     getAllLotes
-};
+};

@@ -1052,12 +1052,19 @@ function renderTablaTransferencias(transferencias) {
             </td>
         `;
 
-        // Fila detalle (vacía, se carga al abrir el modal)
+        // Fila detalle (cargada dinámicamente al expandir)
         const trDetail = document.createElement('tr');
         trDetail.id = detailId;
         trDetail.className = 'transf-dyn detail-row collapse';
         trDetail.setAttribute('aria-hidden', 'true');
-        trDetail.innerHTML = `<td colspan="9" class="px-4 py-2 text-muted small">Haga clic en <i class="fa-regular fa-eye"></i> para ver el detalle completo.</td>`;
+        trDetail.dataset.transfId = t.id_transferencia;
+        trDetail.dataset.loaded = 'false';
+        trDetail.innerHTML = `<td colspan="9" class="px-4 py-2">
+            <div class="d-flex align-items-center gap-2 text-muted small">
+                <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+                <span>Cargando productos…</span>
+            </div>
+        </td>`;
 
         tbody.appendChild(tr);
         tbody.appendChild(trDetail);
@@ -1070,6 +1077,41 @@ function renderTablaTransferencias(transferencias) {
     });
 
     initExpandableRowsLive();
+
+    // Carga dinámica de detalle en filas desplegables
+    document.querySelectorAll('tr.transf-dyn.detail-row[data-transf-id]').forEach(trDet => {
+        const trigger = document.querySelector(`[data-expand-trigger="${trDet.id}"]`);
+        if (!trigger) return;
+        trigger.addEventListener('click', async () => {
+            if (trDet.dataset.loaded === 'true') return;
+            try {
+                const data = await apiFetch(`${API}/transferencias/${trDet.dataset.transfId}`);
+                const productos = data.detalle || [];
+                if (productos.length === 0) {
+                    trDet.querySelector('td').innerHTML = `<span class="text-muted small">Sin productos registrados.</span>`;
+                } else {
+                    trDet.querySelector('td').innerHTML = `
+                        <table class="table table-sm table-borderless mb-0" style="max-width:600px">
+                            <thead class="text-muted small">
+                                <tr><th>Código</th><th>Producto</th><th class="text-end">Cantidad</th><th>Unidad</th></tr>
+                            </thead>
+                            <tbody>
+                                ${productos.map(p => `
+                                    <tr>
+                                        <td class="font-monospace small">${p.producto_codigo}</td>
+                                        <td class="small">${p.producto_nombre}</td>
+                                        <td class="text-end small fw-semibold">${Number(p.cantidad).toFixed(2)}</td>
+                                        <td class="small text-muted">${p.unidad ?? ''}</td>
+                                    </tr>`).join('')}
+                            </tbody>
+                        </table>`;
+                }
+                trDet.dataset.loaded = 'true';
+            } catch {
+                trDet.querySelector('td').innerHTML = `<span class="text-danger small">Error al cargar los productos.</span>`;
+            }
+        }, { once: true });
+    });
 }
 
 function _badgeTransfEstado(estado) {
@@ -1091,10 +1133,34 @@ function abrirDetalleTransferencia(t) {
     document.getElementById('transf-det-estado').outerHTML    =
         `<span id="transf-det-estado">${_badgeTransfEstado(t.estado)}</span>`;
 
+    // Cargar tabla de productos del detalle
+    const tbodyProductos = document.getElementById('tabla-transf-det-productos-body');
+    if (tbodyProductos) {
+        tbodyProductos.innerHTML = `<tr><td colspan="4" class="text-center text-muted small py-3">
+            <i class="fa-solid fa-spinner fa-spin me-1" aria-hidden="true"></i>Cargando…
+        </td></tr>`;
+        apiFetch(`${API}/transferencias/${t.id_transferencia}`)
+            .then(data => {
+                const productos = data.detalle || [];
+                if (productos.length === 0) {
+                    tbodyProductos.innerHTML = `<tr><td colspan="4" class="text-center text-muted small">Sin productos registrados.</td></tr>`;
+                } else {
+                    tbodyProductos.innerHTML = productos.map(p => `
+                        <tr>
+                            <td class="font-monospace small">${p.producto_codigo}</td>
+                            <td class="small">${p.producto_nombre}</td>
+                            <td class="text-end small fw-semibold">${Number(p.cantidad).toFixed(2)}</td>
+                            <td class="small text-muted">${p.unidad ?? ''}</td>
+                        </tr>`).join('');
+                }
+            })
+            .catch(() => {
+                tbodyProductos.innerHTML = `<tr><td colspan="4" class="text-danger small text-center">Error al cargar los productos.</td></tr>`;
+            });
+    }
+
     // Botones de acción según estado
-    const btnCompletar = document.getElementById('btn-completar-transf');
-    const btnAnular    = document.getElementById('btn-anular-transf');
-    const fieldset     = document.getElementById('transf-cambiar-estado-fieldset');
+    const fieldset = document.getElementById('transf-cambiar-estado-fieldset');
 
     if (t.estado !== 'pendiente') {
         fieldset.innerHTML = `<p class="small text-muted mb-0">Esta transferencia ya está <strong>${t.estado}</strong> y no puede modificarse.</p>`;
@@ -1123,6 +1189,7 @@ function abrirDetalleTransferencia(t) {
 
     bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-detalle-transferencia')).show();
 }
+
 
 async function completarTransferencia(id) {
     try {
@@ -1203,6 +1270,8 @@ function renderDetalleTransf() {
         inputCant.step = '0.01';
         inputCant.required = true;
         inputCant.setAttribute('aria-label', `Cantidad a transferir de ${item.nombre}`);
+        // Preservar cantidad si ya fue ingresada
+        inputCant.value = item.cantidad > 0 ? item.cantidad : '';
         inputCant.addEventListener('input', () => { _transfDetalle[idx].cantidad = parseFloat(inputCant.value) || 0; });
 
         const btnElim = document.createElement('button');
@@ -1235,11 +1304,17 @@ async function guardarTransferencia() {
         showToast('El origen y destino deben ser almacenes distintos.', 'warning');
         return;
     }
+    if (!motivo) {
+        showToast('El motivo de la transferencia es obligatorio.', 'warning');
+        document.getElementById('transf-motivo')?.focus();
+        return;
+    }
     const detalle = _transfDetalle.filter(i => i.cantidad > 0);
     if (detalle.length === 0) {
         showToast('Agregue al menos un producto con cantidad válida.', 'warning');
         return;
     }
+
 
     const btn = document.getElementById('btn-confirmar-transferencia');
     btn.disabled = true;

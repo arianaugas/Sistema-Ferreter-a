@@ -402,6 +402,62 @@ const movimientosCaja = async (req, res) => {
 
 //Movimientos de inventario de un producto en un rango de fechas. ---(VERIFICAR)
 // Historial completo de movimientos de un producto (consulta directa a kardex)
+
+// Kardex general — todos los productos con filtros opcionales
+const kardexGeneral = async (req, res) => {
+    const { desde, hasta, id_categoria } = req.query;
+
+    let whereClausules = [];
+    const params = {};
+
+    if (id_categoria) {
+        whereClausules.push(`sc.id_categoria = @id_categoria`);
+        params.id_categoria = { type: sql.Int, value: parseInt(id_categoria) };
+    }
+    if (desde) {
+        whereClausules.push(`k.registrado_en >= @desde`);
+        params.desde = { type: sql.DateTime2, value: new Date(desde) };
+    }
+    if (hasta) {
+        whereClausules.push(`k.registrado_en <= @hasta`);
+        params.hasta = { type: sql.DateTime2, value: new Date(hasta) };
+    }
+
+    const where = whereClausules.length ? `WHERE ${whereClausules.join(' AND ')}` : '';
+
+    try {
+        const result = await query(
+            `SELECT TOP 500
+                k.id_kardex,
+                p.codigo,
+                p.nombre AS producto,
+                k.tipo_movimiento,
+                k.motivo,
+                k.referencia_tipo,
+                k.referencia_id,
+                a.nombre AS almacen,
+                k.cantidad,
+                k.stock_anterior,
+                k.stock_posterior,
+                u.username AS usuario,
+                k.registrado_en
+            FROM kardex k
+            INNER JOIN productos  p ON p.id_producto = k.id_producto
+            INNER JOIN subcategorias sc ON sc.id_subcategoria = p.id_subcategoria
+            INNER JOIN almacenes  a ON a.id_almacen  = k.id_almacen
+            INNER JOIN usuarios   u ON u.id_usuario  = k.id_usuario
+            ${where}
+            ORDER BY k.registrado_en DESC`,
+            params
+        );
+        return res.json({ ok: true, movimientos: result.recordset });
+    } catch (err) {
+        console.error('Error en kardexGeneral:', err);
+        return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor.' });
+    }
+};
+
+
 const kardexProducto = async (req, res) => {
     const { id } = req.params;
     const { desde, hasta } = req.query;
@@ -451,15 +507,15 @@ const kardexProducto = async (req, res) => {
                 k.motivo,
                 k.referencia_tipo,
                 k.referencia_id,
-                a.nombre                         AS almacen,
+                a.nombre AS almacen,
                 k.cantidad,
                 k.stock_anterior,
                 k.stock_posterior,
-                u.username                        AS usuario,
+                u.username AS usuario,
                 k.registrado_en
              FROM kardex k
              INNER JOIN almacenes a  ON a.id_almacen = k.id_almacen
-             INNER JOIN usuarios   u ON u.id_usuario = k.id_usuario
+             INNER JOIN usuarios u ON u.id_usuario = k.id_usuario
              ${where}
              ORDER BY k.registrado_en DESC`,
             params
@@ -506,12 +562,12 @@ const clientesFrecuentes = async (req, res) => {
         const result = await query(
             `SELECT TOP (@limite)
                 c.id_cliente,
-                c.nombre                          AS cliente,
+                c.nombre AS cliente,
                 c.tipo_documento,
                 c.numero_documento,
-                COUNT(v.id_venta)                 AS total_compras,
-                SUM(v.total)                      AS total_gastado,
-                MAX(v.fecha)                      AS ultima_compra
+                COUNT(v.id_venta) AS total_compras,
+                SUM(v.total) AS total_gastado,
+                MAX(v.fecha) AS ultima_compra
              FROM ventas v
              INNER JOIN clientes c ON c.id_cliente = v.id_cliente
              ${where}
@@ -582,8 +638,8 @@ const reporteDevoluciones = async (req, res) => {
                 ISNULL(c.nombre, 'Sin cliente') AS cliente_nombre,
                 e.nombre + ' ' + e.apellido     AS empleado_nombre
              FROM devoluciones d
-             INNER JOIN ventas    v ON v.id_venta    = d.id_venta
-             LEFT JOIN  clientes  c ON c.id_cliente  = v.id_cliente
+             INNER JOIN ventas v ON v.id_venta    = d.id_venta
+             LEFT JOIN  clientes c ON c.id_cliente  = v.id_cliente
              INNER JOIN empleados e ON e.id_empleado = d.id_empleado
              ${where}
              ORDER BY d.fecha DESC`,
@@ -812,6 +868,7 @@ module.exports = {
     stockBajo,
     comprasPorPeriodo,
     movimientosCaja,
+    kardexGeneral,
     kardexProducto,
     clientesFrecuentes,
     cierresCaja,

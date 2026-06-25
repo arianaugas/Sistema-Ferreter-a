@@ -14,9 +14,11 @@ async function apiFetch(url, options = {}) {
 
 function formatFecha(fechaStr) {
     if (!fechaStr) return '—';
-    const soloFecha = String(fechaStr).split('T')[0]; // fecha en texto directamente, cambio manual xd
-    const [anio, mes, dia] = soloFecha.split('-');
-    if (!anio || !mes || !dia) return '—';
+    const fecha = new Date(fechaStr);
+    if (isNaN(fecha.getTime())) return '—';
+    const dia  = String(fecha.getUTCDate()).padStart(2, '0');
+    const mes  = String(fecha.getUTCMonth() + 1).padStart(2, '0');
+    const anio = fecha.getUTCFullYear();
     return `${dia}/${mes}/${anio}`;
 }
 
@@ -333,12 +335,16 @@ document.getElementById('btn-ficha-editar')?.addEventListener('click', () => {
 // Nuevo empleado
 document.getElementById('form-nuevo-empleado')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const telefonoRaw = document.getElementById('nuevo-emp-telefono').value.trim();
+    if (telefonoRaw && !/^9\d{8}$/.test(telefonoRaw)) {
+        return showToast('El teléfono debe tener 9 dígitos y empezar con 9.', 'warning');
+    }
     const body = {
         dni: document.getElementById('nuevo-emp-dni').value.trim(),
         nombre: document.getElementById('nuevo-emp-nombre').value.trim(),
         apellido: document.getElementById('nuevo-emp-apellido').value.trim(),
         id_cargo: document.getElementById('nuevo-emp-cargo').value,
-        telefono: document.getElementById('nuevo-emp-telefono').value.trim() || null,
+        telefono: telefonoRaw || null,
         correo: document.getElementById('nuevo-emp-correo').value.trim() || null,
         fecha_ingreso: document.getElementById('nuevo-emp-fecha-ingreso').value,
         fecha_cese: document.getElementById('nuevo-emp-fecha-cese').value || null
@@ -358,13 +364,17 @@ document.getElementById('form-nuevo-empleado')?.addEventListener('submit', async
 // Editar empleado
 document.getElementById('form-editar-empleado')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const telefonoRaw = document.getElementById('editar-emp-telefono').value.trim();
+    if (telefonoRaw && !/^9\d{8}$/.test(telefonoRaw)) {
+        return showToast('El teléfono debe tener 9 dígitos y empezar con 9.', 'warning');
+    }
     const id = document.getElementById('editar-emp-id').value;
     const body = {
         dni: document.getElementById('editar-emp-dni').value.trim(),
         nombre: document.getElementById('editar-emp-nombre').value.trim(),
         apellido: document.getElementById('editar-emp-apellido').value.trim(),
         id_cargo: document.getElementById('editar-emp-cargo').value,
-        telefono: document.getElementById('editar-emp-telefono').value.trim() || null,
+        telefono: telefonoRaw || null,
         correo: document.getElementById('editar-emp-correo').value.trim() || null,
         fecha_ingreso: document.getElementById('editar-emp-fecha-ingreso').value,
         fecha_cese: document.getElementById('editar-emp-fecha-cese').value || null,

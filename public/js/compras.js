@@ -393,7 +393,7 @@ function agregarLineaProducto(producto = null) {
 }
 
 // Cargar productos en datalist
-async function cargarProductosDatalist() {
+async function cargarProductosDatalist(id_proveedor = '') {
   let datalist = document.getElementById('productos-datalist');
   if (!datalist) {
     datalist = document.createElement('datalist');
@@ -401,8 +401,11 @@ async function cargarProductosDatalist() {
     document.body.appendChild(datalist);
   }
   try {
-    const data = await apiFetch('/api/productos');
-    const productos = Array.isArray(data) ? data : (data.productos || []);
+    const url = id_proveedor
+      ? `/api/proveedores/${id_proveedor}/productos`
+      : '/api/productos';
+    const data = await apiFetch(url);
+    const productos = Array.isArray(data) ? data : (data.productos || data.productos_proveedor || []);
     window._productosCache = productos;
     datalist.replaceChildren();
     const frag = document.createDocumentFragment();
@@ -423,6 +426,11 @@ function initFormNuevaOrden() {
 
   const btnAgrLinea = document.getElementById('btn-agregar-linea-orden');
   if (btnAgrLinea) btnAgrLinea.addEventListener('click', () => agregarLineaProducto());
+
+  const selProv = document.getElementById('no-proveedor');
+  if (selProv) {
+    selProv.addEventListener('change', () => cargarProductosDatalist(selProv.value));
+  }
 
   // Añadir primera línea
   if (document.getElementById('tbody-lineas-orden') && document.querySelectorAll('.linea-orden').length === 0) {
@@ -614,12 +622,23 @@ function initFiltros() {
   if (btnFiltrar) btnFiltrar.addEventListener('click', () => cargarOrdenes(getFiltros()));
   if (btnLimpiar) {
     btnLimpiar.addEventListener('click', () => {
-      ['filtro-orden-proveedor', 'filtro-orden-estado', 'filtro-orden-desde', 'filtro-orden-hasta'].forEach(id => {
+      ['filtro-estado-orden', 'filtro-fecha-desde-orden', 'filtro-fecha-hasta-orden'].forEach(id => {
         const el = document.getElementById(id); if (el) el.value = '';
       });
       cargarOrdenes();
     });
   }
+
+  // Filtros de recepciones
+  const btnFiltrarRec = document.getElementById('btn-filtrar-recepciones');
+  if (btnFiltrarRec) {
+    btnFiltrarRec.addEventListener('click', () => cargarRecepciones({
+      fecha_desde: document.getElementById('filtro-fecha-desde-rec')?.value,
+      fecha_hasta: document.getElementById('filtro-fecha-hasta-rec')?.value,
+      busqueda: document.getElementById('input-buscar-recepcion')?.value.trim(),
+    }));
+  }
+
 }
 
 // Paginación genérica
@@ -647,6 +666,163 @@ function renderPaginacion(containerId, total, porPagina, paginaActual, onPageCha
   container.replaceChildren(ul);
 }
 
+// Renderizar fila de recepción
+function renderFilaRecepcion(r) {
+  const detailId = `rec-detail-${r.id_recepcion}`;
+  const tr = document.createElement('tr');
+  tr.style.cursor = 'pointer';
+
+  const tdIco = document.createElement('td');
+  tdIco.className = 'ps-3';
+  const iIco = document.createElement('i');
+  iIco.className = 'fa-solid fa-chevron-down fa-fw fa-xs';
+  iIco.setAttribute('aria-hidden', 'true');
+  tdIco.appendChild(iIco);
+
+  const tdNum = document.createElement('td');
+  const numSpan = document.createElement('span');
+  numSpan.className = 'badge text-bg-light border font-monospace';
+  numSpan.textContent = `REC-${String(r.id_recepcion).padStart(4,'0')}`;
+  tdNum.appendChild(numSpan);
+
+  const tdOrden = document.createElement('td');
+  tdOrden.className = 'text-muted small';
+  tdOrden.textContent = r.numero_orden || `OC-${r.id_orden}`;
+
+  const tdProv = document.createElement('td');
+  tdProv.className = 'fw-medium';
+  tdProv.textContent = r.proveedor_nombre || '—';
+
+  const tdAlm = document.createElement('td');
+  tdAlm.className = 'text-muted small';
+  tdAlm.textContent = r.almacen_nombre || '—';
+
+  const tdGuia = document.createElement('td');
+  tdGuia.className = 'font-monospace small';
+  tdGuia.textContent = r.guia_remision || '—';
+
+  const tdFecha = document.createElement('td');
+  tdFecha.className = 'text-muted small';
+  tdFecha.textContent = formatDate(r.fecha, false);
+
+  const tdAcc = document.createElement('td');
+  tdAcc.className = 'text-end pe-3';
+
+  tr.append(tdIco, tdNum, tdOrden, tdProv, tdAlm, tdGuia, tdFecha, tdAcc);
+
+  tr.addEventListener('click', () => {
+    const detailRow = document.getElementById(detailId);
+    if (!detailRow) return;
+    const isOpen = detailRow.classList.toggle('show');
+    iIco.classList.toggle('fa-chevron-down', !isOpen);
+    iIco.classList.toggle('fa-chevron-up', isOpen);
+    tr.classList.toggle('table-active', isOpen);
+  });
+
+  // Fila de detalle con productos
+  const trDetail = document.createElement('tr');
+  trDetail.id = detailId;
+  trDetail.className = 'detail-row collapse';
+  const tdDetail = document.createElement('td');
+  tdDetail.colSpan = 8;
+  tdDetail.className = 'p-0';
+
+  if (r.productos && r.productos.length > 0) {
+    const div = document.createElement('div');
+    div.className = 'px-4 py-3';
+    const tbl = document.createElement('table');
+    tbl.className = 'table table-sm mb-0';
+    tbl.innerHTML = '<thead><tr><th>Producto</th><th>Cant. recibida</th><th>P. unitario</th><th>N° Lote</th><th>Vence</th></tr></thead>';
+    const tb = document.createElement('tbody');
+    r.productos.forEach(p => {
+      const tr2 = document.createElement('tr');
+      [p.producto_nombre, p.cantidad, formatMoney(p.precio_unitario), p.numero_lote || '—', p.fecha_vencimiento ? formatDate(p.fecha_vencimiento) : '—'].forEach(v => {
+        const td2 = document.createElement('td'); td2.textContent = v; tr2.appendChild(td2);
+      });
+      tb.appendChild(tr2);
+    });
+    tbl.appendChild(tb);
+    div.appendChild(tbl);
+    tdDetail.appendChild(div);
+  } else {
+    tdDetail.innerHTML = '<div class="px-4 py-2 text-muted small">Sin detalle de productos.</div>';
+  }
+  trDetail.appendChild(tdDetail);
+
+  return [tr, trDetail];
+}
+
+// Cargar recepciones (todas las órdenes recibidas)
+async function cargarRecepciones(filtros = {}) {
+  const tbody = document.querySelector('#tabla-recepciones tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando...</td></tr>';
+  try {
+    const baseParams = new URLSearchParams();
+    if (filtros.fecha_desde) baseParams.set('fecha_desde', filtros.fecha_desde);
+    if (filtros.fecha_hasta) baseParams.set('fecha_hasta', filtros.fecha_hasta);
+    if (filtros.busqueda) baseParams.set('proveedor', filtros.busqueda);
+
+    const [dataRec, dataEnv] = await Promise.all([
+      apiFetch(`/api/compras?${new URLSearchParams({...Object.fromEntries(baseParams), estado: 'recibida'})}`),
+      apiFetch(`/api/compras?${new URLSearchParams({...Object.fromEntries(baseParams), estado: 'enviada'})}`),
+    ]);
+
+    const ordenes = [
+      ...(Array.isArray(dataRec.ordenes) ? dataRec.ordenes : []),
+      ...(Array.isArray(dataEnv.ordenes) ? dataEnv.ordenes : []),
+    ];
+
+    // Para cada orden, cargar sus recepciones
+    const todasRecepciones = [];
+    await Promise.all(ordenes.map(async o => {
+      try {
+        const r = await apiFetch(`/api/compras/${o.id_orden}/recepciones`);
+        (r.recepciones || []).forEach(rec => {
+          todasRecepciones.push({ ...rec, numero_orden: o.numero_orden, proveedor_nombre: o.proveedor_nombre });
+        });
+      } catch { /* orden sin recepciones */ }
+    }));
+
+    todasRecepciones.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+    tbody.replaceChildren();
+    if (todasRecepciones.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No hay recepciones registradas.</td></tr>';
+      return;
+    }
+    const frag = document.createDocumentFragment();
+    todasRecepciones.forEach(r => {
+      const [trMain, trDetail] = renderFilaRecepcion(r);
+      frag.appendChild(trMain);
+      frag.appendChild(trDetail);
+    });
+    tbody.appendChild(frag);
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">Error: ${err.message}</td></tr>`;
+  }
+}
+
+async function cargarAlmacenesSelect() {
+  const sel = document.getElementById('nr-almacen');
+  if (!sel) return;
+  try {
+    const data = await apiFetch('/api/inventario/almacenes');
+    const almacenes = Array.isArray(data) ? data : (data.almacenes || []);
+    sel.replaceChildren();
+    const optDefault = document.createElement('option');
+    optDefault.value = '';
+    optDefault.textContent = 'Seleccionar almacén...';
+    sel.appendChild(optDefault);
+    almacenes.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id_almacen;
+      opt.textContent = a.nombre;
+      sel.appendChild(opt);
+    });
+  } catch { /* no crítico */ }
+}
+
 // Punto de entrada
 document.addEventListener('DOMContentLoaded', async () => {
   await Promise.all([
@@ -657,4 +833,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   initFormNuevaOrden();
   initFormRecepcion();
   cargarOrdenes();
+  cargarRecepciones();
+  cargarAlmacenesSelect();
 });

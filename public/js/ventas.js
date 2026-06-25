@@ -241,13 +241,36 @@ function limpiarCarrito() {
   cargarSelectTiposPago(); // restaurar select de tipos de pago
 }
 
+async function cargarCategoriasPOS() {
+  const sel = document.getElementById('pos-filtro-categoria');
+  if (!sel) return;
+  try {
+    const data = await apiFetch('/api/categorias/cat');
+    const cats = Array.isArray(data.categorias) ? data.categorias : [];
+    sel.innerHTML = '<option value="">Todas</option>';
+    cats.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id_categoria;
+      opt.textContent = c.nombre;
+      sel.appendChild(opt);
+    });
+  } catch {
+    // Si falla deja "Todas"
+  }
+}
+
+
 //  Buscar productos 
 let buscarTimer;
 async function buscarProductos(termino) {
   const tbody = document.getElementById('pos-productos-body');
   if (!tbody) return;
 
-  if (termino && termino.length > 0 && termino.length < 2) {
+  const selCat = document.getElementById('pos-filtro-categoria');
+  const tieneCategoria = !!selCat?.value;
+
+  // Solo abortar si el término es muy corto Y no hay categoría seleccionada
+  if (termino && termino.length > 0 && termino.length < 2 && !tieneCategoria) {
     tbody.replaceChildren();
     return;
   }
@@ -255,19 +278,10 @@ async function buscarProductos(termino) {
   try {
     const params = new URLSearchParams({ activo: '1' });
     if (termino && termino.length >= 2) params.set('nombre', termino);
+    if (tieneCategoria) params.set('categoria', selCat.value);
 
     const data = await apiFetch(`/api/productos?${params}`);
     let productos = Array.isArray(data) ? data : (data.productos || []);
-
-    // Filtro de categoría del select — filtrar en cliente por nombre de categoría
-    const selCat = document.getElementById('pos-filtro-categoria');
-    const catFiltro = selCat ? selCat.value.toLowerCase() : '';
-    if (catFiltro) {
-      productos = productos.filter(p =>
-        (p.categoria || '').toLowerCase().includes(catFiltro) ||
-        (p.subcategoria || '').toLowerCase().includes(catFiltro)
-      );
-    }
 
     tbody.replaceChildren();
     if (productos.length === 0) {
@@ -565,9 +579,13 @@ function initFormNuevaVenta() {
     }
 
     const { total } = calcularTotales();
-    const totalPagado = pagos.reduce((s, p) => s + p.monto, 0);
-    if (parseFloat(totalPagado.toFixed(2)) < total) {
-      showToast(`El total pagado (${formatMoney(totalPagado)}) es menor al total de la venta (${formatMoney(total)}).`, 'warning');
+    const totalPagado = parseFloat(pagos.reduce((s, p) => s + p.monto, 0).toFixed(2));
+    if (totalPagado < total) {
+      showToast(`El monto pagado (${formatMoney(totalPagado)}) es menor al total (${formatMoney(total)}). Falta: ${formatMoney(total - totalPagado)}`, 'warning');
+      return;
+    }
+    if (totalPagado > parseFloat((total * 1.0).toFixed(2)) + 0.01) {
+      showToast(`El monto pagado (${formatMoney(totalPagado)}) supera el total (${formatMoney(total)}). Revisa los montos ingresados.`, 'warning');
       return;
     }
 
@@ -1033,6 +1051,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     cargarClientesDatalist(),
     obtenerAlmacenDefault(),
     cargarConfigIGV(),
+    cargarCategoriasPOS(),
   ]);
 
   renderTablaSeries();

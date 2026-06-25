@@ -24,6 +24,7 @@ router.get('/ganancias', revisarToken, reportesCtrl.reporteGanancias);
 router.get('/compras', revisarToken, reportesCtrl.comprasPorPeriodo);
 router.get('/gastos', revisarToken, reportesCtrl.reporteGastos);
 router.get('/cierres-caja', revisarToken, reportesCtrl.cierresCaja);
+router.get('/kardex', revisarToken, reportesCtrl.kardexGeneral);
 router.get('/kardex/:id', revisarToken, reportesCtrl.kardexProducto);
 router.get('/clientes-frecuentes',revisarToken,reportesCtrl.clientesFrecuentes);
 router.get('/devoluciones', revisarToken, reportesCtrl.reporteDevoluciones);

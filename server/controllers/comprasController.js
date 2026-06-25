@@ -337,11 +337,25 @@ const crearRecepcion = async (req, res) => {
                      VALUES (@id_producto, @id_almacen, 'entrada', 'Compra', @cantidad, @stock_anterior, @stock_posterior, @id_usuario, @referencia_id, 'recepcion')`
                 );
 
-                // Update Stock
+                // Sumar stock en productos_almacen (upsert)
+                const reqStockAlm = transaction.request();
+                reqStockAlm.input('id_producto', sql.Int, p.id_producto);
+                reqStockAlm.input('id_almacen',  sql.Int, id_almacen);
+                reqStockAlm.input('cantidad',    sql.Decimal(10, 2), p.cantidad);
+                await reqStockAlm.query(
+                    `IF EXISTS (SELECT 1 FROM productos_almacen WHERE id_producto = @id_producto AND id_almacen = @id_almacen)
+                         UPDATE productos_almacen SET stock = stock + @cantidad
+                         WHERE id_producto = @id_producto AND id_almacen = @id_almacen
+                     ELSE
+                         INSERT INTO productos_almacen (id_producto, id_almacen, stock)
+                         VALUES (@id_producto, @id_almacen, @cantidad)`
+                );
+
+                // Sincronizar stock general en productos (suma la cantidad recibida)
                 await transaction.request()
-                    .input('stock', sql.Decimal(10, 2), stockPosterior)
+                    .input('cantidad', sql.Decimal(10, 2), p.cantidad)
                     .input('id_p', sql.Int, p.id_producto)
-                    .query('UPDATE productos SET stock_actual = @stock WHERE id_producto = @id_p');
+                    .query('UPDATE productos SET stock_actual = stock_actual + @cantidad WHERE id_producto = @id_p');
 
                 // 5. Crear lote si aplica
                 if (prodResult.recordset[0].tiene_lote && p.numero_lote) {

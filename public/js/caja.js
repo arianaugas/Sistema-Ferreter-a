@@ -515,11 +515,12 @@ function initFormCierreCaja() {
     if (!Caja.cajaActiva) { showToast('No hay caja activa.', 'error'); return; }
 
     const monto_real = parseFloat(inputReal?.value);
+    const observacion = document.getElementById('cierre-observacion')?.value.trim() || null;
     confirmAction('¿Confirmas el cierre de caja? Esta acción no se puede deshacer.', async () => {
       try {
         await apiFetch(`/api/caja/${Caja.cajaActiva.id_caja}/cerrar`, {
           method: 'PATCH',
-          body: JSON.stringify({ monto_real }),
+          body: JSON.stringify({ monto_real, observacion }),
         });
         showToast('Caja cerrada correctamente.', 'success');
         bootstrap.Modal.getInstance(document.getElementById('modal-cierre-caja'))?.hide();

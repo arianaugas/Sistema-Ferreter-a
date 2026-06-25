@@ -151,54 +151,130 @@ function initFormConfiguracion() {
   });
 }
 
-// Renderizar fila de auditoría
+// Estilo visual según tipo de operación
+function operationStyle(op) {
+  const map = {
+    INSERT: { border: 'border-success', iconNuevo: 'text-success', iconAnt: '' },
+    UPDATE: { border: 'border-warning', iconNuevo: 'text-warning', iconAnt: '' },
+    DELETE: { border: 'border-danger',  iconNuevo: '',              iconAnt: 'text-danger' },
+  };
+  return map[op] || { border: 'border-secondary', iconNuevo: '', iconAnt: '' };
+}
+
+// Fila principal (clickeable) de auditoría
 function renderFilaAuditoria(log) {
   const tr = document.createElement('tr');
+  tr.dataset.expandTrigger = `detalle-audit-${log.id_auditoria}`;
+  tr.dataset.idAuditoria = log.id_auditoria;
+  tr.style.cursor = 'pointer';
 
-  const tdId = document.createElement('td');
-  tdId.className = 'ps-3 text-muted small font-monospace';
-  tdId.textContent = `#${log.id_auditoria}`;
+  const tdIcon = document.createElement('td');
+  tdIcon.className = 'ps-3';
+  tdIcon.innerHTML = '<i class="fa-solid fa-chevron-down fa-fw fa-xs text-muted" data-expand-icon aria-hidden="true"></i>';
 
-  const tdOp = document.createElement('td');
-  tdOp.innerHTML = getBadge(log.operacion?.toLowerCase());
+  const tdFecha = document.createElement('td');
+  tdFecha.className = 'small font-monospace text-muted';
+  tdFecha.textContent = formatDate(log.registrado_en, true);
+
+  const tdUsuario = document.createElement('td');
+  tdUsuario.className = 'fw-semibold small';
+  tdUsuario.textContent = log.usuario_nombre || log.empleado_nombre || '—';
 
   const tdTabla = document.createElement('td');
   const tablaSpan = document.createElement('span');
-  tablaSpan.className = 'badge text-bg-light border font-monospace';
+  tablaSpan.className = 'badge text-bg-light border font-monospace fw-normal';
   tablaSpan.textContent = log.tabla_afectada;
   tdTabla.appendChild(tablaSpan);
 
+  const tdOp = document.createElement('td');
+  tdOp.innerHTML = getBadge(log.operacion);
+
   const tdReg = document.createElement('td');
-  tdReg.className = 'text-muted small';
+  tdReg.className = 'font-monospace small text-muted';
   tdReg.textContent = log.registro_id ?? '—';
 
-  const tdUsuario = document.createElement('td');
-  tdUsuario.textContent = log.usuario_nombre || '—';
-
-  const tdEmpleado = document.createElement('td');
-  tdEmpleado.className = 'text-muted small';
-  tdEmpleado.textContent = log.empleado_nombre || '—';
-
-  const tdFecha = document.createElement('td');
-  tdFecha.className = 'text-muted small';
-  tdFecha.textContent = formatDate(log.registrado_en, true);
-
-  const tdAcc = document.createElement('td');
-  tdAcc.className = 'text-end pe-3';
-  const btnVer = document.createElement('button');
-  btnVer.type = 'button';
-  btnVer.className = 'btn btn-sm';
-  btnVer.title = 'Ver detalle';
-  btnVer.innerHTML = '<i class="fa-regular fa-eye fa-fw" aria-hidden="true"></i>';
-  btnVer.addEventListener('click', () => verDetalleAuditoria(log.id_auditoria));
-  tdAcc.appendChild(btnVer);
-
-  //ALTO AQUI CAMBIAAR tdReg POR EL IP VERDADER LO DJO PQ TENGO SUEÑO
-  tr.append(tdOp, tdTabla, tdId, tdUsuario, tdEmpleado, tdFecha, tdReg, tdAcc);
+  tr.append(tdIcon, tdFecha, tdUsuario, tdTabla, tdOp, tdReg);
   return tr;
 }
 
-// Renderizar tabla de auditoría
+// Fila expandible (detalle) que acompaña a cada fila principal
+function crearFilaDetalle(log) {
+  const tr = document.createElement('tr');
+  tr.id = `detalle-audit-${log.id_auditoria}`;
+  tr.className = 'detail-row collapse';
+
+  const td = document.createElement('td');
+  td.colSpan = 6;
+  td.className = 'p-0 border-0';
+
+  const style = operationStyle(log.operacion);
+  td.innerHTML = `
+    <div class="d-flex border-start border-4 ${style.border} mx-3 my-2 rounded-end overflow-hidden">
+      <div class="row g-0 w-100">
+        <div class="col-md-6 p-3 border-end">
+          <p class="text-muted small fw-semibold text-uppercase mb-2 d-flex align-items-center gap-2">
+            <i class="fa-solid fa-arrow-right-from-bracket fa-fw ${style.iconAnt}" aria-hidden="true"></i>
+            Datos anteriores
+            <code class="text-muted fw-normal text-lowercase">datos_anteriores</code>
+          </p>
+          <pre class="rounded p-3 small mb-0 lh-lg" data-campo="anteriores">Cargando…</pre>
+        </div>
+        <div class="col-md-6 p-3">
+          <p class="text-muted small fw-semibold text-uppercase mb-2 d-flex align-items-center gap-2">
+            <i class="fa-solid fa-arrow-right-to-bracket fa-fw ${style.iconNuevo}" aria-hidden="true"></i>
+            Datos nuevos
+            <code class="text-muted fw-normal text-lowercase">datos_nuevos</code>
+          </p>
+          <pre class="rounded p-3 small mb-0 lh-lg" data-campo="nuevos">Cargando…</pre>
+        </div>
+      </div>
+    </div>`;
+
+  tr.appendChild(td);
+  return tr;
+}
+
+// Carga el detalle (datos_anteriores/datos_nuevos) solo la primera vez que se expande
+async function cargarDetalleAuditoria(id, detailRow) {
+  const preAnt = detailRow.querySelector('[data-campo="anteriores"]');
+  const preNue = detailRow.querySelector('[data-campo="nuevos"]');
+  try {
+    const data = await apiFetch(`/api/configuracion/auditoria/${id}`);
+    const log = data.log;
+    if (preAnt) preAnt.textContent = log.datos_anteriores ? JSON.stringify(log.datos_anteriores, null, 2) : '—';
+    if (preNue) preNue.textContent = log.datos_nuevos ? JSON.stringify(log.datos_nuevos, null, 2) : '—';
+    detailRow.dataset.loaded = '1';
+  } catch (err) {
+    if (preAnt) preAnt.textContent = 'Error al cargar el detalle.';
+    if (preNue) preNue.textContent = '—';
+    showToast('Error al cargar detalle: ' + err.message, 'error');
+  }
+}
+
+// Mismo patrón que initExpandableRowsLive() de inventario.js
+function initExpandableRowsLive() {
+  document.querySelectorAll('#tabla-auditoria [data-expand-trigger]:not([data-expand-init])').forEach(trigger => {
+    trigger.setAttribute('data-expand-init', '1');
+    trigger.addEventListener('click', async () => {
+      const detailRow = document.getElementById(trigger.getAttribute('data-expand-trigger'));
+      if (!detailRow) return;
+
+      const isOpen = detailRow.classList.toggle('show');
+      const icon = trigger.querySelector('[data-expand-icon]');
+      if (icon) {
+        icon.classList.toggle('fa-chevron-down', !isOpen);
+        icon.classList.toggle('fa-chevron-up', isOpen);
+      }
+      trigger.classList.toggle('table-active', isOpen);
+
+      if (isOpen && detailRow.dataset.loaded !== '1') {
+        await cargarDetalleAuditoria(trigger.dataset.idAuditoria, detailRow);
+      }
+    });
+  });
+}
+
+// Renderizar tabla de auditoria
 function renderTablaAuditoria() {
   const tbody = document.querySelector('#tabla-auditoria tbody');
   if (!tbody) return;
@@ -211,15 +287,19 @@ function renderTablaAuditoria() {
   if (pagina.length === 0) {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 8;
+    td.colSpan = 6;
     td.className = 'text-center text-muted py-4';
     td.textContent = 'No hay registros de auditoría.';
     tr.appendChild(td);
     frag.appendChild(tr);
   } else {
-    pagina.forEach(log => frag.appendChild(renderFilaAuditoria(log)));
+    pagina.forEach(log => {
+      frag.appendChild(renderFilaAuditoria(log));
+      frag.appendChild(crearFilaDetalle(log));
+    });
   }
   tbody.appendChild(frag);
+  initExpandableRowsLive();
 
   const footerSpan = document.querySelector('#section-auditoria .card-footer span');
   if (footerSpan) {
@@ -256,57 +336,27 @@ async function cargarAuditoria(filtros = {}) {
   }
 }
 
-// Ver detalle de un log
-async function verDetalleAuditoria(id) {
-  const modal = document.getElementById('modal-detalle-auditoria');
-  if (!modal) return;
-  try {
-    const data = await apiFetch(`/api/configuracion/auditoria/${id}`);
-    const log = data.log;
-
-    const setEl = (sel, val) => { const el = modal.querySelector(sel); if (el) el.textContent = val ?? '—'; };
-    setEl('#aud-id', `#${log.id_auditoria}`);
-    setEl('#aud-tabla', log.tabla_afectada);
-    setEl('#aud-operacion', log.operacion);
-    setEl('#aud-reg', log.registro_id);
-    setEl('#aud-usuario', log.usuario_nombre);
-    setEl('#aud-empleado', log.empleado_nombre);
-    setEl('#aud-ip', log.ip);
-    setEl('#aud-fecha', formatDate(log.registrado_en, true));
-
-    const prevEl = modal.querySelector('#aud-datos-prev');
-    const nuevoEl = modal.querySelector('#aud-datos-nuevo');
-    if (prevEl) prevEl.textContent = log.datos_anteriores ? JSON.stringify(log.datos_anteriores, null, 2) : '—';
-    if (nuevoEl) nuevoEl.textContent = log.datos_nuevos ? JSON.stringify(log.datos_nuevos, null, 2) : '—';
-
-    new bootstrap.Modal(modal).show();
-  } catch (err) {
-    showToast('Error al cargar detalle: ' + err.message, 'error');
-  }
+// Filtros de auditoría — se aplican solos al cambiar (igual que en proveedores.js/clientes.js)
+let debounceAuditoria;
+function getFiltrosAuditoria() {
+  return {
+    tabla: document.getElementById('filtro-tabla-auditoria')?.value,
+    operacion: document.getElementById('filtro-operacion-auditoria')?.value,
+    usuario: document.getElementById('input-buscar-auditoria')?.value.trim(),
+    fecha_desde: document.getElementById('filtro-fecha-desde-audit')?.value,
+    fecha_hasta: document.getElementById('filtro-fecha-hasta-audit')?.value,
+  };
 }
 
-// Filtros de auditoría
 function initFiltrosAuditoria() {
-  const btnFiltrar = document.getElementById('btn-filtrar-auditoria');
-  const btnLimpiar = document.getElementById('btn-limpiar-auditoria');
-
-  const getFiltros = () => ({
-    tabla: document.getElementById('filtro-aud-tabla')?.value,
-    operacion: document.getElementById('filtro-aud-operacion')?.value,
-    usuario: document.getElementById('input-buscar-auditoria')?.value.trim(),
-    fecha_desde: document.getElementById('filtro-aud-desde')?.value,
-    fecha_hasta: document.getElementById('filtro-aud-hasta')?.value,
+  document.getElementById('filtro-tabla-auditoria')?.addEventListener('change', () => cargarAuditoria(getFiltrosAuditoria()));
+  document.getElementById('filtro-operacion-auditoria')?.addEventListener('change', () => cargarAuditoria(getFiltrosAuditoria()));
+  document.getElementById('filtro-fecha-desde-audit')?.addEventListener('change', () => cargarAuditoria(getFiltrosAuditoria()));
+  document.getElementById('filtro-fecha-hasta-audit')?.addEventListener('change', () => cargarAuditoria(getFiltrosAuditoria()));
+  document.getElementById('input-buscar-auditoria')?.addEventListener('input', () => {
+    clearTimeout(debounceAuditoria);
+    debounceAuditoria = setTimeout(() => cargarAuditoria(getFiltrosAuditoria()), 350);
   });
-
-  if (btnFiltrar) btnFiltrar.addEventListener('click', () => cargarAuditoria(getFiltros()));
-  if (btnLimpiar) {
-    btnLimpiar.addEventListener('click', () => {
-      ['filtro-aud-tabla', 'filtro-aud-operacion', 'input-buscar-auditoria', 'filtro-aud-desde', 'filtro-aud-hasta'].forEach(id => {
-        const el = document.getElementById(id); if (el) el.value = '';
-      });
-      cargarAuditoria();
-    });
-  }
 }
 
 // Paginación genérica

@@ -524,7 +524,7 @@ Historial de cajas — Lista de todos los turnos anteriores con sus montos y dif
 
                                 <!-- Acciones del turno -->
                                 <div class="col-md-2 d-flex flex-column gap-2">
-                                    <!-- Si la caja está abierta, mostrar botones de Egreso y Cierre -->
+                                    <!-- Botones visibles cuando la caja está ABIERTA -->
                                     <button class="btn btn-outline-secondary btn-sm" type="button"
                                         data-bs-toggle="offcanvas" data-bs-target="#offcanvas-egreso-manual">
                                         <i class="fa-solid fa-arrow-up-right-from-square fa-fw me-1"
@@ -534,15 +534,11 @@ Historial de cajas — Lista de todos los turnos anteriores con sus montos y dif
                                         data-bs-target="#modal-cierre-caja">
                                         <i class="fa-solid fa-lock fa-fw me-1" aria-hidden="true"></i>Cerrar caja
                                     </button>
-                                    <!-- Si la caja está cerrada, mostrar botón de Abrir -->
-                                    <!-- Descomentar y ocultar los botones de arriba si corresponde -->
-                                    <!--
+                                    <!-- Botón visible cuando la caja está CERRADA -->
                                     <button class="btn btn-success btn-sm" type="button"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#modal-abrir-caja">
-                                        <i class="fa-solid fa-lock-open fa-fw me-1"></i>Abrir caja
+                                        data-bs-toggle="modal" data-bs-target="#modal-abrir-caja">
+                                        <i class="fa-solid fa-lock-open fa-fw me-1" aria-hidden="true"></i>Abrir caja
                                     </button>
-                                    -->
                                 </div>
 
                             </div>
@@ -943,6 +939,15 @@ Historial de cajas — Lista de todos los turnos anteriores con sus montos y dif
                             id="cierre-diferencia-panel" role="status" aria-live="polite">
                             <span class="small fw-medium">Diferencia</span>
                             <span class="fw-semibold" id="cierre-diferencia-valor">S/ 0.00</span>
+                        </div>
+
+                        <!-- Motivo de cierre -->
+                        <div class="mb-3">
+                            <label for="cierre-observacion" class="form-label fw-medium">
+                                Motivo de cierre <span class="text-muted small">(opcional)</span>
+                            </label>
+                            <textarea id="cierre-observacion" name="observacion" class="form-control" rows="2"
+                                maxlength="200" placeholder="Ej: Fin de turno, cambio de cajero..."></textarea>
                         </div>
                     </form>
 
