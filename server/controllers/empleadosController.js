@@ -147,23 +147,26 @@ const getAll = async (req, res) => {
         const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
         const result = await query(
-            `SELECT
-                e.id_empleado,
-                e.dni,
-                e.nombre,
-                e.apellido,
-                e.telefono,
-                e.correo,
-                e.fecha_ingreso,
-                e.fecha_cese,
-                e.activo,
-                c.id_cargo,
-                c.nombre AS cargo
-             FROM empleados e
-             INNER JOIN cargos c ON c.id_cargo = e.id_cargo
-             ${where}
-             ORDER BY e.apellido ASC, e.nombre ASC`,
-            params
+                `SELECT
+                    e.id_empleado,
+                    e.dni,
+                    e.nombre,
+                    e.apellido,
+                    e.telefono,
+                    e.correo,
+                    e.fecha_ingreso,
+                    e.fecha_cese,
+                    e.activo,
+                    c.id_cargo,
+                    c.nombre AS cargo,
+                    e.id_turno,
+                    t.nombre AS turno_nombre
+                FROM empleados e
+                INNER JOIN cargos c ON c.id_cargo = e.id_cargo
+                LEFT JOIN turnos t ON t.id_turno = e.id_turno
+                ${where}
+                ORDER BY e.apellido ASC, e.nombre ASC`,
+                    params
         );
 
         return res.json({ ok: true, total: result.recordset.length, empleados: result.recordset });
@@ -177,23 +180,26 @@ const getById = async (req, res) => {
     const { id } = req.params;
     try {
         const result = await query(
-            `SELECT
-                e.id_empleado,
-                e.dni,
-                e.nombre,
-                e.apellido,
-                e.telefono,
-                e.correo,
-                e.fecha_ingreso,
-                e.fecha_cese,
-                e.activo,
-                c.id_cargo,
-                c.nombre AS cargo
-             FROM empleados e
-             INNER JOIN cargos c ON c.id_cargo = e.id_cargo
-             WHERE e.id_empleado = @id`,
-            { id: { type: sql.Int, value: id } }
-        );
+                `SELECT
+                    e.id_empleado,
+                    e.dni,
+                    e.nombre,
+                    e.apellido,
+                    e.telefono,
+                    e.correo,
+                    e.fecha_ingreso,
+                    e.fecha_cese,
+                    e.activo,
+                    c.id_cargo,
+                    c.nombre AS cargo,
+                    e.id_turno,
+                    t.nombre AS turno_nombre
+                FROM empleados e
+                INNER JOIN cargos c ON c.id_cargo = e.id_cargo
+                LEFT JOIN turnos t ON t.id_turno = e.id_turno
+                WHERE e.id_empleado = @id`,
+                { id: { type: sql.Int, value: id } }
+);
 
         const empleado = result.recordset[0];
         if (!empleado) {

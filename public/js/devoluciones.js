@@ -573,17 +573,15 @@ async function cargarDetalleDevExpandible(id, detailId) {
   }
 }
 
-//  Obtener caja activa 
-async function obtenerCajaActiva() {
-  try {
-    const data = await apiFetch('/api/caja/activa');
-    DevState.cajaActiva = data.tieneCajaActiva ? data.caja : null;
-  } catch { DevState.cajaActiva = null; }
+//  Caja de trabajo de la sesión (reutiliza la misma elegida en Ventas) 
+async function inicializarCajaDevoluciones() {
+  const caja = await asegurarCajaDeTrabajo();
+  DevState.cajaActiva = caja;
 }
 
 // Punto de entrada 
 document.addEventListener('DOMContentLoaded', async () => {
-  await obtenerCajaActiva();
+  await inicializarCajaDevoluciones();
   initFiltros();
   initFormNuevaDevolucion();
   cargarDevoluciones();

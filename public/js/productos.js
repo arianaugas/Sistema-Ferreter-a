@@ -127,9 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnGuardarEditUnidad = document.getElementById('btn-guardar-edicion-unidad');
 
 
-  /* 
-     ESTADO LOCAL
-  */
+  // ESTADO LOCAL
   let productosCache = [];
   let categoriasCache = [];
   let subcategoriasCache = [];
@@ -141,9 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let modoEditUnidad = false;
 
 
-  /* 
-     IMAGEN PREVIEW - Modal Nuevo Producto
-  */
+  //IMAGEN PREVIEW - Modal Nuevo Producto
   (function initImagePreview() {
     const input = document.getElementById('np-imagen-input');
     const preview = document.getElementById('np-imagen-preview');
@@ -182,19 +178,14 @@ document.addEventListener('DOMContentLoaded', () => {
   })();
 
 
-  /* 
-     CARGA INICIAL
-  */
+  //CARGA INICIAL
   cargarCategorias();
   cargarMarcas();
   cargarUnidades();
   cargarProductos();
 
 
-  /* 
-     PRODUCTOS
-   */
-
+  //PRODUCTOS
   async function cargarProductos(params = {}) {
     try {
       const qs = new URLSearchParams(params).toString();
@@ -324,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
-  /* ── FICHA DE PRODUCTO ── */
+  //FICHA DE PRODUCTO
   async function abrirFichaProducto(id) {
     // Limpiar ficha
     ['ficha-codigo', 'ficha-nombre', 'ficha-descripcion', 'ficha-categoria',
@@ -440,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
-  /* ── EDITAR PRODUCTO ── */
+  //EDITAR PRODUCTO 
   async function abrirEditarProducto(id) {
     const producto = productosCache.find(p => String(p.id_producto) === String(id));
     if (!producto) return;
@@ -460,15 +451,81 @@ document.addEventListener('DOMContentLoaded', () => {
     ).join('');
     editSubcat.innerHTML = opts || '<option value="">Sin subcategorías</option>';
 
-    // tiene_lote lo traemos de la ficha si está en cache, si no hacemos fetch
+    // tiene_lote, descripcion, id_marca e id_unidad no vienen en el cache de
+    // la tabla, así que pedimos la ficha completa
     let tieneLote = false;
+    let idMarca = '';
+    let idUnidad = '';
+    let descripcion = '';
     try {
       const res = await fetch(`/api/productos/${id}`, { credentials: 'include' });
       const data = await res.json();
-      if (data.ok) tieneLote = !!data.producto.tiene_lote;
+      if (data.ok) {
+        tieneLote = !!data.producto.tiene_lote;
+        idMarca = data.producto.id_marca ?? '';
+        idUnidad = data.producto.id_unidad ?? '';
+        descripcion = data.producto.descripcion ?? '';
+      }
     } catch (_) { /* silencioso */ }
     editLotes.checked = tieneLote;
+    document.getElementById('edit-p-descripcion').value = descripcion;
+
+    const optsMarca = marcasCache.map(m =>
+      `<option value="${m.id_marca}" ${m.id_marca == idMarca ? 'selected' : ''}>${m.nombre}</option>`
+    ).join('');
+    document.getElementById('edit-p-marca').innerHTML = `<option value="">Sin marca</option>${optsMarca}`;
+
+    const optsUnidad = unidadesCache.map(u =>
+      `<option value="${u.id_unidad}" ${u.id_unidad == idUnidad ? 'selected' : ''}>${u.abreviatura} - ${u.nombre}</option>`
+    ).join('');
+    document.getElementById('edit-p-unidad').innerHTML = optsUnidad;
+
+    // Limpiar selección de archivo de imagen de una edición anterior
+    const inputImg = document.getElementById('edit-p-imagen-input');
+    if (inputImg) inputImg.value = '';
   }
+
+  btnGuardarEdicion?.addEventListener('click', async () => {
+    const id = editId?.value;
+    if (!id) return;
+
+    const formData = new FormData();
+    formData.append('nombre', editNombre.value.trim());
+    formData.append('id_subcategoria', editSubcat.value);
+    formData.append('id_marca', document.getElementById('edit-p-marca').value || '');
+    formData.append('id_unidad', document.getElementById('edit-p-unidad').value);
+    formData.append('descripcion', document.getElementById('edit-p-descripcion').value.trim());
+    formData.append('precio_compra', editPrecioCompra.value);
+    formData.append('precio_venta', editPrecioVenta.value);
+    formData.append('stock_minimo', editStockMin.value);
+    formData.append('stock_maximo', editStockMax.value);
+    formData.append('ubicacion', editUbicacion.value.trim());
+    formData.append('tiene_lote', editLotes.checked ? 1 : 0);
+    formData.append('activo', editActivo.checked ? 1 : 0);
+
+    const inputImg = document.getElementById('edit-p-imagen-input');
+    if (inputImg?.files[0]) {
+      formData.append('imagen_principal', inputImg.files[0]);
+    }
+
+    try {
+      const res = await fetch(`/api/productos/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        body: formData, // sin Content-Type: el navegador pone el boundary multipart
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al editar');
+
+      showToast('Producto actualizado correctamente', 'success');
+      bootstrap.Modal.getInstance(document.getElementById('modal-editar-producto'))?.hide();
+      cargarProductos();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message, 'error');
+    }
+  });
+
 
   btnGuardarEdicion?.addEventListener('click', async () => {
     const id = editId?.value;
@@ -506,7 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
-  /* ── DESACTIVAR PRODUCTO ── */
+  //DESACTIVAR PRODUCTO
   function confirmarDesactivar(id, nombre) {
     confirmAction(`¿Desactivar el producto "${nombre}"?`, async () => {
       try {
@@ -527,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 
-  /* ── NUEVO PRODUCTO — wizard 2 pasos ── */
+  //NUEVO PRODUCTO — wizard 2 pasos
   btnNpSiguiente?.addEventListener('click', () => {
     if (!npCodigo.value.trim() || !npNombre.value.trim() ||
       !npSubcategoria.value || !npUnidad.value || !npUbicacion.value.trim()) {
@@ -564,7 +621,6 @@ document.addEventListener('DOMContentLoaded', () => {
     formData.append('ubicacion', npUbicacion.value.trim());
     formData.append('precio_compra', npPrecioCompra.value);
     formData.append('precio_venta', npPrecioVenta.value);
-    //formData.append('stock_actual', npStockActual.value); NO DESCOMENTAR
     formData.append('stock_minimo', npStockMin.value);
     formData.append('stock_maximo', npStockMax.value || '');
     formData.append('tiene_lote', npLotes.checked ? 1 : 0);
@@ -617,10 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
-  /* 
-     CATEGORÍAS
-   */
-
+  //CATEGORÍAS
   async function cargarCategorias() {
     try {
       const res = await fetch('/api/categorias/cat', { credentials: 'include' });
@@ -783,9 +836,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
-  /* 
-     SUBCATEGORÍAS
-   */
+  //SUBCATEGORÍAS
 
   async function cargarSubcategorias() {
     try {
@@ -944,10 +995,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
-  /* 
-     MARCAS
-   */
-
+  //MARCAS
   async function cargarMarcas() {
     try {
       if (!productosCache.length) await cargarProductos();
@@ -1099,10 +1147,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
-  /* 
-     UNIDADES DE MEDIDA
-   */
-
+  //UNIDADES DE MEDIDA
   async function cargarUnidades() {
     try {
       if (!productosCache.length) await cargarProductos();

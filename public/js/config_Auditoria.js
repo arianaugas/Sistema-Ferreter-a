@@ -32,6 +32,15 @@ async function cargarConfiguracion() {
         input.value = cfg.valor ?? '';
         input.dataset.clave = cfg.clave;
       }
+
+      // Caso especial: el IGV tiene un badge informativo al lado (ej: "18 %")
+      if (cfg.clave === 'igv') {
+        const badge = document.getElementById('cfg-igv-badge');
+        if (badge) {
+          const porcentaje = Number(cfg.valor) * 100;
+          badge.textContent = isNaN(porcentaje) ? '— %' : `${porcentaje} %`;
+        }
+      }
     });
 
     // Renderizar tabla de parámetros si existe
@@ -121,6 +130,16 @@ function initFormEditarConfig() {
 function initFormConfiguracion() {
   const form = document.getElementById('form-configuracion');
   if (!form) return;
+
+  // Actualiza el badge "X %" en vivo mientras se edita el campo IGV
+  const inputIgv = document.getElementById('cfg-igv');
+  const badgeIgv = document.getElementById('cfg-igv-badge');
+  if (inputIgv && badgeIgv) {
+    inputIgv.addEventListener('input', () => {
+      const porcentaje = Number(inputIgv.value) * 100;
+      badgeIgv.textContent = isNaN(porcentaje) ? '— %' : `${porcentaje} %`;
+    });
+  }
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -383,6 +402,205 @@ function renderPaginacion(containerId, total, porPagina, paginaActual, onPageCha
   ul.appendChild(crearLi('fa-solid fa-chevron-right fa-xs', paginaActual >= totalPaginas, false, paginaActual + 1, true));
   container.replaceChildren(ul);
 }
+//  TURNOS 
+
+let turnosCache = [];
+let editandoTurnoId = null;
+
+async function cargarTurnos() {
+  try {
+    const data = await apiFetch('/api/configuracion/turnos');
+    turnosCache = data.turnos || [];
+    renderTablaTurnos(turnosCache);
+    await cargarEmpleadosConTurno(); // refresca selects que dependen de los turnos
+  } catch (err) {
+    showToast('Error al cargar turnos: ' + err.message, 'error');
+  }
+}
+
+
+//ESTO ESTA MAL
+function formatHora(horaSQL) {
+  if (horaSQL === null || horaSQL === undefined) return '—';
+
+  // El driver msnodesqlv8 devuelve las columnas TIME como milisegundos
+  // transcurridos desde medianoche (ej: 28200000 = 07:50:00), no como
+  // string. Lo manejamos como caso principal, con un respaldo por si
+  // alguna vez llega como string 'HH:mm:ss' (otro driver, u otra ruta).
+  if (typeof horaSQL === 'number') {
+    const totalSegundos = Math.floor(horaSQL / 1000);
+    const horas = Math.floor(totalSegundos / 3600);
+    const minutos = Math.floor((totalSegundos % 3600) / 60);
+    return `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
+  }
+
+  const str = String(horaSQL);
+  const soloHora = str.includes('T') ? str.split('T')[1] : str;
+  const match = soloHora.match(/^(\d{1,2}):(\d{2})/);
+  return match ? `${match[1].padStart(2, '0')}:${match[2]}` : str;
+}//////////////////////////
+
+function renderTablaTurnos(turnos) {
+  const tbody = document.getElementById('tabla-turnos-body');
+  if (!tbody) return;
+
+  if (!turnos.length) {
+    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">Sin turnos registrados</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = turnos.map(t => `
+    <tr>
+      <td class="fw-medium">${t.nombre}</td>
+      <td>${formatHora(t.hora_inicio)} – ${formatHora(t.hora_fin)}</td>
+      <td>${getBadge(t.activo ? 'activo' : 'inactivo')}</td>
+      <td class="text-end">
+        <button type="button" class="btn btn-sm" data-accion="editar-turno" data-turno-id="${t.id_turno}"
+          aria-label="Editar turno ${t.nombre}">
+          <i class="fa-regular fa-pen-to-square" aria-hidden="true"></i>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function abrirEditarTurno(id) {
+  const t = turnosCache.find(x => x.id_turno === id);
+  if (!t) return;
+
+  editandoTurnoId = id;
+  document.getElementById('titulo-form-turno').textContent = 'Editar turno';
+  document.getElementById('turno-id').value = t.id_turno;
+  document.getElementById('turno-nombre').value = t.nombre;
+  document.getElementById('turno-hora-inicio').value = formatHora(t.hora_inicio);
+  document.getElementById('turno-hora-fin').value = formatHora(t.hora_fin);
+  document.getElementById('turno-activo').checked = !!t.activo;
+}
+
+function limpiarFormTurno() {
+  editandoTurnoId = null;
+  document.getElementById('titulo-form-turno').textContent = 'Nuevo turno';
+  const form = document.getElementById('form-turno');
+  if (form) { form.reset(); form.classList.remove('was-validated'); }
+  document.getElementById('turno-activo').checked = true;
+}
+
+function initFormTurno() {
+  const form = document.getElementById('form-turno');
+  const btnCancelar = document.getElementById('btn-cancelar-turno');
+  const tbody = document.getElementById('tabla-turnos-body');
+  if (!form || !tbody) return;
+
+  tbody.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-accion="editar-turno"]');
+    if (!btn) return;
+    abrirEditarTurno(parseInt(btn.dataset.turnoId));
+  });
+
+  btnCancelar?.addEventListener('click', limpiarFormTurno);
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!form.checkValidity()) { form.classList.add('was-validated'); return; }
+
+    const body = {
+      nombre: document.getElementById('turno-nombre').value.trim(),
+      hora_inicio: document.getElementById('turno-hora-inicio').value,
+      hora_fin: document.getElementById('turno-hora-fin').value,
+      activo: document.getElementById('turno-activo').checked ? 1 : 0,
+    };
+
+    try {
+      if (editandoTurnoId) {
+        await apiFetch(`/api/configuracion/turnos/${editandoTurnoId}`, {
+          method: 'PUT',
+          body: JSON.stringify(body),
+        });
+        showToast('Turno actualizado correctamente', 'success');
+      } else {
+        await apiFetch('/api/configuracion/turnos', {
+          method: 'POST',
+          body: JSON.stringify(body),
+        });
+        showToast('Turno creado correctamente', 'success');
+      }
+      limpiarFormTurno();
+      cargarTurnos();
+    } catch (err) {
+      showToast(err.message || 'Error al guardar el turno', 'error');
+    }
+  });
+}
+
+//  ASIGNACIÓN DE TURNO A EMPLEADOS 
+
+async function cargarEmpleadosConTurno() {
+  try {
+    const data = await apiFetch('/api/configuracion/turnos-empleados');
+    renderTablaEmpleadosTurno(data.empleados || []);
+  } catch (err) {
+    showToast('Error al cargar empleados: ' + err.message, 'error');
+  }
+}
+
+function renderTablaEmpleadosTurno(empleados) {
+  const tbody = document.getElementById('tabla-turnos-empleados-body');
+  if (!tbody) return;
+
+  if (!empleados.length) {
+    tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-3">Sin empleados registrados</td></tr>`;
+    return;
+  }
+
+  const opcionesTurno = (idActual) => {
+    const sinTurno = `<option value="" ${!idActual ? 'selected' : ''}>Sin turno asignado</option>`;
+    const opciones = turnosCache
+      .filter(t => t.activo) // solo se asignan turnos activos
+      .map(t => `<option value="${t.id_turno}" ${t.id_turno === idActual ? 'selected' : ''}>${t.nombre} (${formatHora(t.hora_inicio)}–${formatHora(t.hora_fin)})</option>`)
+      .join('');
+    return sinTurno + opciones;
+  };
+
+  tbody.innerHTML = empleados.map(e => `
+    <tr>
+      <td>${e.nombre} ${e.apellido} <span class="text-muted small">(${e.dni})</span></td>
+      <td>
+        <select class="form-select form-select-sm" data-accion="cambiar-turno" data-empleado-id="${e.id_empleado}">
+          ${opcionesTurno(e.id_turno)}
+        </select>
+      </td>
+      <td class="text-end">
+        <button type="button" class="btn btn-sm btn-primary" data-accion="guardar-turno-empleado" data-empleado-id="${e.id_empleado}">
+          <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function initAsignacionTurnos() {
+  const tbody = document.getElementById('tabla-turnos-empleados-body');
+  if (!tbody) return;
+
+  tbody.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-accion="guardar-turno-empleado"]');
+    if (!btn) return;
+
+    const idEmpleado = btn.dataset.empleadoId;
+    const select = tbody.querySelector(`select[data-empleado-id="${idEmpleado}"]`);
+    const idTurno = select?.value ? parseInt(select.value) : null;
+
+    try {
+      await apiFetch(`/api/configuracion/turnos-empleados/${idEmpleado}`, {
+        method: 'PUT',
+        body: JSON.stringify({ id_turno: idTurno }),
+      });
+      showToast('Turno asignado correctamente', 'success');
+    } catch (err) {
+      showToast(err.message || 'Error al asignar el turno', 'error');
+    }
+  });
+}
 
 // Punto de entrada
 document.addEventListener('DOMContentLoaded', () => {
@@ -391,4 +609,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initFormEditarConfig();
   initFiltrosAuditoria();
   cargarAuditoria();
+  cargarTurnos();
+  initFormTurno();
+  initAsignacionTurnos();
 });

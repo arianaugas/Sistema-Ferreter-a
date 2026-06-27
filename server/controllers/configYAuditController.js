@@ -183,10 +183,188 @@ const getLogById = async (req, res) => {
     }
 };
 
+
+//ESTO ES DE TURNOSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+
+// Lista todos los turnos (activos e inactivos)
+const getTurnos = async (req, res) => {
+    try {
+        const result = await query(
+            `SELECT id_turno, nombre, hora_inicio, hora_fin, activo
+            FROM turnos
+            ORDER BY hora_inicio ASC`
+        );
+        return res.json({ ok: true, turnos: result.recordset });
+    } catch (err) {
+        console.error('Error en getTurnos:', err);
+        return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor.' });
+    }
+};
+
+// Detalle de un turno por id
+const getTurnoById = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await query(
+            `SELECT id_turno, nombre, hora_inicio, hora_fin, activo FROM turnos WHERE id_turno = @id`,
+            { id: { type: sql.Int, value: id } }
+        );
+        const turno = result.recordset[0];
+        if (!turno) return res.status(404).json({ ok: false, mensaje: 'Turno no encontrado.' });
+        return res.json({ ok: true, turno });
+    } catch (err) {
+        console.error('Error en getTurnoById:', err);
+        return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor.' });
+    }
+};
+
+// Crea un nuevo turno (horario de trabajo del negocio)
+const crearTurno = async (req, res) => {
+    const { nombre, hora_inicio, hora_fin } = req.body;
+
+    if (!nombre || !hora_inicio || !hora_fin) {
+        return res.status(400).json({ ok: false, mensaje: 'Nombre, hora_inicio y hora_fin son obligatorios.' });
+    }
+    if (hora_inicio === hora_fin) {
+        return res.status(400).json({ ok: false, mensaje: 'La hora de inicio y fin no pueden ser iguales.' });
+    }
+
+    try {
+        const existe = await query(
+            `SELECT id_turno FROM turnos WHERE nombre = @nombre`,
+            { nombre: { type: sql.VarChar, value: nombre } }
+        );
+        if (existe.recordset.length > 0) {
+            return res.status(400).json({ ok: false, mensaje: 'Ya existe un turno con ese nombre.' });
+        }
+
+        const result = await query(
+            `INSERT INTO turnos (nombre, hora_inicio, hora_fin, activo)
+            OUTPUT INSERTED.*
+            VALUES (@nombre, @hora_inicio, @hora_fin, 1)`,
+            {
+                nombre: { type: sql.VarChar, value: nombre },
+                hora_inicio: { type: sql.VarChar, value: hora_inicio }, // 'HH:mm' o 'HH:mm:ss'
+                hora_fin: { type: sql.VarChar, value: hora_fin }
+            }
+        );
+        return res.status(201).json({ ok: true, turno: result.recordset[0] });
+    } catch (err) {
+        console.error('Error en crearTurno:', err);
+        return res.status(500).json({ ok: false, mensaje: 'Error interno al crear el turno.' });
+    }
+};
+
+// Edita un turno existente (nombre, horario o estado activo)
+const editarTurno = async (req, res) => {
+    const { id } = req.params;
+    const { nombre, hora_inicio, hora_fin, activo } = req.body;
+
+    if (!nombre || !hora_inicio || !hora_fin) {
+        return res.status(400).json({ ok: false, mensaje: 'Nombre, hora_inicio y hora_fin son obligatorios.' });
+    }
+    if (hora_inicio === hora_fin) {
+        return res.status(400).json({ ok: false, mensaje: 'La hora de inicio y fin no pueden ser iguales.' });
+    }
+
+    try {
+        const duplicado = await query(
+            `SELECT id_turno FROM turnos WHERE nombre = @nombre AND id_turno <> @id`,
+            { nombre: { type: sql.VarChar, value: nombre }, id: { type: sql.Int, value: id } }
+        );
+        if (duplicado.recordset.length > 0) {
+            return res.status(400).json({ ok: false, mensaje: 'Ya existe otro turno con ese nombre.' });
+        }
+
+        const result = await query(
+            `UPDATE turnos
+             SET nombre = @nombre, hora_inicio = @hora_inicio, hora_fin = @hora_fin, activo = @activo
+             OUTPUT INSERTED.*
+             WHERE id_turno = @id`,
+            {
+                id: { type: sql.Int, value: id },
+                nombre: { type: sql.VarChar, value: nombre },
+                hora_inicio: { type: sql.VarChar, value: hora_inicio },
+                hora_fin: { type: sql.VarChar, value: hora_fin },
+                activo: { type: sql.Bit, value: activo !== undefined ? (activo ? 1 : 0) : 1 }
+            }
+        );
+        const turno = result.recordset[0];
+        if (!turno) return res.status(404).json({ ok: false, mensaje: 'Turno no encontrado.' });
+        return res.json({ ok: true, turno });
+    } catch (err) {
+        console.error('Error en editarTurno:', err);
+        return res.status(500).json({ ok: false, mensaje: 'Error interno al editar el turno.' });
+    }
+};
+
+// Lista los empleados con su turno asignado actual (para la pantalla de asignación)
+const getEmpleadosConTurno = async (req, res) => {
+    try {
+        const result = await query(
+            `SELECT e.id_empleado, e.nombre, e.apellido, e.dni, e.activo,
+                t.id_turno, t.nombre AS turno_nombre, t.hora_inicio, t.hora_fin
+            FROM empleados e
+            LEFT JOIN turnos t ON t.id_turno = e.id_turno
+            WHERE e.activo = 1
+            ORDER BY e.apellido ASC, e.nombre ASC`
+        );
+        return res.json({ ok: true, empleados: result.recordset });
+    } catch (err) {
+        console.error('Error en getEmpleadosConTurno:', err);
+        return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor.' });
+    }
+};
+
+// Asigna o reasigna el turno de un empleado (se puede volver a llamar
+// en cualquier momento si cambia su horario de trabajo)
+const asignarTurnoEmpleado = async (req, res) => {
+    const { id } = req.params; // id_empleado
+    const { id_turno } = req.body; // puede venir null para "sin turno asignado"
+
+    try {
+        const existeEmpleado = await query(
+            `SELECT id_empleado FROM empleados WHERE id_empleado = @id`,
+            { id: { type: sql.Int, value: id } }
+        );
+        if (!existeEmpleado.recordset.length) {
+            return res.status(404).json({ ok: false, mensaje: 'Empleado no encontrado.' });
+        }
+
+        if (id_turno !== null && id_turno !== undefined) {
+            const existeTurno = await query(
+                `SELECT id_turno FROM turnos WHERE id_turno = @id_turno`,
+                { id_turno: { type: sql.Int, value: id_turno } }
+            );
+            if (!existeTurno.recordset.length) {
+                return res.status(400).json({ ok: false, mensaje: 'Turno no encontrado.' });
+            }
+        }
+
+        const result = await query(
+            `UPDATE empleados SET id_turno = @id_turno OUTPUT INSERTED.* WHERE id_empleado = @id`,
+            {
+                id: { type: sql.Int, value: id },
+                id_turno: { type: sql.Int, value: id_turno ?? null }
+            }
+        );
+        return res.json({ ok: true, empleado: result.recordset[0] });
+    } catch (err) {
+        console.error('Error en asignarTurnoEmpleado:', err);
+        return res.status(500).json({ ok: false, mensaje: 'Error interno al asignar el turno.' });
+    }
+};
+
 module.exports = { 
     getAll, 
     getByKey, 
     update,
     getLogs,
-    getLogById
+    getLogById,
+    getTurnos,
+    getTurnoById,
+    crearTurno,
+    editarTurno,
+    getEmpleadosConTurno,
+    asignarTurnoEmpleado
 };

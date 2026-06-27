@@ -24,6 +24,22 @@ CREATE TABLE auditoria (
     CONSTRAINT pk_auditoria PRIMARY KEY (id_auditoria)
 );
 
+-- ============================================================
+-- MÓDULO: TURNOS (Configuración)
+-- Horarios de trabajo del negocio. Se gestionan desde Configuración
+-- y se asignan a los empleados (módulo Empleados y Acceso, abajo).
+-- ============================================================
+CREATE TABLE turnos (
+    id_turno INT NOT NULL IDENTITY(1,1),
+    nombre VARCHAR(40) NOT NULL, -- Ej: 'Turno Mañana', 'Turno Tarde'
+    hora_inicio TIME NOT NULL, -- Ej: 07:00:00
+    hora_fin TIME NOT NULL, -- Ej: 15:00:00
+    activo BIT NOT NULL DEFAULT 1,
+    CONSTRAINT pk_turnos PRIMARY KEY (id_turno),
+    CONSTRAINT uq_turnos_nombre UNIQUE (nombre),
+    CONSTRAINT chk_turnos_horario CHECK (hora_inicio <> hora_fin)
+);
+
 -- MÓDULO: EMPLEADOS Y ACCESO
 CREATE TABLE cargos (
     id_cargo INT NOT NULL IDENTITY(1,1),
@@ -36,6 +52,7 @@ CREATE TABLE cargos (
 CREATE TABLE empleados (
     id_empleado INT NOT NULL IDENTITY(1,1),
     id_cargo INT NOT NULL,
+    id_turno INT NULL, -- Turno asignado actualmente (reasignable por el admin)
     dni VARCHAR(8) NOT NULL,
     nombre VARCHAR(80) NOT NULL,
     apellido VARCHAR(80) NOT NULL,
@@ -44,10 +61,12 @@ CREATE TABLE empleados (
     fecha_ingreso DATE NOT NULL,
     fecha_cese DATE NULL,
     activo BIT NOT NULL DEFAULT 1,
-    CONSTRAINT pk_empleados       PRIMARY KEY (id_empleado),
-    CONSTRAINT uq_empleados_dni   UNIQUE (dni),
+    CONSTRAINT pk_empleados PRIMARY KEY (id_empleado),
+    CONSTRAINT uq_empleados_dni UNIQUE (dni),
     CONSTRAINT fk_empleados_cargo FOREIGN KEY (id_cargo)
-        REFERENCES cargos (id_cargo)
+        REFERENCES cargos (id_cargo),
+    CONSTRAINT fk_empleados_turno FOREIGN KEY (id_turno)
+        REFERENCES turnos (id_turno)
 );
 
 CREATE TABLE roles (
@@ -128,7 +147,7 @@ CREATE TABLE unidades_medida (
     id_unidad INT NOT NULL IDENTITY(1,1),
     nombre VARCHAR(40) NOT NULL,
     abreviatura VARCHAR(10) NOT NULL,
-    activo BIT NOT NULL DEFAULT 1,-- CAMPO NUEVO
+    activo BIT NOT NULL DEFAULT 1,
     CONSTRAINT pk_unidades PRIMARY KEY (id_unidad),
     CONSTRAINT uq_unidades_nombre UNIQUE (nombre),
     CONSTRAINT uq_unidades_abrev UNIQUE (abreviatura)
@@ -146,7 +165,7 @@ CREATE TABLE productos (
     precio_venta DECIMAL(10,2) NOT NULL,
     stock_actual DECIMAL(10,2) NOT NULL DEFAULT 0,
     stock_minimo DECIMAL(10,2) NOT NULL DEFAULT 0,
-    stock_maximo DECIMAL(10,2) NOT NULL DEFAULT 0,--CAMBIO ACA
+    stock_maximo DECIMAL(10,2) NOT NULL DEFAULT 0,
     ubicacion VARCHAR(50)   NOT NULL,
     tiene_lote BIT NOT NULL DEFAULT 0,
     activo BIT NOT NULL DEFAULT 1,
@@ -197,7 +216,6 @@ CREATE TABLE productos_almacen (
     CONSTRAINT chk_prod_alm_stock CHECK (stock >= 0)
 );
 
-
 CREATE TABLE lotes (
     id_lote INT NOT NULL IDENTITY(1,1),
     id_producto INT NOT NULL,
@@ -246,7 +264,6 @@ CREATE TABLE detalle_transferencia (
     CONSTRAINT chk_det_transf_cant CHECK (cantidad > 0)
 );
 
-
 CREATE TABLE kardex (
     id_kardex INT NOT NULL IDENTITY(1,1),
     id_producto INT NOT NULL,
@@ -270,21 +287,20 @@ CREATE TABLE kardex (
         REFERENCES usuarios (id_usuario)
 );
 
-
 -- MÓDULO: PROVEEDORES
 CREATE TABLE proveedores (
-    id_proveedor   INT          NOT NULL IDENTITY(1,1),
-    ruc            VARCHAR(11)  NOT NULL,
-    nombre         VARCHAR(150) NOT NULL,
-    direccion      VARCHAR(200) NULL,
-    telefono       VARCHAR(15)  NULL,
-    correo         VARCHAR(100) NULL,
-    web            VARCHAR(150) NULL,
+    id_proveedor INT NOT NULL IDENTITY(1,1),
+    ruc VARCHAR(11) NOT NULL,
+    nombre VARCHAR(150) NOT NULL,
+    direccion VARCHAR(200) NULL,
+    telefono VARCHAR(15) NULL,
+    correo VARCHAR(100) NULL,
+    web VARCHAR(150) NULL,
     condicion_pago VARCHAR(10)  NOT NULL DEFAULT 'contado'
         CHECK (condicion_pago IN ('contado','30_dias','60_dias','90_dias')),
-    activo         BIT          NOT NULL DEFAULT 1,
-    creado_en      DATETIME2    NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT pk_proveedores     PRIMARY KEY (id_proveedor),
+    activo BIT NOT NULL DEFAULT 1,
+    creado_en DATETIME2 NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT pk_proveedores PRIMARY KEY (id_proveedor),
     CONSTRAINT uq_proveedores_ruc UNIQUE (ruc)
 );
 
@@ -497,27 +513,39 @@ CREATE TABLE detalle_devolucion (
     CONSTRAINT chk_det_dev_cant CHECK (cantidad > 0)
 );
 
+-- ============================================================
 -- MÓDULO: CAJA
+-- estado ahora incluye 'vencida': la caja llegó a la hora de fin
+-- de turno pero todavía nadie hizo el cierre/arqueo manual. En ese
+-- estado se bloquean nuevas ventas, pero el monto_real SIEMPRE lo
+-- ingresa una persona (el cajero o un admin) — nunca se inventa.
+-- ============================================================
 CREATE TABLE cajas (
     id_caja INT NOT NULL IDENTITY(1,1),
     id_empleado INT NOT NULL,
+    id_turno INT NULL, -- turno que cubría al abrir (histórico)
     numero_turno INT NOT NULL,
     fecha_apertura DATETIME2 NOT NULL,
-    fecha_cierre DATETIME2 NULL,
+    fecha_cierre_programada DATETIME2 NULL, -- calculada según hora_fin del turno
+    fecha_cierre DATETIME2 NULL, -- cuándo se cerró realmente
     monto_inicial DECIMAL(10,2) NOT NULL,
     monto_esperado DECIMAL(10,2) NOT NULL DEFAULT 0,
     monto_real DECIMAL(10,2) NULL,
     diferencia DECIMAL(10,2) NULL,
     observacion NVARCHAR(200) NULL,
     estado VARCHAR(10) NOT NULL DEFAULT 'abierta'
-        CHECK (estado IN ('abierta','cerrada')),
+        CHECK (estado IN ('abierta','vencida','cerrada')),
+    cerrado_por INT NULL, -- empleado que hizo el cierre real
     CONSTRAINT pk_cajas PRIMARY KEY (id_caja),
     CONSTRAINT fk_cajas_emp FOREIGN KEY (id_empleado)
+        REFERENCES empleados (id_empleado),
+    CONSTRAINT fk_cajas_turno FOREIGN KEY (id_turno)
+        REFERENCES turnos (id_turno),
+    CONSTRAINT fk_cajas_cerrado_por FOREIGN KEY (cerrado_por)
         REFERENCES empleados (id_empleado),
     CONSTRAINT chk_cajas_monto CHECK (monto_inicial >= 0),
     CONSTRAINT chk_cajas_turno CHECK (numero_turno > 0)
 );
-
 
 CREATE TABLE movimientos_caja (
     id_movimiento INT NOT NULL IDENTITY(1,1),

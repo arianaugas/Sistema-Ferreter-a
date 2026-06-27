@@ -17,8 +17,8 @@ const ventasController = {
         const id_empleado = req.user.id_empleado;
         const id_usuario = req.user.id;
 
-        if (!id_empleado || !id_serie || !tipo_comprobante || !id_almacen || !detalle_venta || detalle_venta.length === 0) {
-            return res.status(400).json({ error: 'Faltan datos críticos para procesar la venta (serie, comprobante, almacén o productos).' });
+        if (!id_empleado || !id_caja || !id_serie || !tipo_comprobante || !id_almacen || !detalle_venta || detalle_venta.length === 0) {
+            return res.status(400).json({ error: 'Faltan datos críticos para procesar la venta (caja, serie, comprobante, almacén o productos).' });
         }
         if (!pagos_venta || pagos_venta.length === 0) {
             return res.status(400).json({ error: 'Debe registrar al menos un pago.' });
@@ -27,12 +27,21 @@ const ventasController = {
         try {
             const resultadoTransaccion = await withTransaction(async (tx) => {
 
-                // 1. Verificar caja abierta
+                // 1. Verificar que la caja elegida por el vendedor exista y siga
+                // abierta (nunca se confía ciegamente en lo que manda el frontend,
+                // por si se cerró/venció justo entre que el vendedor la eligió y
+                // ahora registra la venta).
                 const reqCaja = tx.request();
                 reqCaja.input('id_caja', sql.Int, id_caja);
                 const resCaja = await reqCaja.query('SELECT estado FROM cajas WHERE id_caja = @id_caja');
-                if (resCaja.recordset.length === 0 || resCaja.recordset[0].estado !== 'abierta') {
-                    throw new Error('La caja seleccionada no existe o ya se encuentra cerrada. No puedes vender.');
+                if (resCaja.recordset.length === 0) {
+                    throw new Error('La caja seleccionada no existe.');
+                }
+                if (resCaja.recordset[0].estado === 'vencida') {
+                    throw new Error('La caja seleccionada venció su turno. Elige otra caja o pide que un cajero abra una nueva.');
+                }
+                if (resCaja.recordset[0].estado !== 'abierta') {
+                    throw new Error('La caja seleccionada ya se encuentra cerrada. Elige otra caja para continuar vendiendo.');
                 }
 
                 // 2. Leer IGV desde configuracion
@@ -41,6 +50,11 @@ const ventasController = {
                     throw new Error("No se encontró la configuración de IGV. Contacte al administrador.");
                 }
                 const TASA_IGV = parseFloat(resIgv.recordset[0].valor);
+
+                // 2b. Identificar el tipo de pago "Efectivo" (monto_esperado de caja solo
+                // debe reflejar dinero físico, no pagos por Yape/tarjeta/transferencia)
+                const resEfectivo = await tx.request().query("SELECT id_tipo_pago FROM tipos_pago WHERE nombre = 'Efectivo'");
+                const idTipoEfectivo = resEfectivo.recordset[0]?.id_tipo_pago ?? null;
 
                 // 3. Actualizar correlativo y obtener número de comprobante
                 const reqSerie = tx.request();
@@ -62,7 +76,7 @@ const ventasController = {
                 for (const item of detalle_venta) {
                     const reqCheck = tx.request();
                     reqCheck.input('id_producto', sql.Int, item.id_producto);
-                    reqCheck.input('id_almacen',  sql.Int, id_almacen);
+                    reqCheck.input('id_almacen', sql.Int, id_almacen);
                     const resCheck = await reqCheck.query(`
                         SELECT p.nombre, ISNULL(pa.stock, 0) AS stock_almacen
                         FROM productos p
@@ -123,8 +137,8 @@ const ventasController = {
                     // Descontar stock en productos_almacen
                     const reqStockAlm = tx.request();
                     reqStockAlm.input('id_producto', sql.Int, item.id_producto);
-                    reqStockAlm.input('id_almacen',  sql.Int, id_almacen);
-                    reqStockAlm.input('cantidad',    sql.Decimal(10, 2), item.cantidad);
+                    reqStockAlm.input('id_almacen', sql.Int, id_almacen);
+                    reqStockAlm.input('cantidad', sql.Decimal(10, 2), item.cantidad);
                     const resStockAlm = await reqStockAlm.query(`
                         UPDATE productos_almacen
                         SET stock = stock - @cantidad
@@ -136,7 +150,7 @@ const ventasController = {
                     // Sincronizar stock general en productos
                     const reqStockGral = tx.request();
                     reqStockGral.input('id_producto', sql.Int, item.id_producto);
-                    reqStockGral.input('cantidad',    sql.Decimal(10, 2), item.cantidad);
+                    reqStockGral.input('cantidad', sql.Decimal(10, 2), item.cantidad);
                     await reqStockGral.query(`
                         UPDATE productos SET stock_actual = stock_actual - @cantidad
                         WHERE id_producto = @id_producto AND activo = 1
@@ -157,6 +171,7 @@ const ventasController = {
                 }
 
                 // 8. Registrar pagos y movimientos de caja
+                let montoEfectivo = 0;
                 for (const pago of pagos_venta) {
                     const reqPago = tx.request();
                     reqPago.input('id_venta', sql.Int, id_venta);
@@ -178,13 +193,19 @@ const ventasController = {
                         INSERT INTO movimientos_caja (id_caja, id_usuario, tipo, concepto, referencia_id, monto, registrado_en)
                         VALUES (@id_caja, @id_usuario, 'ingreso', @concepto, @referencia_id, @monto, GETDATE())
                     `);
-                }
 
-                // 9. Actualizar monto esperado de caja
+                    // Solo el efectivo afecta el conteo físico de caja
+                    if (idTipoEfectivo && pago.id_tipo_pago === idTipoEfectivo) {
+                        montoEfectivo += parseFloat(pago.monto);
+                    }
+                }
+                montoEfectivo = parseFloat(montoEfectivo.toFixed(2));
+
+                // 9. Actualizar monto esperado de caja (solo con la parte en efectivo)
                 const reqUpCaja = tx.request();
                 reqUpCaja.input('id_caja', sql.Int, id_caja);
-                reqUpCaja.input('total_venta', sql.Decimal(10, 2), total);
-                await reqUpCaja.query('UPDATE cajas SET monto_esperado = monto_esperado + @total_venta WHERE id_caja = @id_caja');
+                reqUpCaja.input('monto_efectivo', sql.Decimal(10, 2), montoEfectivo);
+                await reqUpCaja.query('UPDATE cajas SET monto_esperado = monto_esperado + @monto_efectivo WHERE id_caja = @id_caja');
 
                 return { id_venta, numero_comprobante, total };
             });
@@ -328,11 +349,14 @@ const ventasController = {
                 }
                 const { total, numero_comprobante } = resVenta.recordset[0];
 
-                // 2. Verificar caja abierta
+                // 2. Verificar que la caja elegida exista y siga abierta
                 const reqCaja = tx.request();
                 reqCaja.input('id_caja', sql.Int, id_caja);
                 const resCaja = await reqCaja.query('SELECT estado FROM cajas WHERE id_caja = @id_caja');
-                if (resCaja.recordset.length === 0 || resCaja.recordset[0].estado !== 'abierta') {
+                if (resCaja.recordset.length === 0) {
+                    throw new Error('La caja seleccionada no existe.');
+                }
+                if (resCaja.recordset[0].estado !== 'abierta') {
                     throw new Error('La caja seleccionada para la anulación no está abierta.');
                 }
 
@@ -350,8 +374,8 @@ const ventasController = {
                     // Devolver stock a productos_almacen
                     const reqStockAlm = tx.request();
                     reqStockAlm.input('id_producto', sql.Int, item.id_producto);
-                    reqStockAlm.input('id_almacen',  sql.Int, id_almacen);
-                    reqStockAlm.input('cantidad',    sql.Decimal(10, 2), item.cantidad);
+                    reqStockAlm.input('id_almacen', sql.Int, id_almacen);
+                    reqStockAlm.input('cantidad', sql.Decimal(10, 2), item.cantidad);
                     const resStockAlm = await reqStockAlm.query(`
                         IF EXISTS (SELECT 1 FROM productos_almacen WHERE id_producto = @id_producto AND id_almacen = @id_almacen)
                             UPDATE productos_almacen
@@ -368,7 +392,7 @@ const ventasController = {
                     // Sincronizar stock general en productos
                     const reqStockGral = tx.request();
                     reqStockGral.input('id_producto', sql.Int, item.id_producto);
-                    reqStockGral.input('cantidad',    sql.Decimal(10, 2), item.cantidad);
+                    reqStockGral.input('cantidad', sql.Decimal(10, 2), item.cantidad);
                     await reqStockGral.query(`
                         UPDATE productos SET stock_actual = stock_actual + @cantidad WHERE id_producto = @id_producto
                     `);
@@ -399,10 +423,20 @@ const ventasController = {
                     VALUES (@id_caja, @id_usuario, 'egreso', @concepto, @referencia_id, @monto, GETDATE())
                 `);
 
-                // 6. Descontar monto esperado de caja
+                // 6. Descontar monto esperado de caja (solo la parte que fue en efectivo)
+                const reqEfectivoVenta = tx.request();
+                reqEfectivoVenta.input('id_venta', sql.Int, id);
+                const resEfectivoVenta = await reqEfectivoVenta.query(`
+                    SELECT ISNULL(SUM(pv.monto), 0) AS monto_efectivo
+                    FROM pagos_venta pv
+                    INNER JOIN tipos_pago tp ON tp.id_tipo_pago = pv.id_tipo_pago
+                    WHERE pv.id_venta = @id_venta AND tp.nombre = 'Efectivo'
+                `);
+                const montoEfectivoVenta = parseFloat(resEfectivoVenta.recordset[0].monto_efectivo);
+
                 const reqUpCaja = tx.request();
                 reqUpCaja.input('id_caja', sql.Int, id_caja);
-                reqUpCaja.input('monto', sql.Decimal(10, 2), total);
+                reqUpCaja.input('monto', sql.Decimal(10, 2), montoEfectivoVenta);
                 await reqUpCaja.query('UPDATE cajas SET monto_esperado = monto_esperado - @monto WHERE id_caja = @id_caja');
 
                 return { numero_comprobante, monto_devuelto: total };

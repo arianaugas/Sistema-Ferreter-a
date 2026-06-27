@@ -796,9 +796,30 @@ Detalle de devolución — Ver el contenido de una devolución y procesar o anul
         </div>
     </div>
 
+    <!-- MODAL: Elegir caja de trabajo (al iniciar sesión de ventas/devoluciones) -->
+    <div class="modal fade" id="modal-elegir-caja-venta" tabindex="-1" aria-labelledby="modal-elegir-caja-venta-title"
+        aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="modal-elegir-caja-venta-title">
+                        <i class="fa-solid fa-cash-register me-2" aria-hidden="true"></i>¿Con qué caja vas a trabajar?
+                    </h2>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        Elige la caja en la que vas a registrar tus operaciones durante este turno.
+                        No se te volverá a preguntar hasta que cambies de turno.
+                    </p>
+                    <div class="list-group" id="lista-cajas-elegir">
+                        <!-- Las opciones de caja se generan dinámicamente -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <!--
-        MODAL — Detalle de devolución -->
+    <!-- MODAL — Detalle de devolución -->
     <div class="modal fade" id="modal-detalle-devolucion" tabindex="-1" aria-labelledby="modal-detalle-devolucion-label"
         aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">

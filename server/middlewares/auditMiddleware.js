@@ -2,21 +2,21 @@ const { sql, query } = require('../db/conexion_sql');
 
 // Mapa URL -> tabla afectada + clave primaria (para poder leer el estado anterior y el registro_id real)
 const TABLA_MAP = [
-    { patron: '/clientes',          tabla: 'clientes',        pk: 'id_cliente' },
-    { patron: '/ventas',            tabla: 'ventas',           pk: 'id_venta' },
-    { patron: '/caja',              tabla: 'cajas',            pk: 'id_caja' },
-    { patron: '/productos',         tabla: 'productos',        pk: 'id_producto' },
-    { patron: '/empleados',         tabla: 'empleados',        pk: 'id_empleado' },
-    { patron: '/auth/users',        tabla: 'usuarios',         pk: 'id_usuario' },
-    { patron: '/compras',           tabla: 'ordenes_compra',   pk: 'id_orden' },
-    { patron: '/devoluciones',      tabla: 'devoluciones',     pk: 'id_devolucion' },
-    { patron: '/inventario',        tabla: 'inventario',       pk: null }, // ver al trabajar el módulo INVENTARIO
-    { patron: '/proveedores',       tabla: 'proveedores',      pk: 'id_proveedor' },
-    { patron: '/subcategorias',     tabla: 'subcategorias',    pk: 'id_subcategoria' },  // antes que /categorias
-    { patron: '/categorias',        tabla: 'categorias',       pk: 'id_categoria' },
-    { patron: '/catalogo/marcas',   tabla: 'marcas',           pk: 'id_marca' },
-    { patron: '/catalogo/unidades', tabla: 'unidades_medida',  pk: 'id_unidad' },
-    { patron: '/configuracion',     tabla: 'configuracion',    pk: 'id_config', matchCol: 'clave', matchParam: 'clave' },
+    { patron: '/clientes', tabla: 'clientes', pk: 'id_cliente' },
+    { patron: '/ventas', tabla: 'ventas', pk: 'id_venta' },
+    { patron: '/caja', tabla: 'cajas', pk: 'id_caja' },
+    { patron: '/productos', tabla: 'productos', pk: 'id_producto' },
+    { patron: '/empleados', tabla: 'empleados', pk: 'id_empleado' },
+    { patron: '/auth/users', tabla: 'usuarios', pk: 'id_usuario' },
+    { patron: '/compras', tabla: 'ordenes_compra', pk: 'id_orden' },
+    { patron: '/devoluciones', tabla: 'devoluciones', pk: 'id_devolucion' },
+    { patron: '/inventario', tabla: 'inventario', pk: null }, // ver al trabajar el módulo INVENTARIO
+    { patron: '/proveedores', tabla: 'proveedores', pk: 'id_proveedor' },
+    { patron: '/subcategorias', tabla: 'subcategorias', pk: 'id_subcategoria' },  // antes que /categorias
+    { patron: '/categorias', tabla: 'categorias', pk: 'id_categoria' },
+    { patron: '/catalogo/marcas', tabla: 'marcas', pk: 'id_marca' },
+    { patron: '/catalogo/unidades', tabla: 'unidades_medida', pk: 'id_unidad' },
+    { patron: '/configuracion', tabla: 'configuracion', pk: 'id_config', matchCol: 'clave', matchParam: 'clave' },
 ];
 
 // Quita contraseñas de cualquier objeto antes de guardarlo en la auditoría
@@ -50,6 +50,25 @@ function buscarFila(obj, pk, depth = 2) {
     return null;
 }
 
+// Express aún no ha hecho el routing cuando corre este middleware
+//  Extraemos el valor directamente de la URL en su lugar.
+function extraerValorRuta(originalUrl, patron, matchParam) {
+    const path = originalUrl.split('?')[0];
+    const idx = path.indexOf(patron);
+    if (idx === -1) return undefined;
+
+    const resto = path.slice(idx + patron.length); // ej: "/5/anular", "/5", "/igv"
+    const segmentos = resto.split('/').filter(Boolean);
+    if (segmentos.length === 0) return undefined;
+
+    if (matchParam === 'clave') {
+        return segmentos[0]; // la clave es alfanumérica, va siempre primero
+    }
+    // para ids numéricos, tomamos el primer segmento que sea solo dígitos
+    // (cubre rutas como /:id/anular, donde el id no es el último segmento)
+    return segmentos.find(s => /^\d+$/.test(s));
+}
+
 const auditMiddleware = async (req, res, next) => {
     const metodosAuditables = ['POST', 'PUT', 'PATCH', 'DELETE'];
     if (!metodosAuditables.includes(req.method)) {
@@ -66,7 +85,7 @@ const auditMiddleware = async (req, res, next) => {
     if (entrada && entrada.pk && req.method !== 'POST') {
         const matchCol = entrada.matchCol || entrada.pk;
         const matchParam = entrada.matchParam || 'id';
-        const valorParam = req.params[matchParam];
+        const valorParam = extraerValorRuta(req.originalUrl, entrada.patron, matchParam);
 
         if (valorParam !== undefined) {
             try {
@@ -128,15 +147,15 @@ const auditMiddleware = async (req, res, next) => {
 
                 query(
                     `INSERT INTO auditoria (id_usuario, tabla_afectada, operacion, registro_id, datos_anteriores, datos_nuevos, ip, registrado_en)
-                     VALUES (@id_usuario, @tabla, @operacion, @registro_id, @datos_anteriores, @datos_nuevos, @ip, GETDATE())`,
+                    VALUES (@id_usuario, @tabla, @operacion, @registro_id, @datos_anteriores, @datos_nuevos, @ip, GETDATE())`,
                     {
-                        id_usuario:       { type: sql.Int,              value: id_usuario },
-                        tabla:            { type: sql.VarChar(60),      value: tablaAfectada },
-                        operacion:        { type: sql.VarChar(10),      value: operacion },
-                        registro_id:      { type: sql.Int,              value: registroId || 0 },
+                        id_usuario: { type: sql.Int, value: id_usuario },
+                        tabla: { type: sql.VarChar(60), value: tablaAfectada },
+                        operacion: { type: sql.VarChar(10), value: operacion },
+                        registro_id: { type: sql.Int, value: registroId || 0 },
                         datos_anteriores: { type: sql.NVarChar(sql.MAX), value: req._auditAnterior ? JSON.stringify(redactar(req._auditAnterior)) : null },
-                        datos_nuevos:     { type: sql.NVarChar(sql.MAX), value: datosNuevos ? JSON.stringify(datosNuevos) : null },
-                        ip:               { type: sql.VarChar(45),      value: ip }
+                        datos_nuevos: { type: sql.NVarChar(sql.MAX), value: datosNuevos ? JSON.stringify(datosNuevos) : null },
+                        ip: { type: sql.VarChar(45), value: ip }
                     }
                 ).catch(err => console.error('Error al escribir auditoría:', err));
 

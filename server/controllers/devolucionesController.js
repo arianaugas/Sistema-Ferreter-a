@@ -154,8 +154,14 @@ const create = async (req, res) => {
             'SELECT estado FROM cajas WHERE id_caja = @id_caja',
             { id_caja: { type: sql.Int, value: id_caja } }
         );
-        if (cajaResult.recordset.length === 0 || cajaResult.recordset[0].estado !== 'abierta') {
-            return res.status(400).json({ ok: false, mensaje: 'La caja no existe o no está abierta.' });
+        if (cajaResult.recordset.length === 0) {
+            return res.status(400).json({ ok: false, mensaje: 'La caja seleccionada no existe.' });
+        }
+        if (cajaResult.recordset[0].estado === 'vencida') {
+            return res.status(400).json({ ok: false, mensaje: 'La caja seleccionada venció su turno. Elige otra caja para continuar.' });
+        }
+        if (cajaResult.recordset[0].estado !== 'abierta') {
+            return res.status(400).json({ ok: false, mensaje: 'La caja seleccionada ya se encuentra cerrada.' });
         }
 
         const result = await withTransaction(async (transaction) => {

@@ -525,17 +525,12 @@ function agregarFilaPago() {
   contenedor.appendChild(div);
 }
 
-//  Obtener caja activa 
-async function obtenerCajaActiva() {
-  try {
-    const data = await apiFetch('/api/caja/activa');
-    VentasState.cajaActiva = data.tieneCajaActiva ? data.caja : null;
-    if (!VentasState.cajaActiva) {
-      showToast('⚠ No tienes una caja abierta. Abre la caja antes de registrar ventas.', 'warning');
-    }
-  } catch {
-    VentasState.cajaActiva = null;
-  }
+//  Caja de trabajo de la sesión 
+// La lógica de selección/validación de caja vive en global.js
+// (asegurarCajaDeTrabajo, compartida con devoluciones.js).
+async function inicializarCajaVentas() {
+  const caja = await asegurarCajaDeTrabajo();
+  VentasState.cajaActiva = caja;
 }
 
 //  Formulario: nueva venta 
@@ -1045,7 +1040,7 @@ async function obtenerAlmacenDefault() {
 //  Punto de entrada  
 document.addEventListener('DOMContentLoaded', async () => {
   await Promise.all([
-    obtenerCajaActiva(),
+    inicializarCajaVentas(),
     cargarSeries(),
     cargarTiposPago(),
     cargarClientesDatalist(),

@@ -59,6 +59,19 @@ function renderEstadoCaja(caja) {
     return;
   }
 
+  if (caja.estado === 'vencida') {
+    // El turno terminó, pero sigue pendiente el cierre real con conteo físico
+    if (badge) { badge.className = 'badge rounded-pill text-bg-warning fs-6 px-3 py-2 mb-2'; badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation fa-xs me-1" aria-hidden="true"></i>Turno vencido'; }
+    if (cajeroEl) cajeroEl.textContent = caja.cajero_nombre || '—';
+    if (horaEl) horaEl.innerHTML = `<i class="fa-regular fa-clock fa-fw me-1" aria-hidden="true"></i> Tu turno (${caja.turno_nombre || 'sin turno'}) ya terminó. Debes cerrar la caja.`;
+    if (montoInicialEl) montoInicialEl.textContent = formatMoney(caja.monto_inicial);
+    // Ya no puede registrar más movimientos, solo cerrar con el conteo real
+    if (btnEgreso) btnEgreso.classList.add('d-none');
+    if (btnCerrar) btnCerrar.classList.remove('d-none');
+    if (btnAbrir) btnAbrir.classList.add('d-none');
+    return;
+  }
+
   // Caja abierta
   if (badge) { badge.className = 'badge rounded-pill text-bg-success fs-6 px-3 py-2 mb-2'; badge.innerHTML = '<i class="fa-solid fa-circle fa-xs me-1" aria-hidden="true"></i>Abierta'; }
   if (cajeroEl) cajeroEl.textContent = caja.cajero_nombre || '—';

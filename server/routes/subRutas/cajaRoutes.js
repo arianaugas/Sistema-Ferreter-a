@@ -4,6 +4,7 @@ const cajaController = require('../../controllers/cajaController');
 const { revisarToken } = require('../../middlewares/auth');
 
 router.get('/activa', revisarToken, cajaController.getCajaActiva);
+router.get('/abiertas', revisarToken, cajaController.getCajasAbiertas);
 router.post('/abrir', revisarToken, cajaController.abrirCaja);
 router.patch('/:id/cerrar', revisarToken, cajaController.cerrarCaja);
 router.get('/:id/movimientos', revisarToken, cajaController.getMovimientos);

@@ -11,11 +11,11 @@ async function nombreExiste(nombre, idExcluir = null) {
 }
 
 
-// Obtener todas las marcas activas
+// Obtener todas las marcas (activas e inactivas)
 async function getAll(req, res) {
   try {
     //consultamos
-    const { recordset } = await query('SELECT * FROM marcas WHERE activo = 1');
+    const { recordset } = await query('SELECT * FROM marcas ORDER BY nombre ASC');
     return res.json({ ok: true, marcas: recordset });
 
   } catch (err) {

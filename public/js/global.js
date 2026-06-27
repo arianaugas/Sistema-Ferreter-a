@@ -584,6 +584,109 @@ function inicializarLogout() {
     }
 }
 
+//  Caja de trabajo de la sesión (compartida entre Ventas y Devoluciones) 
+// El vendedor elige UNA VEZ, al iniciar su turno, con qué caja va a
+// trabajar. Se guarda en sessionStorage y se reutiliza en cualquier
+// pantalla (Ventas, Devoluciones) sin volver a preguntar, hasta que esa
+// caja deje de estar disponible.
+const CAJA_TRABAJO_SESSION_KEY = 'caja_trabajo_sesion';
+
+function obtenerCajaTrabajoGuardada() {
+  try {
+    const raw = sessionStorage.getItem(CAJA_TRABAJO_SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function guardarCajaTrabajo(caja) {
+  try {
+    sessionStorage.setItem(CAJA_TRABAJO_SESSION_KEY, JSON.stringify(caja));
+  } catch { /* sessionStorage no disponible, seguimos solo en memoria */ }
+}
+
+function limpiarCajaTrabajo() {
+  try {
+    sessionStorage.removeItem(CAJA_TRABAJO_SESSION_KEY);
+  } catch { /* noop */ }
+}
+
+// Muestra el modal de selección de caja (debe existir #modal-elegir-caja-venta
+// y #lista-cajas-elegir en la página actual) y resuelve con la caja elegida.
+function mostrarModalSeleccionCaja(cajasAbiertas) {
+  return new Promise((resolve) => {
+    const modalEl = document.getElementById('modal-elegir-caja-venta');
+    const listaEl = document.getElementById('lista-cajas-elegir');
+    if (!modalEl || !listaEl) {
+      resolve(cajasAbiertas[0] || null);
+      return;
+    }
+
+    listaEl.innerHTML = cajasAbiertas.map(c => `
+      <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+        data-id-caja="${c.id_caja}">
+        <span>
+          <strong>Caja #${c.id_caja}</strong> — ${c.cajero_nombre}
+          <br><span class="text-muted small">${c.turno_nombre || 'Sin turno asignado'}</span>
+        </span>
+        <i class="fa-solid fa-chevron-right text-muted" aria-hidden="true"></i>
+      </button>
+    `).join('');
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl, { backdrop: 'static', keyboard: false });
+
+    const onClick = (e) => {
+      const btn = e.target.closest('[data-id-caja]');
+      if (!btn) return;
+      const idCaja = parseInt(btn.dataset.idCaja);
+      const caja = cajasAbiertas.find(c => c.id_caja === idCaja);
+      listaEl.removeEventListener('click', onClick);
+      modal.hide();
+      resolve(caja || null);
+    };
+
+    listaEl.addEventListener('click', onClick);
+    modal.show();
+  });
+}
+
+// Punto de entrada: asegura que haya una caja de trabajo válida para esta
+// sesión, preguntando al vendedor solo si hace falta. Devuelve la caja
+// elegida (objeto) o null si no hay ninguna caja abierta en el sistema.
+async function asegurarCajaDeTrabajo() {
+  let data;
+  try {
+    data = await apiFetch('/api/caja/abiertas');
+  } catch {
+    showToast('No se pudo verificar las cajas abiertas.', 'error');
+    return null;
+  }
+
+  const cajasAbiertas = data.cajas || [];
+
+  if (cajasAbiertas.length === 0) {
+    limpiarCajaTrabajo();
+    showToast('⚠ No hay ninguna caja abierta. Un cajero debe abrir su caja antes de continuar.', 'warning');
+    return null;
+  }
+
+  const cajaGuardada = obtenerCajaTrabajoGuardada();
+  const sigueValida = cajaGuardada && cajasAbiertas.some(c => c.id_caja === cajaGuardada.id_caja);
+
+  if (sigueValida) {
+    return cajaGuardada;
+  }
+
+  limpiarCajaTrabajo();
+  const elegida = await mostrarModalSeleccionCaja(cajasAbiertas);
+  if (elegida) {
+    guardarCajaTrabajo(elegida);
+  }
+  return elegida;
+}
+
+
 /* 
    INICIALIZACIÓN GLOBAL
    Se ejecuta en todas las páginas que cargan global.js

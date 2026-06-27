@@ -3,12 +3,14 @@ require('dotenv').config();
 const morgan = require('morgan');
 const path = require('path');
 const cookieParser = require('cookie-parser');
+
 //importamos las rutas creadas
 const apiRouter = require('./server/routes/api');
 const vistasRouter = require('./server/routes/vistas');
 const {notFound} = require('./server/middlewares/notFoundMiddleware');
 const auditMiddleware = require('./server/middlewares/auditMiddleware');
 const errorMiddleware = require('./server/middlewares/errorMiddleware');
+const { iniciarJobVencimientoCaja } = require('./server/jobs/vencimientoCajaJob');
 
 
 //creamos el servidor
@@ -37,6 +39,6 @@ app.use(errorMiddleware);
 // ARRANQUE DEL SERVIDOR
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    iniciarJobVencimientoCaja();
 });
-
 

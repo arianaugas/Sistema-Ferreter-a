@@ -18,6 +18,15 @@ const { revisarToken } = require('../../middlewares/auth');
 router.get('/auditoria', revisarToken, configCtrl.getLogs);
 router.get('/auditoria/:id', revisarToken, configCtrl.getLogById);
 
+//rutas de turnos
+router.get('/turnos', revisarToken, configCtrl.getTurnos);
+router.get('/turnos/:id', revisarToken, configCtrl.getTurnoById);
+router.post('/turnos', revisarToken, configCtrl.crearTurno);
+router.put('/turnos/:id', revisarToken, configCtrl.editarTurno);
+
+//rutas de asignacion de turno a empleados
+router.get('/turnos-empleados', revisarToken, configCtrl.getEmpleadosConTurno);
+router.put('/turnos-empleados/:id', revisarToken, configCtrl.asignarTurnoEmpleado);
 
 //rutas de configuracion
 router.get('/', revisarToken, configCtrl.getAll);

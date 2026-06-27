@@ -137,6 +137,9 @@ const getById = async (req, res) => {
                 p.stock_maximo,
                 p.tiene_lote,
                 p.creado_en,
+                p.id_subcategoria,
+                p.id_marca,
+                p.id_unidad,
                 c.nombre AS categoria,
                 sc.nombre AS subcategoria,
                 m.nombre AS marca,
@@ -382,7 +385,8 @@ const editarProducto = async (req, res) => {
     const id = req.params.id;
     const {
         precio_compra, precio_venta, stock_minimo, stock_maximo,
-        ubicacion, nombre, id_subcategoria, tiene_lote, activo
+        ubicacion, nombre, id_subcategoria, tiene_lote, activo,
+        id_marca, id_unidad, descripcion
     } = req.body;
 
     if (!nombre || !id_subcategoria || stock_maximo == null ||
@@ -423,11 +427,20 @@ const editarProducto = async (req, res) => {
         if (!(await subcatExiste(id_subcategoria))) {
             return res.status(400).json({ ok: false, mensaje: 'Subcategoría no encontrada.' });
         }
+        if (!(await unidadExiste(id_unidad))) {
+            return res.status(400).json({ ok: false, mensaje: 'Unidad de medida no encontrada.' });
+        }
+        if (id_marca && !(await marcaExiste(id_marca))) {
+            return res.status(400).json({ ok: false, mensaje: 'Marca no encontrada.' });
+        }
 
         const dataProducts = await query(
             `UPDATE productos 
                 SET id_subcategoria = @id_subcategoria,  
+                    id_marca = @id_marca,
+                    id_unidad = @id_unidad,
                     nombre = @nombre, 
+                    descripcion = @descripcion,
                     precio_compra = @precio_compra, 
                     precio_venta = @precio_venta, 
                     stock_minimo = @stock_minimo, 
@@ -439,7 +452,10 @@ const editarProducto = async (req, res) => {
                 WHERE id_producto = @id`,
             {
                 id_subcategoria: { type: sql.Int, value: id_subcategoria },
+                id_marca: { type: sql.Int, value: id_marca || null },
+                id_unidad: { type: sql.Int, value: id_unidad },
                 nombre: { type: sql.VarChar, value: nombre },
+                descripcion: { type: sql.VarChar, value: descripcion || null },
                 precio_compra: { type: sql.Decimal, value: precio_compra },
                 precio_venta: { type: sql.Decimal, value: precio_venta },
                 stock_minimo: { type: sql.Decimal, value: stock_minimo },
@@ -451,6 +467,7 @@ const editarProducto = async (req, res) => {
             }
         );
 
+        
         // Si se subió una imagen nueva, reemplaza la anterior (mantiene siempre
         // como máximo una imagen por producto, sin acumular filas viejas)
         if (req.fileUrl) {

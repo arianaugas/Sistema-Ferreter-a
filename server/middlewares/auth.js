@@ -27,4 +27,18 @@ function revisarToken(req, res, next) {
     }
 }
 
-module.exports = { revisarToken };
+// Restringe el acceso según el rol. Se usa SIEMPRE después de revisarToken,
+// que es quien deja el rol del usuario en req.user.rol
+function permitirRoles(...rolesPermitidos) {
+    return (req, res, next) => {
+        if (!rolesPermitidos.includes(req.user?.rol)) {
+            return res.status(403).json({ error: 'No tienes permiso para realizar esta acción.' });
+        }
+        next();
+    };
+}
+
+module.exports = {
+    revisarToken, 
+    permitirRoles 
+};
