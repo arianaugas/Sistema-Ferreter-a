@@ -494,20 +494,11 @@ Auditoría — Tabla de todos los cambios registrados en el sistema, con filtros
                             Registro de auditoría
                         </button>
                     </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="tab-permisos" data-bs-toggle="tab"
-                            data-bs-target="#section-permisos" type="button" role="tab" aria-controls="section-permisos"
-                            aria-selected="false">
-                            Permisos de roles
-                        </button>
-                    </li>
                 </ul>
 
                 <div class="tab-content" id="nav-config-content">
 
-                    <!-- 
-             PANEL: PARÁMETROS
-         -->
+                    <!-- PANEL: PARÁMETROS-->
                     <div class="tab-pane fade show active" id="pill-parametros" role="tabpanel"
                         aria-labelledby="pill-parametros-btn">
 
@@ -544,8 +535,8 @@ Auditoría — Tabla de todos los cambios registrados en el sistema, con filtros
                                                                 aria-hidden="true"></i>
                                                         </span>
                                                         <input type="text" id="cfg-negocio" name="negocio"
-                                                            class="form-control" maxlength="200"
-                                                            placeholder="Nombre del negocio">
+                                                    data-clave="negocio" class="form-control" maxlength="200"
+                                                    placeholder="Nombre del negocio">
                                                     </div>
                                                 </div>
 
@@ -561,7 +552,7 @@ Auditoría — Tabla de todos los cambios registrados en el sistema, con filtros
                                                     <div class="d-flex align-items-center gap-3">
                                                         <div class="input-group" style="max-width: 180px;">
                                                             <input type="number" id="cfg-igv" name="igv"
-                                                                class="form-control" min="0" max="1" step="0.01">
+                                                                data-clave="igv" class="form-control" min="0" max="1" step="0.01">
                                                             <span class="input-group-text">
                                                                 <i class="fa-solid fa-percent fa-fw fa-sm"
                                                                     aria-hidden="true"></i>
@@ -581,7 +572,7 @@ Auditoría — Tabla de todos los cambios registrados en el sistema, con filtros
                                                         Nombre completo de la moneda utilizada en el sistema.
                                                     </p>
                                                     <input type="text" id="cfg-moneda" name="moneda"
-                                                        class="form-control" maxlength="200" style="max-width: 260px;"
+                                                        data-clave="moneda" class="form-control" maxlength="200" style="max-width: 260px;"
                                                         placeholder="Ej: Sol peruano">
                                                 </div>
 
@@ -594,7 +585,7 @@ Auditoría — Tabla de todos los cambios registrados en el sistema, con filtros
                                                         Se antepone a todos los precios y totales del sistema.
                                                     </p>
                                                     <input type="text" id="cfg-simbolo" name="simbolo"
-                                                        class="form-control font-monospace" maxlength="10"
+                                                        data-clave="simbolo" class="form-control font-monospace" maxlength="10"
                                                         style="max-width: 100px;">
                                                 </div>
 
@@ -913,32 +904,6 @@ Auditoría — Tabla de todos los cambios registrados en el sistema, con filtros
                         </section>
 
                     </div><!-- /pill-auditoria -->
-
-                    <!-- PANEL: PERMISOS -->
-                    <div class="tab-pane fade" id="section-permisos" role="tabpanel" aria-labelledby="tab-permisos">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header d-flex align-items-center gap-3 flex-wrap">
-                                <h2 class="h6 mb-0 fw-semibold">
-                                   
-                                    Permisos por rol
-                                </h2>
-                                <select id="permisos-select-rol" class="form-select form-select-sm w-auto ms-auto">
-                                    <option value="">Seleccionar rol...</option>
-                                </select>
-                            </div>
-                            <div class="card-body p-0">
-                                <div id="permisos-tabla-container" class="p-4 text-muted text-center">
-                                    Selecciona un rol para ver y editar sus permisos.
-                                </div>
-                            </div>
-                            <div class="card-footer d-flex justify-content-end gap-2">
-                                <button type="button" id="btn-guardar-permisos" class="btn btn-sm btn-primary d-none">
-                                    <i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i>
-                                    Guardar permisos
-                                </button>
-                            </div>
-                        </div>
-                    </div>
 
                 </div><!-- /tab-content -->
 

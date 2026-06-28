@@ -149,7 +149,7 @@ function initFormEditarConfig() {
 
 // Formulario inline de configuración
 function initFormConfiguracion() {
-  const form = document.getElementById('form-configuracion');
+  const form = document.getElementById('form-parametros');
   if (!form) return;
 
   // Actualiza el badge "X %" en vivo mientras se edita el campo IGV
@@ -711,118 +711,6 @@ function initAsignacionTurnos() {
   });
 }
 
-// PERMISOS DE ROLES 
-
-let _permisosEditando = []; // copia local para editar antes de guardar
-
-async function cargarRolesEnSelect() {
-    const sel = document.getElementById('permisos-select-rol');
-    if (!sel) return;
-    try {
-        const data = await apiFetch('/api/auth/roles');
-        (data.roles || [])
-            .filter(r => r.nombre !== 'Administrador') // admin no es configurable
-            .forEach(r => {
-                const opt = document.createElement('option');
-                opt.value = r.id_rol;
-                opt.textContent = r.nombre;
-                sel.appendChild(opt);
-            });
-    } catch (err) {
-        showToast('Error al cargar roles: ' + err.message, 'error');
-    }
-}
-
-async function cargarPermisosRol(id_rol) {
-    const container = document.getElementById('permisos-tabla-container');
-    const btnGuardar = document.getElementById('btn-guardar-permisos');
-    if (!container) return;
-
-    container.innerHTML = '<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin"></i> Cargando...</div>';
-
-    try {
-        const data = await apiFetch(`/api/permisos/rol/${id_rol}`);
-        _permisosEditando = data.permisos.map(p => ({ ...p })); // copia editable
-
-        const table = document.createElement('table');
-        table.className = 'table table-hover align-middle mb-0';
-        table.innerHTML = `
-            <thead class="table-light">
-                <tr>
-                    <th class="ps-3">Módulo</th>
-                    <th class="text-center" style="width:160px">Acceso</th>
-                </tr>
-            </thead>`;
-
-        const tbody = document.createElement('tbody');
-
-        _permisosEditando.forEach((p, idx) => {
-            const tr = document.createElement('tr');
-
-            const tdNombre = document.createElement('td');
-            tdNombre.className = 'ps-3 fw-medium';
-            tdNombre.textContent = p.nombre;
-            tr.appendChild(tdNombre);
-
-            const td = document.createElement('td');
-            td.className = 'text-center';
-
-            const wrapper = document.createElement('div');
-            wrapper.className = 'form-check form-switch d-flex justify-content-center mb-0';
-
-            const input = document.createElement('input');
-            input.type = 'checkbox';
-            input.className = 'form-check-input';
-            input.role = 'switch';
-            input.id = `perm-${idx}-acceso`;
-            input.checked = !!p.tiene_acceso;
-
-            input.addEventListener('change', () => {
-                _permisosEditando[idx].tiene_acceso = input.checked ? 1 : 0;
-            });
-
-            wrapper.appendChild(input);
-            td.appendChild(wrapper);
-            tr.appendChild(td);
-            tbody.appendChild(tr);
-        });
-
-        table.appendChild(tbody);
-        container.replaceChildren(table);
-        if (btnGuardar) btnGuardar.classList.remove('d-none');
-
-    } catch (err) {
-        container.innerHTML = `<div class="text-danger p-4">Error: ${err.message}</div>`;
-    }
-}
-
-function initPermisosRoles() {
-    const sel = document.getElementById('permisos-select-rol');
-    const btnGuardar = document.getElementById('btn-guardar-permisos');
-
-    sel?.addEventListener('change', () => {
-        if (sel.value) cargarPermisosRol(sel.value);
-        else {
-            document.getElementById('permisos-tabla-container').innerHTML =
-                '<div class="p-4 text-muted text-center">Selecciona un rol para ver y editar sus permisos.</div>';
-            btnGuardar?.classList.add('d-none');
-        }
-    });
-
-    btnGuardar?.addEventListener('click', async () => {
-        const id_rol = sel?.value;
-        if (!id_rol) return;
-        try {
-            await apiFetch(`/api/permisos/rol/${id_rol}`, {
-                method: 'PUT',
-                body: JSON.stringify({ permisos: _permisosEditando }),
-            });
-            showToast('Permisos guardados correctamente.', 'success');
-        } catch (err) {
-            showToast('Error al guardar: ' + err.message, 'error');
-        }
-    });
-}
 
 // Punto de entrada
 document.addEventListener('DOMContentLoaded', () => {
@@ -836,6 +724,4 @@ document.addEventListener('DOMContentLoaded', () => {
   cargarTurnos();
   initFormTurno();
   initAsignacionTurnos();
-  cargarRolesEnSelect();
-  initPermisosRoles();
 });

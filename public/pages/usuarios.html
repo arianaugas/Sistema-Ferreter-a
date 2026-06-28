@@ -485,7 +485,7 @@ Formulario para agregar nuevo rol.
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="tab-roles" role="tab" aria-controls="section-roles"
                             data-bs-toggle="tab" data-bs-target="#section-roles" aria-selected="false" type="button">
-                            <i saria-hidden="true"></i>Roles
+                            <i saria-hidden="true"></i>Roles y Permisos
                         </button>
                     </li>
                 </ul>
@@ -592,31 +592,59 @@ Formulario para agregar nuevo rol.
 
                     <!-- TAB: Roles -->
                     <section class="tab-pane fade" id="section-roles" role="tabpanel" aria-labelledby="tab-roles">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <h2 class="h6 fw-semibold mb-0">Roles del sistema</h2>
-                            <button type="button" class="btn btn-sm btn-primary" id="btn-nuevo-rol"
-                                data-bs-toggle="modal" data-bs-target="#modal-nuevo-rol" aria-label="Crear nuevo rol">
-                                <i class="fa-solid fa-plus me-1" aria-hidden="true"></i>Nuevo rol
-                            </button>
-                        </div>
-                        <div class="card">
-                            <div class="card-body p-0">
-                                <div class="table-responsive">
-                                    <table class="table table-hover mb-0" id="tabla-roles"
-                                        aria-label="Roles del sistema">
-                                        <thead>
-                                            <tr>
-                                                <th scope="col">#</th>
-                                                <th scope="col">Nombre del rol</th>
-                                                <th scope="col">Descripción</th>
-                                                <th scope="col">Usuarios asignados</th>
-                                                <th scope="col"><span class="visually-hidden">Acciones</span></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="tabla-roles-body">
+                        <div class="row g-3">
+                            <div class="col-12 col-lg-7">
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <h2 class="h6 fw-semibold mb-0">Roles del sistema</h2>
+                                    <button type="button" class="btn btn-sm btn-primary" id="btn-nuevo-rol"
+                                        data-bs-toggle="modal" data-bs-target="#modal-nuevo-rol" aria-label="Crear nuevo rol">
+                                        <i class="fa-solid fa-plus me-1" aria-hidden="true"></i>Nuevo rol
+                                    </button>
+                                </div>
+                                <div class="card">
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover mb-0" id="tabla-roles"
+                                                aria-label="Roles del sistema">
+                                                <thead>
+                                                    <tr>
+                                                        <th scope="col">#</th>
+                                                        <th scope="col">Nombre del rol</th>
+                                                        <th scope="col">Descripción</th>
+                                                        <th scope="col">Usuarios</th>
+                                                        <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="tabla-roles-body">
 
-                                        </tbody>
-                                    </table>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-lg-5">
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <h2 class="h6 fw-semibold mb-0">Permisos por rol</h2>
+                                    <select id="permisos-select-rol" class="form-select form-select-sm w-auto"
+                                        aria-label="Seleccionar rol para editar permisos">
+                                        <option value="">Seleccionar rol...</option>
+                                    </select>
+                                </div>
+                                <div class="card">
+                                    <div class="card-body p-0">
+                                        <div id="permisos-tabla-container" class="p-4 text-muted text-center small">
+                                            Selecciona un rol para ver y editar sus permisos.
+                                        </div>
+                                    </div>
+                                    <div class="card-footer d-flex justify-content-end gap-2 py-2">
+                                        <button type="button" id="btn-guardar-permisos"
+                                            class="btn btn-sm btn-primary d-none">
+                                            <i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i>
+                                            Guardar permisos
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

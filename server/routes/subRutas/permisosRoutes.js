@@ -3,7 +3,7 @@ const router = express.Router();
 const permisosCtrl = require('../../controllers/permisosController');
 const { revisarToken, verificarAccesoModulo } = require('../../middlewares/auth');
 
-const soloAdmin = verificarAccesoModulo('/configuracion-auditoria');
+const soloAdmin = verificarAccesoModulo('/usuarios');
 
 router.get('/modulos', revisarToken, permisosCtrl.getModulos);
 router.get('/rol/:id_rol', revisarToken, soloAdmin, permisosCtrl.getPermisosPorRol);

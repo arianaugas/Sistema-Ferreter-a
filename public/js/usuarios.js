@@ -36,10 +36,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const formNuevoRol = document.getElementById('form-nuevo-rol');
     // Modal editar rol
     const formEditarRol = document.getElementById('form-editar-rol');
+    // Permisos por rol
+    const selPermisosRol = document.getElementById('permisos-select-rol');
+    const permisosContainer = document.getElementById('permisos-tabla-container');
+    const btnGuardarPermisos = document.getElementById('btn-guardar-permisos');
 
     //ESTADO LOCAL
     let usuariosCache = [];  // para no re-fetch al abrir modales
     let rolesCache = [];
+    let _permisosEditando = []; // copia editable de los permisos del rol seleccionado
 
     //UTILIDADES
     function iniciales(nombre, apellido) {
@@ -127,7 +132,86 @@ document.addEventListener('DOMContentLoaded', async () => {
         const opcionesSelect = roles.map(r => `<option value="${r.id_rol}">${r.nombre}</option>`).join('');
         selRolNuevo.innerHTML = `<option value="" disabled selected>Seleccionar rol</option>${opcionesSelect}`;
         selRolEditar.innerHTML = opcionesSelect;
+
+        // Select de permisos (Administrador no es configurable, se omite)
+        const opcionesPermisos = roles
+            .filter(r => r.nombre !== 'Administrador')
+            .map(r => `<option value="${r.id_rol}">${r.nombre}</option>`).join('');
+        if (selPermisosRol) selPermisosRol.innerHTML = `<option value="">Seleccionar rol...</option>${opcionesPermisos}`;
     }
+
+    //PERMISOS POR ROL — lista compacta al lado de la tabla de roles
+    async function cargarPermisosRol(id_rol) {
+        if (!permisosContainer) return;
+        permisosContainer.innerHTML = '<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin"></i></div>';
+
+        try {
+            const res = await fetch(`/api/permisos/rol/${id_rol}`, { credentials: 'include' });
+            const data = await res.json();
+            if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al cargar permisos');
+
+            _permisosEditando = data.permisos.map(p => ({ ...p })); // copia editable
+
+            const renderItem = (p, idx) => `
+                <div class="d-flex align-items-center justify-content-between py-2 px-3 border-bottom">
+                    <span class="fw-medium text-dark">${p.nombre}</span>
+                    <div class="form-check form-switch mb-0">
+                        <input type="checkbox" class="form-check-input" role="switch" data-idx="${idx}"
+                            ${p.tiene_acceso ? 'checked' : ''}>
+                    </div>
+                </div>
+            `;
+
+            const mitad = Math.ceil(_permisosEditando.length / 2);
+            const columnaIzq = _permisosEditando.slice(0, mitad).map((p, i) => renderItem(p, i)).join('');
+            const columnaDer = _permisosEditando.slice(mitad).map((p, i) => renderItem(p, i + mitad)).join('');
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'row g-0';
+            wrapper.innerHTML = `
+                <div class="col-6 border-end">${columnaIzq}</div>
+                <div class="col-6">${columnaDer}</div>
+            `;
+
+            wrapper.querySelectorAll('input[data-idx]').forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const idx = parseInt(e.target.dataset.idx);
+                    _permisosEditando[idx].tiene_acceso = e.target.checked ? 1 : 0;
+                });
+            });
+
+            permisosContainer.replaceChildren(wrapper);
+            btnGuardarPermisos?.classList.remove('d-none');
+        } catch (err) {
+            permisosContainer.innerHTML = `<div class="text-danger p-4">Error: ${err.message}</div>`;
+        }
+    }
+    selPermisosRol?.addEventListener('change', () => {
+        if (selPermisosRol.value) {
+            cargarPermisosRol(selPermisosRol.value);
+        } else {
+            permisosContainer.innerHTML = '<div class="p-4 text-muted text-center small">Selecciona un rol para ver y editar sus permisos.</div>';
+            btnGuardarPermisos?.classList.add('d-none');
+        }
+    });
+
+    btnGuardarPermisos?.addEventListener('click', async () => {
+        const id_rol = selPermisosRol?.value;
+        if (!id_rol) return;
+        try {
+            const res = await fetch(`/api/permisos/rol/${id_rol}`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ permisos: _permisosEditando })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al guardar permisos');
+            showToast('Permisos guardados correctamente.', 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    });
 
     //USUARIOS — getAll y render
     async function cargarUsuarios(params = {}) {

@@ -45,4 +45,16 @@ INSERT INTO usuarios (id_empleado, id_rol, username, contrasena, activo) VALUES
 (7, 2, 'diego.vend',  '$2b$10$SW4mKXT/Ht2RrnkyczZm.Ow0ph6ZuMpqY92S1S2L6YYMKveZioTda', 1), -- vendedor123
 (8, 3, 'valeria.alm', '$2b$10$gCYy/qXPHX52VDtufGK2Q.U1CpP0nJUsha4cmGvKxy5FacyPsEiAe', 1); -- almacen123
 
---CREAR NUEVOS INSERTS
+INSERT INTO modulos (nombre, ruta, descripcion) VALUES
+('Productos',     '/productos',               'Catálogo de productos, categorías, marcas y unidades'),
+('Clientes',      '/clientes',                'Gestión de clientes'),
+('Proveedores',   '/proveedores',             'Gestión de proveedores'),
+('Compras',       '/compras',                 'Órdenes de compra y recepciones'),
+('Inventario',    '/inventario',              'Stock, kardex, almacenes y transferencias'),
+('Ventas',        '/ventas',                  'Registro de ventas'),
+('Caja',          '/caja',                    'Apertura, movimientos y cierre de caja'),
+('Devoluciones',  '/devoluciones',            'Cambios y reembolsos'),
+('Empleados',     '/empleados',               'Gestión de empleados y cargos'),
+('Usuarios',      '/usuarios',                'Cuentas de acceso y roles'),
+('Reportes',      '/reportes',                'Reportes y estadísticas'),
+('Configuración y Auditoría', '/configuracion-auditoria', 'Configuración del sistema, turnos y auditoría');

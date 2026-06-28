@@ -723,6 +723,15 @@ async function aplicarSidebarSegunPermisos() {
       if (li) li.classList.add('d-none');
     }
   });
+
+  // Si una sección entera (ej. "Análisis", "Sistema") se queda sin ningún
+  // ítem visible, ocultamos también su título para que no quede flotando solo.
+  document.querySelectorAll('#sidebar-nav p.sidebar-nav-label').forEach(label => {
+    const ul = label.nextElementSibling;
+    if (!ul || ul.tagName !== 'UL') return;
+    const hayVisible = Array.from(ul.children).some(li => !li.classList.contains('d-none'));
+    label.classList.toggle('d-none', !hayVisible);
+  });
 }
 
 
