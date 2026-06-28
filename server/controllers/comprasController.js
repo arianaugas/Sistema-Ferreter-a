@@ -73,7 +73,7 @@ const getOrdenById = async (req, res) => {
         }
 
         const detalleResult = await query(
-            `SELECT d.*, p.nombre AS producto_nombre, p.codigo AS producto_codigo
+            `SELECT d.*, p.nombre AS producto_nombre, p.codigo AS producto_codigo, p.tiene_lote
              FROM detalle_orden_compra d
              INNER JOIN productos p ON d.id_producto = p.id_producto
              WHERE d.id_orden = @id`,
@@ -82,9 +82,9 @@ const getOrdenById = async (req, res) => {
 
         const recepcionesResult = await query(
             `SELECT r.*, e.nombre + ' ' + e.apellido AS empleado_nombre
-             FROM recepciones r
-             INNER JOIN empleados e ON r.id_empleado = e.id_empleado
-             WHERE r.id_orden = @id`,
+            FROM recepciones r
+            INNER JOIN empleados e ON r.id_empleado = e.id_empleado
+            WHERE r.id_orden = @id`,
             { id: { type: sql.Int, value: id } }
         );
 

@@ -44,17 +44,17 @@ function buildQuery(params) {
 /** Badge de estado coloreado */
 function badgeEstado(estado) {
     const map = {
-        caducado:   'text-bg-danger',
+        caducado: 'text-bg-danger',
         por_vencer: 'text-bg-warning',
-        vigente:    'text-bg-success',
-        pendiente:  'text-bg-warning',
-        procesada:  'text-bg-success',
-        anulada:    'text-bg-secondary',
-        cambio:     'text-bg-info',
-        reembolso:  'text-bg-primary',
-        entrada:    'text-bg-success',
-        salida:     'text-bg-danger',
-        ajuste:     'text-bg-warning',
+        vigente: 'text-bg-success',
+        pendiente: 'text-bg-warning',
+        procesada: 'text-bg-success',
+        anulada: 'text-bg-secondary',
+        cambio: 'text-bg-info',
+        reembolso: 'text-bg-primary',
+        entrada: 'text-bg-success',
+        salida: 'text-bg-danger',
+        ajuste: 'text-bg-warning',
         transferencia: 'text-bg-info',
     };
     return `<span class="badge ${map[estado] ?? 'text-bg-secondary'}">${estado}</span>`;
@@ -169,18 +169,11 @@ async function cargarSubcategorias(idCategoria) {
 }
 
 
-// ════════════════════════════════════════════════════════════
-//  1. REPORTE DE VENTAS
-//  GET /api/reportes/ventas
-//  Params: desde, hasta, agrupacion, id_empleado, tipo_comprobante
-//  Response: { ok, agrupacion, datos: [{ periodo, cantidad_ventas, subtotal, igv, total }] }
-// ════════════════════════════════════════════════════════════
-
 async function generarRepVentas() {
-    const desde          = document.getElementById('rv-desde')?.value;
-    const hasta          = document.getElementById('rv-hasta')?.value;
-    const agrupacion     = document.getElementById('rv-agrupacion')?.value || 'dia';
-    const id_empleado    = document.getElementById('rv-empleado')?.value;
+    const desde = document.getElementById('rv-desde')?.value;
+    const hasta = document.getElementById('rv-hasta')?.value;
+    const agrupacion = document.getElementById('rv-agrupacion')?.value || 'dia';
+    const id_empleado = document.getElementById('rv-empleado')?.value;
     const tipo_comprobante = document.getElementById('rv-tipo-comp')?.value;
 
     setTbodyLoading('tbody-rep-ventas', 5);
@@ -206,16 +199,16 @@ async function generarRepVentas() {
         // Calcular totales acumulados
         let totalVentas = 0, totalSubtotal = 0, totalIgv = 0, totalGeneral = 0;
         rows.forEach(r => {
-            totalVentas   += Number(r.cantidad_ventas || 0);
+            totalVentas += Number(r.cantidad_ventas || 0);
             totalSubtotal += Number(r.subtotal || 0);
-            totalIgv      += Number(r.igv || 0);
+            totalIgv += Number(r.igv || 0);
             totalGeneral  += Number(r.total || 0);
         });
 
         document.getElementById('rv-total-ventas').textContent = totalVentas;
-        document.getElementById('rv-subtotal').textContent     = formatMoney(totalSubtotal);
-        document.getElementById('rv-igv').textContent          = formatMoney(totalIgv);
-        document.getElementById('rv-total').textContent        = formatMoney(totalGeneral);
+        document.getElementById('rv-subtotal').textContent = formatMoney(totalSubtotal);
+        document.getElementById('rv-igv').textContent = formatMoney(totalIgv);
+        document.getElementById('rv-total').textContent = formatMoney(totalGeneral);
 
         // Renderizar tabla
         const tb = document.getElementById('tbody-rep-ventas');
@@ -238,17 +231,10 @@ async function generarRepVentas() {
 }
 
 
-// ════════════════════════════════════════════════════════════
-//  2. REPORTE DE GANANCIAS
-//  GET /api/reportes/ganancias
-//  Params: desde, hasta, id_categoria, id_subcategoria
-//  Response: { ok, totales: { ingresos, costo_total, ganancia }, datos: [...] }
-// ════════════════════════════════════════════════════════════
-
 async function generarRepGanancias() {
-    const desde           = document.getElementById('rg-desde')?.value;
-    const hasta           = document.getElementById('rg-hasta')?.value;
-    const id_categoria    = document.getElementById('rg-categoria')?.value;
+    const desde = document.getElementById('rg-desde')?.value;
+    const hasta = document.getElementById('rg-hasta')?.value;
+    const id_categoria = document.getElementById('rg-categoria')?.value;
     const id_subcategoria = document.getElementById('rg-subcategoria')?.value;
 
     setTbodyLoading('tbody-rep-ganancias', 8);
@@ -263,12 +249,12 @@ async function generarRepGanancias() {
 
         if (!data.ok) throw new Error(data.mensaje || 'Error en el reporte');
 
-        const rows    = data.datos ?? [];
+        const rows = data.datos ?? [];
         const totales = data.totales ?? {};
 
-        document.getElementById('rg-ingresos').textContent  = formatMoney(totales.ingresos  ?? 0);
+        document.getElementById('rg-ingresos').textContent = formatMoney(totales.ingresos  ?? 0);
         document.getElementById('rg-inversion').textContent = formatMoney(totales.costo_total ?? 0);
-        document.getElementById('rg-ganancia').textContent  = formatMoney(totales.ganancia  ?? 0);
+        document.getElementById('rg-ganancia').textContent = formatMoney(totales.ganancia  ?? 0);
 
         if (!rows.length) {
             setTbodyEmpty('tbody-rep-ganancias', 8);
@@ -301,17 +287,10 @@ async function generarRepGanancias() {
 }
 
 
-// ════════════════════════════════════════════════════════════
-//  3. REPORTE: PRODUCTOS MÁS VENDIDOS
-//  GET /api/reportes/productos-vendidos
-//  Params: desde, hasta, orden (cantidad|monto), limite
-//  Response: { ok, orden, datos: [{ id_producto, codigo, producto, total_cantidad, total_monto }] }
-// ════════════════════════════════════════════════════════════
-
 async function generarRepProductos() {
-    const desde  = document.getElementById('rpv-desde')?.value;
-    const hasta  = document.getElementById('rpv-hasta')?.value;
-    const orden  = document.getElementById('rpv-ordenar')?.value || 'cantidad';
+    const desde = document.getElementById('rpv-desde')?.value;
+    const hasta = document.getElementById('rpv-hasta')?.value;
+    const orden = document.getElementById('rpv-ordenar')?.value || 'cantidad';
     const limite = document.getElementById('rpv-top')?.value || '10';
 
     setTbodyLoading('tbody-rep-productos', 5);
@@ -350,14 +329,6 @@ async function generarRepProductos() {
     }
 }
 
-
-// ════════════════════════════════════════════════════════════
-//  4. REPORTE: STOCK CRÍTICO
-//  GET /api/reportes/stock-bajo
-//  Params: id_categoria
-//  Response: { ok, total, datos: [{ id_producto, codigo, nombre, ubicacion,
-//              stock_actual, stock_minimo, diferencia, categoria, subcategoria, proveedor_preferido }] }
-// ════════════════════════════════════════════════════════════
 
 async function generarRepStock() {
     const id_categoria = document.getElementById('rsc-categoria')?.value;
@@ -405,13 +376,6 @@ async function generarRepStock() {
 }
 
 
-// ════════════════════════════════════════════════════════════
-//  5. REPORTE: LOTES Y VENCIMIENTOS
-//  GET /api/reportes/lotes
-//  Params: estado (caducado|por_vencer|vigente), vence_antes
-//  Response: { ok, total, datos: [{ id_lote, numero_lote, fecha_vencimiento,
-//              cantidad, producto, codigo_producto, almacen, estado_lote }] }
-// ════════════════════════════════════════════════════════════
 
 async function generarRepLotes() {
     const vence_antes  = document.getElementById('rl-vence-antes')?.value;
@@ -437,7 +401,7 @@ async function generarRepLotes() {
         rows.forEach(r => {
             const tr = document.createElement('tr');
             const rowClass = r.estado_lote === 'caducado' ? 'table-danger'
-                           : r.estado_lote === 'por_vencer' ? 'table-warning' : '';
+                            : r.estado_lote === 'por_vencer' ? 'table-warning' : '';
             tr.className = rowClass;
             tr.innerHTML = `
                 <td class="font-monospace small">${r.codigo_producto}</td>
@@ -457,32 +421,22 @@ async function generarRepLotes() {
 }
 
 
-// ════════════════════════════════════════════════════════════
-//  6. REPORTE: KARDEX
-//  GET /api/reportes/kardex/:id
-//  Params de ruta: id (id_producto, obligatorio)
-//  Params de query: desde, hasta
-//  Response: { ok, producto: { id_producto, codigo, nombre },
-//              movimientos: [{ id_kardex, tipo_movimiento, motivo, referencia_tipo,
-//                              referencia_id, almacen, cantidad, stock_anterior, stock_posterior, usuario, registrado_en }] }
-// ════════════════════════════════════════════════════════════
 
 async function generarRepKardex() {
-    const id_producto  = document.getElementById('rk-producto')?.value;
-    const desde        = document.getElementById('rk-desde')?.value;
-    const hasta        = document.getElementById('rk-hasta')?.value;
+    const id_producto = document.getElementById('rk-producto')?.value;
+    const desde = document.getElementById('rk-desde')?.value;
+    const hasta = document.getElementById('rk-hasta')?.value;
     const id_categoria = document.getElementById('rk-categoria')?.value;
 
     setTbodyLoading('tbody-rep-kardex', 9);
 
     try {
         let data;
-        if (id_producto) {
-            // Kardex de un producto específico
+        const esGeneral = !id_producto;
+        if (!esGeneral) {
             const qs = buildQuery({ desde, hasta });
             data = await apiFetch(`/api/reportes/kardex/${id_producto}${qs}`);
         } else {
-            // Kardex general — todos los productos
             const qs = buildQuery({ desde, hasta, id_categoria });
             data = await apiFetch(`/api/reportes/kardex${qs}`);
         }
@@ -491,8 +445,23 @@ async function generarRepKardex() {
 
         const movimientos = data.movimientos ?? [];
 
+        // Ajustar encabezado dinámicamente
+        const theadRow = document.getElementById('thead-kardex-row');
+        const colCount = esGeneral ? 10 : 9;
+        if (theadRow) {
+            const prodTh = theadRow.querySelector('th[data-col="producto"]');
+            if (esGeneral && !prodTh) {
+                const th = document.createElement('th');
+                th.dataset.col = 'producto';
+                th.textContent = 'Producto';
+                theadRow.insertBefore(th, theadRow.firstChild);
+            } else if (!esGeneral && prodTh) {
+                prodTh.remove();
+            }
+        }
+
         if (!movimientos.length) {
-            setTbodyEmpty('tbody-rep-kardex', 9, 'No hay movimientos para este producto en el período.');
+            setTbodyEmpty('tbody-rep-kardex', colCount, 'No hay movimientos en el período seleccionado.');
             return;
         }
 
@@ -504,10 +473,9 @@ async function generarRepKardex() {
             const ref = m.referencia_tipo && m.referencia_id
                 ? `<span class="small text-muted">${m.referencia_tipo} #${m.referencia_id}</span>`
                 : '—';
-            const productoCol = m.producto
+            const productoCol = esGeneral && m.producto
                 ? `<td class="small fw-medium">${m.producto}<br><span class="text-muted font-monospace">${m.codigo ?? ''}</span></td>`
                 : '';
-            const colCount = m.producto ? 10 : 9;
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 ${productoCol}
@@ -530,18 +498,12 @@ async function generarRepKardex() {
 }
 
 
-// ════════════════════════════════════════════════════════════
-//  7. REPORTE: COMPRAS
-//  GET /api/reportes/compras
-//  Params: desde, hasta, agrupacion (dia|semana|mes), id_proveedor
-//  Response: { ok, agrupacion, datos: [{ periodo, proveedor, cantidad_ordenes, subtotal, igv, total }] }
-// ════════════════════════════════════════════════════════════
 
 async function generarRepCompras() {
     const id_proveedor = document.getElementById('rc-proveedor')?.value;
-    const agrupacion   = document.getElementById('rc-agrupacion')?.value || 'dia';
-    const desde        = document.getElementById('rc-desde')?.value;
-    const hasta        = document.getElementById('rc-hasta')?.value;
+    const agrupacion = document.getElementById('rc-agrupacion')?.value || 'dia';
+    const desde = document.getElementById('rc-desde')?.value;
+    const hasta = document.getElementById('rc-hasta')?.value;
 
     setTbodyLoading('tbody-rep-compras', 6);
 
@@ -578,14 +540,6 @@ async function generarRepCompras() {
     }
 }
 
-
-// ════════════════════════════════════════════════════════════
-//  8. REPORTE: GASTOS OPERATIVOS
-//  GET /api/reportes/gastos
-//  Params: desde, hasta
-//  Response: { ok, total_gastos, datos: [{ id_movimiento, registrado_en, concepto,
-//              monto, id_caja, numero_turno, cajero }] }
-// ════════════════════════════════════════════════════════════
 
 async function generarRepGastos() {
     const desde = document.getElementById('rg2-desde')?.value;
@@ -629,19 +583,9 @@ async function generarRepGastos() {
     }
 }
 
-
-// ════════════════════════════════════════════════════════════
-//  9. REPORTE: CAJA
-//  GET /api/reportes/cierres-caja
-//  Params: desde, hasta, id_empleado
-//  Response: { ok, total_cierres, totales: { total_esperado, total_real, total_diferencia },
-//              datos: [{ id_caja, numero_turno, fecha_apertura, fecha_cierre, monto_inicial,
-//                        monto_esperado, monto_real, diferencia, observacion, cajero }] }
-// ════════════════════════════════════════════════════════════
-
 async function generarRepCaja() {
-    const desde       = document.getElementById('rcaja-desde')?.value;
-    const hasta       = document.getElementById('rcaja-hasta')?.value;
+    const desde = document.getElementById('rcaja-desde')?.value;
+    const hasta = document.getElementById('rcaja-hasta')?.value;
     const id_empleado = document.getElementById('rcaja-cajero')?.value;
 
     setTbodyLoading('tbody-rep-caja', 9);
@@ -656,12 +600,12 @@ async function generarRepCaja() {
 
         if (!data.ok) throw new Error(data.mensaje || 'Error en el reporte');
 
-        const rows    = data.datos    ?? [];
+        const rows = data.datos    ?? [];
         const totales = data.totales  ?? {};
 
-        document.getElementById('rcaja-turnos').textContent    = data.total_cierres ?? 0;
-        document.getElementById('rcaja-esperado').textContent  = formatMoney(totales.total_esperado   ?? 0);
-        document.getElementById('rcaja-real').textContent      = formatMoney(totales.total_real       ?? 0);
+        document.getElementById('rcaja-turnos').textContent = data.total_cierres ?? 0;
+        document.getElementById('rcaja-esperado').textContent = formatMoney(totales.total_esperado   ?? 0);
+        document.getElementById('rcaja-real').textContent = formatMoney(totales.total_real       ?? 0);
 
         // Diferencia con color según si es positiva (sobrante) o negativa (faltante)
         const elDif = document.getElementById('rcaja-diferencia');
@@ -679,7 +623,7 @@ async function generarRepCaja() {
         const tb = document.getElementById('tbody-rep-caja');
         tb.innerHTML = '';
         rows.forEach(r => {
-            const dif    = Number(r.diferencia ?? 0);
+            const dif = Number(r.diferencia ?? 0);
             const difCls = dif >= 0 ? 'text-success' : 'text-danger';
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -701,20 +645,10 @@ async function generarRepCaja() {
     }
 }
 
-
-// ════════════════════════════════════════════════════════════
-//  10. REPORTE: DEVOLUCIONES
-//  GET /api/reportes/devoluciones
-//  Params: desde, hasta, tipo (cambio|reembolso), estado (pendiente|procesada|anulada)
-//  Response: { ok, total, total_reembolsado,
-//              datos: [{ id_devolucion, fecha, tipo, estado, motivo, monto_reembolso,
-//                        numero_comprobante, cliente_nombre, empleado_nombre }] }
-// ════════════════════════════════════════════════════════════
-
 async function generarRepDevoluciones() {
-    const desde  = document.getElementById('rd-desde')?.value;
-    const hasta  = document.getElementById('rd-hasta')?.value;
-    const tipo   = document.getElementById('rd-tipo')?.value;
+    const desde = document.getElementById('rd-desde')?.value;
+    const hasta = document.getElementById('rd-hasta')?.value;
+    const tipo = document.getElementById('rd-tipo')?.value;
     const estado = document.getElementById('rd-estado')?.value;
 
     setTbodyLoading('tbody-rep-devoluciones', 9);
@@ -763,9 +697,8 @@ async function generarRepDevoluciones() {
 }
 
 
-// ════════════════════════════════════════════════════════════
+
 //  INICIALIZACIÓN
-// ════════════════════════════════════════════════════════════
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -788,27 +721,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     //  Botones de generar reporte 
-    document.getElementById('btn-generar-rep-ventas')      ?.addEventListener('click', generarRepVentas);
-    document.getElementById('btn-generar-rep-ganancias')   ?.addEventListener('click', generarRepGanancias);
-    document.getElementById('btn-generar-rep-productos')   ?.addEventListener('click', generarRepProductos);
-    document.getElementById('btn-generar-rep-stock')       ?.addEventListener('click', generarRepStock);
-    document.getElementById('btn-generar-rep-lotes')       ?.addEventListener('click', generarRepLotes);
-    document.getElementById('btn-generar-rep-kardex')      ?.addEventListener('click', generarRepKardex);
-    document.getElementById('btn-generar-rep-compras')     ?.addEventListener('click', generarRepCompras);
-    document.getElementById('btn-generar-rep-gastos')      ?.addEventListener('click', generarRepGastos);
-    document.getElementById('btn-generar-rep-caja')        ?.addEventListener('click', generarRepCaja);
+    document.getElementById('btn-generar-rep-ventas') ?.addEventListener('click', generarRepVentas);
+    document.getElementById('btn-generar-rep-ganancias') ?.addEventListener('click', generarRepGanancias);
+    document.getElementById('btn-generar-rep-productos') ?.addEventListener('click', generarRepProductos);
+    document.getElementById('btn-generar-rep-stock') ?.addEventListener('click', generarRepStock);
+    document.getElementById('btn-generar-rep-lotes') ?.addEventListener('click', generarRepLotes);
+    document.getElementById('btn-generar-rep-kardex') ?.addEventListener('click', generarRepKardex);
+    document.getElementById('btn-generar-rep-compras') ?.addEventListener('click', generarRepCompras);
+    document.getElementById('btn-generar-rep-gastos') ?.addEventListener('click', generarRepGastos);
+    document.getElementById('btn-generar-rep-caja') ?.addEventListener('click', generarRepCaja);
     document.getElementById('btn-generar-rep-devoluciones')?.addEventListener('click', generarRepDevoluciones);
 
     //  Cargar automáticamente al cambiar de pestaña (todos los reportes)
     const tabReportes = {
-        'rep-ventas-btn':       generarRepVentas,
-        'rep-ganancias-btn':    generarRepGanancias,
-        'rep-productos-btn':    generarRepProductos,
-        'rep-stock-btn':        generarRepStock,
-        'rep-lotes-btn':        generarRepLotes,
-        'rep-compras-btn':      generarRepCompras,
-        'rep-gastos-btn':       generarRepGastos,
-        'rep-caja-btn':         generarRepCaja,
+        'rep-ventas-btn': generarRepVentas,
+        'rep-ganancias-btn': generarRepGanancias,
+        'rep-productos-btn': generarRepProductos,
+        'rep-stock-btn': generarRepStock,
+        'rep-lotes-btn': generarRepLotes,
+        'rep-compras-btn': generarRepCompras,
+        'rep-gastos-btn': generarRepGastos,
+        'rep-caja-btn': generarRepCaja,
         'rep-devoluciones-btn': generarRepDevoluciones,
     };
     Object.entries(tabReportes).forEach(([id, fn]) => {

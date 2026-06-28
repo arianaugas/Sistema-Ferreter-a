@@ -65,42 +65,26 @@ function renderFilaOrden(o) {
 
   const tdAcciones = document.createElement('td');
   tdAcciones.className = 'text-end pe-3';
-  const divAcc = document.createElement('div');
-  divAcc.className = 'd-flex gap-1 justify-content-end';
-
   if (o.estado === 'borrador') {
-    const btnEnviar = document.createElement('button');
-    btnEnviar.type = 'button';
-    btnEnviar.className = 'btn btn-sm btn-outline-primary';
-    btnEnviar.title = 'Enviar orden';
-    btnEnviar.innerHTML = '<i class="fa-solid fa-paper-plane fa-fw" aria-hidden="true"></i>';
-    btnEnviar.addEventListener('click', (e) => { e.stopPropagation(); enviarOrden(o.id_orden, o.numero_orden); });
-    divAcc.appendChild(btnEnviar);
+    tdAcciones.innerHTML = `
+      <button type="button" class="btn btn-sm btn-outline-success me-1" data-accion="enviar-orden" title="Marcar como enviada">
+        <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-danger" data-accion="anular-orden" title="Anular orden">
+        <i class="fa-solid fa-ban" aria-hidden="true"></i>
+      </button>
+    `;
+  } else if (o.estado === 'enviada') {
+    tdAcciones.innerHTML = `
+      <button type="button" class="btn btn-sm btn-outline-danger" data-accion="anular-orden" title="Anular orden">
+        <i class="fa-solid fa-ban" aria-hidden="true"></i>
+      </button>
+    `;
+  } else {
+    tdAcciones.innerHTML = '<span class="text-muted small">—</span>';
   }
-
-  if (['borrador', 'enviada'].includes(o.estado)) {
-    const btnAnular = document.createElement('button');
-    btnAnular.type = 'button';
-    btnAnular.className = 'btn btn-sm btn-outline-danger';
-    btnAnular.title = 'Anular orden';
-    btnAnular.innerHTML = '<i class="fa-solid fa-ban fa-fw" aria-hidden="true"></i>';
-    btnAnular.addEventListener('click', (e) => { e.stopPropagation(); anularOrden(o.id_orden, o.numero_orden); });
-    divAcc.appendChild(btnAnular);
-  }
-
-  if (o.estado === 'enviada') {
-    const btnRecep = document.createElement('button');
-    btnRecep.type = 'button';
-    btnRecep.className = 'btn btn-sm btn-outline-success';
-    btnRecep.title = 'Registrar recepción';
-    btnRecep.innerHTML = '<i class="fa-solid fa-truck-ramp-box fa-fw" aria-hidden="true"></i>';
-    btnRecep.setAttribute('data-bs-toggle', 'offcanvas');
-    btnRecep.setAttribute('data-bs-target', '#offcanvas-nueva-recepcion');
-    btnRecep.addEventListener('click', (e) => { e.stopPropagation(); prepararRecepcion(o.id_orden); });
-    divAcc.appendChild(btnRecep);
-  }
-
-  tdAcciones.appendChild(divAcc);
+  tdAcciones.querySelector('[data-accion="enviar-orden"]')?.addEventListener('click', () => enviarOrden(o.id_orden, o.numero_orden));
+  tdAcciones.querySelector('[data-accion="anular-orden"]')?.addEventListener('click', () => anularOrden(o.id_orden, o.numero_orden));
 
   tr.append(tdIco, tdNum, tdProv, tdEmp, tdFecha, tdFEsp, tdTotal, tdEstado, tdAcciones);
 
@@ -304,74 +288,80 @@ async function cargarProveedoresSelect() {
   }
 }
 
-// Líneas de producto para nueva orden
+// REEMPLAZAR la función completa:
 function agregarLineaProducto(producto = null) {
   const container = document.getElementById('tbody-lineas-orden');
   if (!container) return;
 
-  const idx = container.querySelectorAll('.linea-orden').length;
-  const div = document.createElement('div');
-  div.className = 'row g-2 mb-2 align-items-end linea-orden';
+  const productos = window._productosCache || [];
 
-  const col1 = document.createElement('div');
-  col1.className = 'col-5';
-  const labelP = document.createElement('label');
-  labelP.className = 'form-label form-label-sm mb-1';
-  labelP.textContent = 'Producto';
-  const inputP = document.createElement('input');
-  inputP.type = 'text';
-  inputP.className = 'form-control form-control-sm linea-producto-nombre';
-  inputP.placeholder = 'Nombre del producto...';
-  inputP.list = 'productos-datalist';
-  inputP.value = producto?.nombre || '';
-  inputP.dataset.idProducto = producto?.id_producto || '';
-  inputP.setAttribute('aria-label', `Producto línea ${idx + 1}`);
-  inputP.addEventListener('change', () => {
-    const cache = window._productosCache || [];
-    const found = cache.find(p => p.nombre === inputP.value);
-    if (found) {
-      inputP.dataset.idProducto = found.id_producto;
-      const linea = inputP.closest('.linea-orden');
-      const precioInput = linea?.querySelector('.linea-precio');
-      if (precioInput && found.precio_compra) precioInput.value = found.precio_compra;
-    }
+  const tr = document.createElement('tr');
+  tr.className = 'linea-orden';
+
+  // Columna PRODUCTO — select con los productos del proveedor
+  const tdProd = document.createElement('td');
+  const sel = document.createElement('select');
+  sel.className = 'form-select form-select-sm linea-producto-nombre';
+  sel.setAttribute('aria-label', 'Producto');
+
+  const optDefault = document.createElement('option');
+  optDefault.value = '';
+  optDefault.textContent = 'Seleccionar producto...';
+  sel.appendChild(optDefault);
+
+  productos.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id_producto;
+    opt.textContent = p.nombre;
+    opt.dataset.precio = p.precio_compra || '';
+    sel.appendChild(opt);
   });
-  col1.appendChild(labelP);
-  col1.appendChild(inputP);
 
-  const col2 = document.createElement('div');
-  col2.className = 'col-3';
-  const labelC = document.createElement('label');
-  labelC.className = 'form-label form-label-sm mb-1';
-  labelC.textContent = 'Cantidad';
+  if (producto) sel.value = producto.id_producto;
+
+  sel.addEventListener('change', () => {
+    const selected = sel.options[sel.selectedIndex];
+    const precioInput = tr.querySelector('.linea-precio');
+    if (precioInput && selected?.dataset.precio) {
+      precioInput.value = selected.dataset.precio;
+      precioInput.dispatchEvent(new Event('input'));
+    }
+    actualizarTotalesOrden();
+  });
+
+  tdProd.appendChild(sel);
+
+  // Columna CANTIDAD
+  const tdCant = document.createElement('td');
   const inputC = document.createElement('input');
   inputC.type = 'number';
   inputC.className = 'form-control form-control-sm linea-cantidad';
   inputC.placeholder = '0';
   inputC.min = '0.01';
   inputC.step = '0.01';
-  inputC.value = '';
-  inputC.setAttribute('aria-label', `Cantidad línea ${idx + 1}`);
-  col2.appendChild(labelC);
-  col2.appendChild(inputC);
+  inputC.value = producto?.cantidad || '';
+  inputC.addEventListener('input', actualizarTotalesOrden);
+  tdCant.appendChild(inputC);
 
-  const col3 = document.createElement('div');
-  col3.className = 'col-3';
-  const labelPr = document.createElement('label');
-  labelPr.className = 'form-label form-label-sm mb-1';
-  labelPr.textContent = 'P. Unitario';
+  // Columna P. UNITARIO
+  const tdPrecio = document.createElement('td');
   const inputPr = document.createElement('input');
   inputPr.type = 'number';
   inputPr.className = 'form-control form-control-sm linea-precio';
   inputPr.placeholder = '0.00';
   inputPr.min = '0.01';
   inputPr.step = '0.01';
-  inputPr.setAttribute('aria-label', `Precio unitario línea ${idx + 1}`);
-  col3.appendChild(labelPr);
-  col3.appendChild(inputPr);
+  inputPr.value = producto?.precio_compra || '';
+  inputPr.addEventListener('input', actualizarTotalesOrden);
+  tdPrecio.appendChild(inputPr);
 
-  const col4 = document.createElement('div');
-  col4.className = 'col-1';
+  // Columna SUBTOTAL
+  const tdSub = document.createElement('td');
+  tdSub.className = 'linea-subtotal text-end text-muted small';
+  tdSub.textContent = '—';
+
+  // Columna ELIMINAR
+  const tdElim = document.createElement('td');
   const btnElim = document.createElement('button');
   btnElim.type = 'button';
   btnElim.className = 'btn btn-sm btn-outline-danger';
@@ -379,45 +369,69 @@ function agregarLineaProducto(producto = null) {
   btnElim.innerHTML = '<i class="fa-solid fa-minus" aria-hidden="true"></i>';
   btnElim.addEventListener('click', () => {
     if (container.querySelectorAll('.linea-orden').length > 1) {
-      div.remove();
+      tr.remove();
+      actualizarTotalesOrden();
     } else {
       showToast('Debe haber al menos una línea de producto.', 'warning');
     }
   });
-  col4.appendChild(btnElim);
+  tdElim.appendChild(btnElim);
 
-  div.appendChild(col1);
-  div.appendChild(col2);
-  div.appendChild(col3);
-  div.appendChild(col4);
-  container.appendChild(div);
+  tr.append(tdProd, tdCant, tdPrecio, tdSub, tdElim);
+  container.appendChild(tr);
 }
 
-// Cargar productos en datalist
-async function cargarProductosDatalist(id_proveedor = '') {
-  let datalist = document.getElementById('productos-datalist');
-  if (!datalist) {
-    datalist = document.createElement('datalist');
-    datalist.id = 'productos-datalist';
-    document.body.appendChild(datalist);
-  }
+function actualizarTotalesOrden() {
+  let subtotal = 0;
+  document.querySelectorAll('.linea-orden').forEach(tr => {
+    const cant = parseFloat(tr.querySelector('.linea-cantidad')?.value) || 0;
+    const precio = parseFloat(tr.querySelector('.linea-precio')?.value) || 0;
+    const sub = cant * precio;
+    const tdSub = tr.querySelector('.linea-subtotal');
+    if (tdSub) tdSub.textContent = sub > 0 ? formatMoney(sub) : '—';
+    subtotal += sub;
+  });
+  const igv = subtotal * 0.18;
+  const total = subtotal + igv;
+  const fmt = v => formatMoney(v);
+  document.getElementById('no-subtotal').textContent = fmt(subtotal);
+  document.getElementById('no-igv').textContent = fmt(igv);
+  document.getElementById('no-total').textContent = fmt(total);
+}
+
+async function cargarProductosProveedor(id_proveedor = '') {
+  window._productosCache = [];
+  // Limpiar líneas existentes y poner una vacía
+  const container = document.getElementById('tbody-lineas-orden');
+  if (container) { container.replaceChildren(); }
+
+  // Ocultar alerta hasta que carguemos
+  const alerta = document.getElementById('alerta-stock-critico');
+  if (alerta) alerta.classList.add('d-none');
+
+  if (!id_proveedor) return;
+
   try {
-    const url = id_proveedor
-      ? `/api/proveedores/${id_proveedor}/productos`
-      : '/api/productos';
-    const data = await apiFetch(url);
-    const productos = Array.isArray(data) ? data : (data.productos || data.productos_proveedor || []);
-    window._productosCache = productos;
-    datalist.replaceChildren();
-    const frag = document.createDocumentFragment();
-    productos.forEach(p => {
-      const opt = document.createElement('option');
-      opt.value = p.nombre;
-      opt.dataset.id = p.id_producto;
-      frag.appendChild(opt);
-    });
-    datalist.appendChild(frag);
-  } catch { /* no crítico */ }
+    // Cargar productos del proveedor
+    const data = await apiFetch(`/api/proveedores/${id_proveedor}/productos`);
+    window._productosCache = data.productos || [];
+
+    // Cargar productos con stock bajo de este proveedor
+    const stockData = await apiFetch('/api/reportes/stock-bajo');
+    const idsProveedor = new Set(window._productosCache.map(p => p.id_producto));
+    window._stockBajoCache = (stockData.datos || []).filter(p => idsProveedor.has(p.id_producto));
+
+    // Mostrar alerta si hay productos con stock bajo del proveedor seleccionado
+    if (window._stockBajoCache.length > 0 && alerta) {
+      document.getElementById('alerta-stock-count').textContent = window._stockBajoCache.length;
+      alerta.classList.remove('d-none');
+    }
+
+    // Agregar primera línea vacía
+    agregarLineaProducto();
+  } catch (err) {
+    showToast('Error al cargar productos del proveedor: ' + err.message, 'error');
+  }
 }
 
 // Formulario: nueva orden de compra
@@ -430,13 +444,9 @@ function initFormNuevaOrden() {
 
   const selProv = document.getElementById('no-proveedor');
   if (selProv) {
-    selProv.addEventListener('change', () => cargarProductosDatalist(selProv.value));
+    selProv.addEventListener('change', () => cargarProductosProveedor(selProv.value));
   }
 
-  // Añadir primera línea
-  if (document.getElementById('tbody-lineas-orden') && document.querySelectorAll('.linea-orden').length === 0) {
-    agregarLineaProducto();
-  }
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -450,11 +460,11 @@ function initFormNuevaOrden() {
 
     const lineas = [];
     let error = false;
-    document.querySelectorAll('.linea-orden').forEach(row => {
-      const inputNom = row.querySelector('.linea-producto-nombre');
-      const inputCant = row.querySelector('.linea-cantidad');
-      const inputPr = row.querySelector('.linea-precio');
-      const id_producto = parseInt(inputNom?.dataset.idProducto);
+    document.querySelectorAll('.linea-orden').forEach(tr => {
+      const sel = tr.querySelector('.linea-producto-nombre');
+      const inputCant = tr.querySelector('.linea-cantidad');
+      const inputPr = tr.querySelector('.linea-precio');
+      const id_producto = parseInt(sel?.value);
       const cantidad = parseFloat(inputCant?.value);
       const precio = parseFloat(inputPr?.value);
 
@@ -486,15 +496,86 @@ function initFormNuevaOrden() {
       showToast('Error al crear orden: ' + err.message, 'error');
     }
   });
+
+
+  document.getElementById('btn-cargar-stock-critico')?.addEventListener('click', () => {
+    const container = document.getElementById('tbody-lineas-orden');
+    if (!container) return;
+
+    // Limpiar líneas vacías antes de agregar
+    container.querySelectorAll('.linea-orden').forEach(tr => {
+      const val = tr.querySelector('.linea-producto-nombre')?.value;
+      if (!val) tr.remove();
+    });
+
+    (window._stockBajoCache || []).forEach(p => {
+      // Evitar duplicados
+      const yaAgregado = Array.from(container.querySelectorAll('.linea-producto-nombre'))
+        .some(sel => sel.value === String(p.id_producto));
+      if (!yaAgregado) {
+        agregarLineaProducto({
+          id_producto: p.id_producto,
+          cantidad: p.diferencia, // cantidad sugerida = lo que falta para llegar al mínimo
+          precio_compra: null // precio viene del select onChange
+        });
+      }
+    });
+
+    // Cerrar la alerta
+    document.getElementById('alerta-stock-critico')?.classList.add('d-none');
+    actualizarTotalesOrden();
+  });
+
 }
 
 // Preparar formulario de recepción
-async function prepararRecepcion(id_orden) {
-  const inputOrden = document.getElementById('nr-orden');
-  const tbody = document.querySelector('#tabla-recepcion-productos tbody');
-  if (inputOrden) inputOrden.value = id_orden;
+// Carga las órdenes en estado 'enviada' (pendientes de recibir) en el select #nr-orden
+async function cargarOrdenesPendientesSelect(idOrdenPreseleccionada = null) {
+  const sel = document.getElementById('nr-orden');
+  if (!sel) return;
+  try {
+    const data = await apiFetch('/api/compras?estado=enviada');
+    const ordenes = Array.isArray(data.ordenes) ? data.ordenes : [];
 
+    sel.replaceChildren();
+    const optDefault = document.createElement('option');
+    optDefault.value = '';
+    optDefault.disabled = true;
+    optDefault.textContent = ordenes.length
+      ? 'Seleccionar orden…'
+      : 'No hay órdenes enviadas pendientes de recibir';
+    sel.appendChild(optDefault);
+
+    ordenes.forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o.id_orden;
+      opt.textContent = `${o.numero_orden} — ${o.proveedor_nombre || 'Proveedor no disponible'}`;
+      sel.appendChild(opt);
+    });
+
+    if (idOrdenPreseleccionada) {
+      sel.value = idOrdenPreseleccionada;
+    } else {
+      optDefault.selected = true;
+    }
+  } catch (err) {
+    showToast('No se pudieron cargar las órdenes pendientes: ' + err.message, 'error');
+  }
+}
+
+// Preparar formulario de recepción a partir de una orden ya elegida (id_orden puede venir
+// del botón de una fila específica, o del cambio manual del select #nr-orden)
+async function prepararRecepcion(id_orden) {
+  const tbody = document.getElementById('tbody-lineas-recepcion');
   if (!tbody) return;
+
+  if (!id_orden) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3 small">Selecciona una orden de compra para ver sus productos pendientes.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3"><i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando productos…</td></tr>';
+
   try {
     const data = await apiFetch(`/api/compras/${id_orden}`);
     const lineas = (data.detalle || []).filter(d => d.cantidad_solicitada > d.cantidad_recibida);
@@ -504,7 +585,7 @@ async function prepararRecepcion(id_orden) {
     if (lineas.length === 0) {
       const tr = document.createElement('tr');
       const td = document.createElement('td');
-      td.colSpan = 5;
+      td.colSpan = 6;
       td.className = 'text-center text-muted py-3';
       td.textContent = 'Esta orden ya está totalmente recibida.';
       tr.appendChild(td);
@@ -516,12 +597,15 @@ async function prepararRecepcion(id_orden) {
     lineas.forEach(l => {
       const pendiente = l.cantidad_solicitada - l.cantidad_recibida;
       const tr = document.createElement('tr');
+      tr.dataset.idProducto = l.id_producto;
 
       const tdNom = document.createElement('td');
       tdNom.textContent = l.producto_nombre;
+      tdNom.className = 'fw-medium';
       tdNom.dataset.idProducto = l.id_producto;
 
       const tdPend = document.createElement('td');
+      tdPend.className = 'text-muted small';
       tdPend.textContent = pendiente;
 
       const tdCant = document.createElement('td');
@@ -536,27 +620,52 @@ async function prepararRecepcion(id_orden) {
       inputCant.setAttribute('aria-label', `Cantidad recibida de ${l.producto_nombre}`);
       tdCant.appendChild(inputCant);
 
+      const tdPrecio = document.createElement('td');
+      const inputGroup = document.createElement('div');
+      inputGroup.className = 'input-group input-group-sm';
+      const spanPrefix = document.createElement('span');
+      spanPrefix.className = 'input-group-text';
+      spanPrefix.textContent = 'S/';
+      const inputPrecio = document.createElement('input');
+      inputPrecio.type = 'number';
+      inputPrecio.className = 'form-control rec-precio';
+      inputPrecio.min = '0';
+      inputPrecio.step = '0.01';
+      inputPrecio.value = l.precio_unitario ?? '';
+      inputPrecio.dataset.idProducto = l.id_producto;
+      inputPrecio.setAttribute('aria-label', `Precio unitario de ${l.producto_nombre}`);
+      inputGroup.append(spanPrefix, inputPrecio);
+      tdPrecio.appendChild(inputGroup);
+
       const tdLote = document.createElement('td');
-      const inputLote = document.createElement('input');
-      inputLote.type = 'text';
-      inputLote.className = 'form-control form-control-sm rec-lote';
-      inputLote.placeholder = 'Opcional';
-      inputLote.dataset.idProducto = l.id_producto;
-      tdLote.appendChild(inputLote);
-
       const tdVenc = document.createElement('td');
-      const inputVenc = document.createElement('input');
-      inputVenc.type = 'date';
-      inputVenc.className = 'form-control form-control-sm rec-vencimiento';
-      inputVenc.dataset.idProducto = l.id_producto;
-      tdVenc.appendChild(inputVenc);
 
-      tr.append(tdNom, tdPend, tdCant, tdLote, tdVenc);
+      if (l.tiene_lote) {
+        const inputLote = document.createElement('input');
+        inputLote.type = 'text';
+        inputLote.className = 'form-control form-control-sm rec-lote font-monospace';
+        inputLote.placeholder = 'Ej: L2026-045';
+        inputLote.maxLength = 50;
+        inputLote.dataset.idProducto = l.id_producto;
+        tdLote.appendChild(inputLote);
+
+        const inputVenc = document.createElement('input');
+        inputVenc.type = 'date';
+        inputVenc.className = 'form-control form-control-sm rec-vencimiento';
+        inputVenc.dataset.idProducto = l.id_producto;
+        tdVenc.appendChild(inputVenc);
+      } else {
+        // Este producto no maneja lotes/vencimiento, no tiene sentido pedírselo
+        tdLote.innerHTML = '<span class="text-muted small">No aplica</span>';
+        tdVenc.innerHTML = '<span class="text-muted small">No aplica</span>';
+      }
+
+      tr.append(tdNom, tdPend, tdCant, tdPrecio, tdLote, tdVenc);
       frag.appendChild(tr);
     });
     tbody.appendChild(frag);
   } catch (err) {
-    showToast('Error al cargar orden: ' + err.message, 'error');
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-3 small">Error al cargar la orden: ${err.message}</td></tr>`;
   }
 }
 
@@ -565,6 +674,17 @@ function initFormRecepcion() {
   const form = document.getElementById('form-nueva-recepcion');
   if (!form) return;
 
+  document.getElementById('offcanvas-nueva-recepcion')?.addEventListener('show.bs.offcanvas', () => {
+    cargarOrdenesPendientesSelect();
+    cargarAlmacenesSelect();
+    prepararRecepcion(null);
+  });
+
+  // Cambiar manualmente la orden en el select recarga sus productos pendientes
+  document.getElementById('nr-orden')?.addEventListener('change', (e) => {
+    prepararRecepcion(e.target.value || null);
+  });
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const id_orden = document.getElementById('nr-orden')?.value;
@@ -572,17 +692,19 @@ function initFormRecepcion() {
     const id_almacen = parseInt(document.getElementById('nr-almacen')?.value) || 1;
 
     const productos = [];
-    document.querySelectorAll('#tabla-recepcion-productos tbody tr').forEach(row => {
+    document.querySelectorAll('#tabla-recepcion-productos tbody tr[data-id-producto]').forEach(row => {
       const inputCant = row.querySelector('.rec-cantidad');
+      const inputPrecio = row.querySelector('.rec-precio');
       const inputLote = row.querySelector('.rec-lote');
       const inputVenc = row.querySelector('.rec-vencimiento');
-      const tdNom = row.querySelector('td[data-id-producto]');
-      const id_producto = parseInt(tdNom?.dataset.idProducto || inputCant?.dataset.idProducto);
+      const id_producto = parseInt(row.dataset.idProducto);
       const cantidad = parseFloat(inputCant?.value);
+      const precio_unitario = parseFloat(inputPrecio?.value);
       if (id_producto && !isNaN(cantidad) && cantidad > 0) {
         productos.push({
           id_producto,
           cantidad,
+          precio_unitario: isNaN(precio_unitario) ? undefined : precio_unitario,
           numero_lote: inputLote?.value.trim() || null,
           fecha_vencimiento: inputVenc?.value || null,
         });
@@ -619,34 +741,37 @@ function initFormRecepcion() {
 
 // Filtros
 function initFiltros() {
-  const btnFiltrar = document.getElementById('btn-filtrar-ordenes');  
-  const btnLimpiar = document.getElementById('btn-limpiar-filtros-ordenes'); 
-
+  // Filtros de órdenes — se aplican solos, no hay botón "Filtrar" en esta barra
   const getFiltros = () => ({
+    proveedor: document.getElementById('input-buscar-orden')?.value.trim(),
     estado: document.getElementById('filtro-estado-orden')?.value,
     fecha_desde: document.getElementById('filtro-fecha-desde-orden')?.value,
     fecha_hasta: document.getElementById('filtro-fecha-hasta-orden')?.value,
   });
 
-  if (btnFiltrar) btnFiltrar.addEventListener('click', () => cargarOrdenes(getFiltros()));
-  if (btnLimpiar) {
-    btnLimpiar.addEventListener('click', () => {
-      ['filtro-estado-orden', 'filtro-fecha-desde-orden', 'filtro-fecha-hasta-orden'].forEach(id => {
-        const el = document.getElementById(id); if (el) el.value = '';
-      });
-      cargarOrdenes();
-    });
-  }
+  let timeoutBusquedaOrden;
+  document.getElementById('input-buscar-orden')?.addEventListener('input', () => {
+    clearTimeout(timeoutBusquedaOrden);
+    timeoutBusquedaOrden = setTimeout(() => cargarOrdenes(getFiltros()), 300);
+  });
+  document.getElementById('filtro-estado-orden')?.addEventListener('change', () => cargarOrdenes(getFiltros()));
+  document.getElementById('filtro-fecha-desde-orden')?.addEventListener('change', () => cargarOrdenes(getFiltros()));
+  document.getElementById('filtro-fecha-hasta-orden')?.addEventListener('change', () => cargarOrdenes(getFiltros()));
 
   // Filtros de recepciones
-  const btnFiltrarRec = document.getElementById('btn-filtrar-recepciones');
-  if (btnFiltrarRec) {
-    btnFiltrarRec.addEventListener('click', () => cargarRecepciones({
-      fecha_desde: document.getElementById('filtro-fecha-desde-rec')?.value,
-      fecha_hasta: document.getElementById('filtro-fecha-hasta-rec')?.value,
-      busqueda: document.getElementById('input-buscar-recepcion')?.value.trim(),
-    }));
-  }
+  const getFiltrosRec = () => ({
+    fecha_desde: document.getElementById('filtro-fecha-desde-rec')?.value,
+    fecha_hasta: document.getElementById('filtro-fecha-hasta-rec')?.value,
+    busqueda: document.getElementById('input-buscar-recepcion')?.value.trim(),
+  });
+
+  let timeoutBusquedaRec;
+  document.getElementById('input-buscar-recepcion')?.addEventListener('input', () => {
+    clearTimeout(timeoutBusquedaRec);
+    timeoutBusquedaRec = setTimeout(() => cargarRecepciones(getFiltrosRec()), 300);
+  });
+  document.getElementById('filtro-fecha-desde-rec')?.addEventListener('change', () => cargarRecepciones(getFiltrosRec()));
+  document.getElementById('filtro-fecha-hasta-rec')?.addEventListener('change', () => cargarRecepciones(getFiltrosRec()));
 
 }
 
@@ -691,7 +816,7 @@ function renderFilaRecepcion(r) {
   const tdNum = document.createElement('td');
   const numSpan = document.createElement('span');
   numSpan.className = 'badge text-bg-light border font-monospace';
-  numSpan.textContent = `REC-${String(r.id_recepcion).padStart(4,'0')}`;
+  numSpan.textContent = `REC-${String(r.id_recepcion).padStart(4, '0')}`;
   tdNum.appendChild(numSpan);
 
   const tdOrden = document.createElement('td');
@@ -708,16 +833,13 @@ function renderFilaRecepcion(r) {
 
   const tdGuia = document.createElement('td');
   tdGuia.className = 'font-monospace small';
-  tdGuia.textContent = r.guia_remision || '—';
+  tdGuia.textContent = r.numero_guia || '—';
 
   const tdFecha = document.createElement('td');
   tdFecha.className = 'text-muted small';
   tdFecha.textContent = formatDate(r.fecha, false);
 
-  const tdAcc = document.createElement('td');
-  tdAcc.className = 'text-end pe-3';
-
-  tr.append(tdIco, tdNum, tdOrden, tdProv, tdAlm, tdGuia, tdFecha, tdAcc);
+  tr.append(tdIco, tdNum, tdOrden, tdProv, tdAlm, tdGuia, tdFecha);
 
   tr.addEventListener('click', () => {
     const detailRow = document.getElementById(detailId);
@@ -733,7 +855,7 @@ function renderFilaRecepcion(r) {
   trDetail.id = detailId;
   trDetail.className = 'detail-row collapse';
   const tdDetail = document.createElement('td');
-  tdDetail.colSpan = 8;
+  tdDetail.colSpan = 7;
   tdDetail.className = 'p-0';
 
   if (r.productos && r.productos.length > 0) {
@@ -745,7 +867,7 @@ function renderFilaRecepcion(r) {
     const tb = document.createElement('tbody');
     r.productos.forEach(p => {
       const tr2 = document.createElement('tr');
-      [p.producto_nombre, p.cantidad, formatMoney(p.precio_unitario), p.numero_lote || '—', p.fecha_vencimiento ? formatDate(p.fecha_vencimiento) : '—'].forEach(v => {
+      [p.producto_nombre, p.cantidad_recibida, formatMoney(p.precio_unitario), p.numero_lote || '—', p.fecha_vencimiento ? formatDate(p.fecha_vencimiento) : '—'].forEach(v => {
         const td2 = document.createElement('td'); td2.textContent = v; tr2.appendChild(td2);
       });
       tb.appendChild(tr2);
@@ -765,16 +887,14 @@ function renderFilaRecepcion(r) {
 async function cargarRecepciones(filtros = {}) {
   const tbody = document.querySelector('#tabla-recepciones tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando...</td></tr>';
   try {
-    const baseParams = new URLSearchParams();
-    if (filtros.fecha_desde) baseParams.set('fecha_desde', filtros.fecha_desde);
-    if (filtros.fecha_hasta) baseParams.set('fecha_hasta', filtros.fecha_hasta);
-    if (filtros.busqueda) baseParams.set('proveedor', filtros.busqueda);
-
+    // Traemos TODAS las órdenes recibidas/enviadas sin filtrar acá — el
+    // filtro real (guía, proveedor, fecha de recepción) se aplica abajo,
+    // sobre las recepciones, no sobre las órdenes.
     const [dataRec, dataEnv] = await Promise.all([
-      apiFetch(`/api/compras?${new URLSearchParams({...Object.fromEntries(baseParams), estado: 'recibida'})}`),
-      apiFetch(`/api/compras?${new URLSearchParams({...Object.fromEntries(baseParams), estado: 'enviada'})}`),
+      apiFetch(`/api/compras?estado=recibida`),
+      apiFetch(`/api/compras?estado=enviada`),
     ]);
 
     const ordenes = [
@@ -783,7 +903,7 @@ async function cargarRecepciones(filtros = {}) {
     ];
 
     // Para cada orden, cargar sus recepciones
-    const todasRecepciones = [];
+    let todasRecepciones = [];
     await Promise.all(ordenes.map(async o => {
       try {
         const r = await apiFetch(`/api/compras/${o.id_orden}/recepciones`);
@@ -793,11 +913,31 @@ async function cargarRecepciones(filtros = {}) {
       } catch { /* orden sin recepciones */ }
     }));
 
+    // Filtro por texto: busca en N° de guía o nombre del proveedor
+    if (filtros.busqueda) {
+      const texto = filtros.busqueda.toLowerCase();
+      todasRecepciones = todasRecepciones.filter(r =>
+        (r.numero_guia || '').toLowerCase().includes(texto) ||
+        (r.proveedor_nombre || '').toLowerCase().includes(texto)
+      );
+    }
+
+    // Filtro por rango de fechas: sobre la fecha real de la recepción
+    if (filtros.fecha_desde) {
+      const desde = new Date(filtros.fecha_desde);
+      todasRecepciones = todasRecepciones.filter(r => new Date(r.fecha) >= desde);
+    }
+    if (filtros.fecha_hasta) {
+      const hasta = new Date(filtros.fecha_hasta);
+      hasta.setHours(23, 59, 59, 999); // incluir todo el día "hasta"
+      todasRecepciones = todasRecepciones.filter(r => new Date(r.fecha) <= hasta);
+    }
+
     todasRecepciones.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
     tbody.replaceChildren();
     if (todasRecepciones.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No hay recepciones registradas.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No hay recepciones que coincidan con el filtro.</td></tr>';
       return;
     }
     const frag = document.createDocumentFragment();
@@ -808,7 +948,7 @@ async function cargarRecepciones(filtros = {}) {
     });
     tbody.appendChild(frag);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">Error: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">Error: ${err.message}</td></tr>`;
   }
 }
 
@@ -834,15 +974,11 @@ async function cargarAlmacenesSelect() {
 
 // Punto de entrada
 document.addEventListener('DOMContentLoaded', async () => {
-  ComprasState.cajaActiva = await asegurarCajaDeTrabajo();
-  await Promise.all([
-    cargarProveedoresSelect(),
-    cargarProductosDatalist(),
-  ]);
-  initFiltros();
-  initFormNuevaOrden();
-  initFormRecepcion();
-  cargarOrdenes();
-  cargarRecepciones();
-  cargarAlmacenesSelect();
+    ComprasState.cajaActiva = await asegurarCajaDeTrabajo();
+    await cargarProveedoresSelect();
+    initFiltros();
+    initFormNuevaOrden();
+    initFormRecepcion();
+    cargarOrdenes();
+    cargarRecepciones();
 });

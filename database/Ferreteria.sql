@@ -592,6 +592,11 @@ CREATE TABLE permisos_rol (
     tiene_acceso BIT NOT NULL DEFAULT 0,
     CONSTRAINT pk_permisos_rol PRIMARY KEY (id_permiso),
     CONSTRAINT uq_permisos_rol UNIQUE (id_rol, id_modulo),
-    CONSTRAINT fk_permisos_rol_rol FOREIGN KEY (id_rol) REFERENCES roles(id_rol),
+    CONSTRAINT fk_permisos_rol_rol FOREIGN KEY (id_rol) REFERENCES roles(id_rol) ON DELETE CASCADE,
     CONSTRAINT fk_permisos_rol_modulo FOREIGN KEY (id_modulo) REFERENCES modulos(id_modulo)
 );
+
+--Nuevo, sintetizar dsps
+
+ALTER TABLE ventas ADD CONSTRAINT chk_ventas_estado 
+    CHECK (estado IN ('pendiente','pagada','anulada','con_devolucion'));

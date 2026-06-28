@@ -15,17 +15,18 @@ let lotesPage = 1;
 // Producto seleccionado en kardex y ajuste
 let kardexProductoId = null;
 let ajusteProductoData = null;
-// Caché del datalist de transferencias: solo productos con stock > 0 en el almacén de origen elegido
+// Caché de productos con stock en el almacén de origen elegido para la transferencia
 let _transfStockCache = [];
 
 async function actualizarDatalistTransferenciaPorOrigen() {
     const idAlmacen = document.getElementById('transf-origen')?.value;
-    const dlT = document.getElementById('transf-productos-lista');
-    if (!dlT) return;
+    const dropdown = document.getElementById('transf-resultados-dropdown');
+    if (!dropdown) return;
+
+    ocultarResultadosTransf();
 
     if (!idAlmacen) {
         _transfStockCache = [];
-        dlT.innerHTML = '';
         return;
     }
 
@@ -33,16 +34,66 @@ async function actualizarDatalistTransferenciaPorOrigen() {
         const data = await apiFetch(`${API}/stock?id_almacen=${idAlmacen}`);
         // Solo productos con stock disponible en ese almacén
         _transfStockCache = (data.stock || []).filter(p => Number(p.stock_actual) > 0);
-
-        dlT.innerHTML = '';
-        _transfStockCache.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = `${p.codigo} — ${p.nombre}`;
-            opt.dataset.id = p.id_producto;
-            dlT.appendChild(opt);
-        });
     } catch (err) {
+        _transfStockCache = [];
         showToast('No se pudo cargar el stock del almacén de origen.', 'error');
+    }
+}
+
+// Pinta el dropdown con los productos del almacén origen que matchean el texto escrito
+// (o todos, si el input está vacío y se hace foco/click, para que se puedan explorar).
+function renderResultadosTransf(termino = '') {
+    const dropdown = document.getElementById('transf-resultados-dropdown');
+    if (!dropdown) return;
+
+    if (!_transfStockCache.length) {
+        ocultarResultadosTransf();
+        return;
+    }
+
+    const t = termino.trim().toLowerCase();
+    const yaAgregados = new Set(_transfDetalle.map(i => i.id_producto));
+
+    const coincidencias = _transfStockCache
+        .filter(p => !t || p.nombre.toLowerCase().includes(t) || p.codigo.toLowerCase().includes(t))
+        .slice(0, 30);
+
+    dropdown.innerHTML = '';
+
+    if (coincidencias.length === 0) {
+        dropdown.innerHTML = '<p class="small text-muted text-center py-3 mb-0">Sin resultados en este almacén.</p>';
+        dropdown.classList.remove('d-none');
+        return;
+    }
+
+    coincidencias.forEach(p => {
+        const yaEsta = yaAgregados.has(p.id_producto);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-2';
+        btn.disabled = yaEsta;
+        btn.innerHTML = `
+            <span class="text-truncate">
+                <span class="fw-semibold small">${p.codigo}</span> — ${p.nombre}
+            </span>
+            <span class="badge ${yaEsta ? 'text-bg-secondary' : 'text-bg-success'} flex-shrink-0">
+                ${yaEsta ? 'Agregado' : `${Number(p.stock_actual).toFixed(2)} ${p.unidad ?? ''}`}
+            </span>`;
+        btn.addEventListener('click', () => {
+            if (yaEsta) return;
+            agregarProductoTransfDesdeDropdown(p);
+        });
+        dropdown.appendChild(btn);
+    });
+
+    dropdown.classList.remove('d-none');
+}
+
+function ocultarResultadosTransf() {
+    const dropdown = document.getElementById('transf-resultados-dropdown');
+    if (dropdown) {
+        dropdown.classList.add('d-none');
+        dropdown.innerHTML = '';
     }
 }
 
@@ -286,16 +337,15 @@ function _badgeEstadoStock(estado) {
     return span;
 }
 
-// FIX: Cards de alertas con colores e íconos
 function actualizarAlertas(stock) {
-    const critico    = stock.filter(s => s.estado_stock === 'critico').length;
-    const normal     = stock.filter(s => s.estado_stock === 'normal').length;
+    const critico = stock.filter(s => s.estado_stock === 'critico').length;
+    const normal = stock.filter(s => s.estado_stock === 'normal').length;
     const sobrestock = stock.filter(s => s.estado_stock === 'sobrestock').length;
 
-    document.getElementById('alerta-critico-count').textContent    = critico;
-    document.getElementById('alerta-normal-count').textContent     = normal;
+    document.getElementById('alerta-critico-count').textContent = critico;
+    document.getElementById('alerta-normal-count').textContent = normal;
     document.getElementById('alerta-sobrestock-count').textContent = sobrestock;
-    document.getElementById('alerta-total-count').textContent      = stock.length;
+    document.getElementById('alerta-total-count').textContent = stock.length;
 
     // Aplicar colores a las cards de alerta
     const critCard = document.getElementById('alerta-critico-card');
@@ -374,10 +424,10 @@ function initStockFiltros() {
 
 function aplicarFiltrosStock() {
     const params = {
-        buscar:      document.getElementById('filtro-stock-buscar')?.value.trim()  || '',
-        id_categoria: document.getElementById('filtro-stock-categoria')?.value     || '',
-        id_almacen:  document.getElementById('filtro-stock-almacen')?.value        || '',
-        estado:      document.getElementById('filtro-stock-estado')?.value         || '',
+        buscar: document.getElementById('filtro-stock-buscar')?.value.trim() || '',
+        id_categoria: document.getElementById('filtro-stock-categoria')?.value || '',
+        id_almacen: document.getElementById('filtro-stock-almacen')?.value || '',
+        estado: document.getElementById('filtro-stock-estado')?.value || '',
     };
     Object.keys(params).forEach(k => { if (!params[k]) delete params[k]; });
     cargarStock(params);
@@ -392,10 +442,10 @@ function renderPaginacion(seccion, total) {
     const current = pageMap[seccion] ?? 1;
 
     const sectionMap = {
-        stock:  'stock-tabla-card',
+        stock: 'stock-tabla-card',
         kardex: 'kardex-tabla-card',
         transf: 'transferencias-tabla-card',
-        lotes:  'lotes-tabla-card',
+        lotes: 'lotes-tabla-card',
     };
     const card = document.getElementById(sectionMap[seccion]);
     if (!card) return;
@@ -420,7 +470,7 @@ function renderPaginacion(seccion, total) {
     ul.appendChild(liPrev);
 
     const start = Math.max(1, current - 2);
-    const end   = Math.min(totalPages, start + 4);
+    const end = Math.min(totalPages, start + 4);
     for (let i = start; i <= end; i++) {
         const li = document.createElement('li');
         li.className = 'page-item' + (i === current ? ' active' : '');
@@ -450,10 +500,10 @@ function renderPaginacion(seccion, total) {
 }
 
 function cambiarPagina(seccion, page, total) {
-    if (seccion === 'stock')  { stockPage  = page; renderStock(_stockCache); }
+    if (seccion === 'stock') { stockPage = page; renderStock(_stockCache); }
     if (seccion === 'kardex') { kardexPage = page; }
     if (seccion === 'transf') { transfPage = page; }
-    if (seccion === 'lotes')  { lotesPage  = page; }
+    if (seccion === 'lotes') { lotesPage  = page; }
 }
 
 
@@ -490,8 +540,8 @@ function initKardexBusqueda() {
         const input = document.getElementById('kardex-producto-input');
         if (input) input.value = '';
         kardexProductoId = null;
-        document.getElementById('kardex-almacen').value    = '';
-        document.getElementById('kardex-tipo').value       = '';
+        document.getElementById('kardex-almacen').value = '';
+        document.getElementById('kardex-tipo').value = '';
         document.getElementById('kardex-fecha-desde').value = '';
         document.getElementById('kardex-fecha-hasta').value = '';
         limpiarTablaKardex();
@@ -531,13 +581,13 @@ async function buscarKardex() {
     }
 
     const qs = new URLSearchParams();
-    const almacen    = document.getElementById('kardex-almacen')?.value;
-    const tipo       = document.getElementById('kardex-tipo')?.value;
+    const almacen = document.getElementById('kardex-almacen')?.value;
+    const tipo = document.getElementById('kardex-tipo')?.value;
     const fechaDesde = document.getElementById('kardex-fecha-desde')?.value;
     const fechaHasta = document.getElementById('kardex-fecha-hasta')?.value;
 
-    if (almacen)    qs.set('id_almacen',  almacen);
-    if (tipo)       qs.set('tipo',        tipo);
+    if (almacen) qs.set('id_almacen',  almacen);
+    if (tipo) qs.set('tipo', tipo);
     if (fechaDesde) qs.set('fecha_desde', fechaDesde);
     if (fechaHasta) qs.set('fecha_hasta', fechaHasta);
 
@@ -550,190 +600,135 @@ async function buscarKardex() {
 }
 
 function limpiarTablaKardex() {
-    const tbody    = document.getElementById('tabla-kardex-body');
-    const emptyRow = document.getElementById('kardex-empty-row');
-    tbody.querySelectorAll('tr.kardex-dyn').forEach(r => r.remove());
-    emptyRow.classList.remove('d-none');
+    const lista = document.getElementById('kardex-lista');
+    lista.querySelectorAll('.kardex-card-item').forEach(el => el.remove());
+    document.getElementById('kardex-empty-row').classList.remove('d-none');
     document.getElementById('kardex-total-badge').textContent = '0 movimientos';
-    document.getElementById('kardex-paginacion-info').textContent = '';
 }
 
-// FIX KARDEX: eliminar referencia_id de la tabla, expandir con más info + colores
 function renderTablaKardex(movimientos) {
-    const tbody    = document.getElementById('tabla-kardex-body');
-    const emptyRow = document.getElementById('kardex-empty-row');
-    const badge    = document.getElementById('kardex-total-badge');
-    const info     = document.getElementById('kardex-paginacion-info');
+    const lista = document.getElementById('kardex-lista');
+    const empty = document.getElementById('kardex-empty-row');
+    const badge = document.getElementById('kardex-total-badge');
 
-    tbody.querySelectorAll('tr.kardex-dyn').forEach(r => r.remove());
-
+    lista.querySelectorAll('.kardex-card-item').forEach(el => el.remove());
     badge.textContent = `${movimientos.length} movimiento${movimientos.length !== 1 ? 's' : ''}`;
 
     if (movimientos.length === 0) {
-        emptyRow.classList.remove('d-none');
-        info.textContent = 'Sin resultados';
+        empty.classList.remove('d-none');
         return;
     }
-
-    emptyRow.classList.add('d-none');
-    info.textContent = `${movimientos.length} movimiento${movimientos.length !== 1 ? 's' : ''}`;
+    empty.classList.add('d-none');
 
     movimientos.forEach((mov, idx) => {
-        const rowId    = `kardex-dyn-row-${idx}`;
-        const detailId = `kardex-dyn-detail-${idx}`;
-
-        const tr = document.createElement('tr');
-        tr.id = rowId;
-        tr.className = 'kardex-dyn cursor-pointer';
-        tr.setAttribute('data-expand-trigger', detailId);
-        tr.setAttribute('role', 'button');
-        tr.setAttribute('tabindex', '0');
-        tr.setAttribute('aria-expanded', 'false');
-
         const cantidad = parseFloat(mov.cantidad);
-        const signo    = cantidad >= 0 ? '+' : '';
-        const colorCantidad = cantidad > 0 ? 'text-success' : cantidad < 0 ? 'text-danger' : 'text-muted';
+        const signo = cantidad >= 0 ? '+' : '';
+        const clrCant = cantidad > 0 ? 'text-success' : cantidad < 0 ? 'text-danger' : 'text-muted';
+        const detailId = `kdx-detail-${idx}`;
 
-        // FIX: reemplazar columna "Motivo / Referencia" — quitar referencia_id numérico y mostrar descripción legible
-        const descripcionMovimiento = _descripcionKardex(mov);
+        const wrap = document.createElement('div');
+        wrap.className = 'kardex-card-item mb-2';
 
-        tr.innerHTML = `
-            <td class="ps-3"><i class="fa-solid fa-chevron-down fa-xs text-muted" data-expand-icon aria-hidden="true"></i></td>
-            <td>${_badgeKardexTipo(mov.tipo_movimiento)}</td>
-            <td><time datetime="${mov.registrado_en}">${formatDate(mov.registrado_en, true)}</time></td>
-            <td>${mov.almacen}</td>
-            <td>${descripcionMovimiento}</td>
-            <td class="text-end fw-semibold ${colorCantidad}">${signo}${Number(mov.cantidad).toFixed(2)}</td>
-            <td class="text-end text-muted">${Number(mov.stock_anterior).toFixed(2)}</td>
-            <td class="text-end fw-semibold">${Number(mov.stock_posterior).toFixed(2)}</td>
-            <td><span class="small">${mov.empleado}</span></td>
+        // — tarjeta principal —
+        const card = document.createElement('div');
+        card.className = 'card card-body py-2 px-3 kardex-card-head';
+        card.style.cursor = 'pointer';
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-expanded', 'false');
+        card.setAttribute('aria-controls', detailId);
+
+        card.innerHTML = `
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <i class="fa-solid fa-chevron-right fa-xs text-muted kardex-chevron" aria-hidden="true"></i>
+                ${_badgeKardexTipo(mov.tipo_movimiento)}
+                <span class="fw-semibold small">${_tituloKardex(mov)}</span>
+                <span class="ms-auto fw-semibold ${clrCant}">${signo}${Number(mov.cantidad).toFixed(2)}</span>
+            </div>
+            <div class="d-flex gap-3 mt-1 small text-muted flex-wrap">
+                <span><i class="fa-regular fa-calendar fa-xs me-1" aria-hidden="true"></i>${formatDate(mov.registrado_en, true)}</span>
+                <span><i class="fa-solid fa-warehouse fa-xs me-1" aria-hidden="true"></i>${mov.almacen}</span>
+                <span><i class="fa-regular fa-user fa-xs me-1" aria-hidden="true"></i>${mov.empleado}</span>
+            </div>
         `;
 
-        // Fila detalle expandible — con más info y colores
-        const trDetail = document.createElement('tr');
-        trDetail.id = detailId;
-        trDetail.className = 'kardex-dyn detail-row collapse';
-        trDetail.setAttribute('aria-hidden', 'true');
+        // — panel de detalle colapsable —
+        const detail = document.createElement('div');
+        detail.id = detailId;
+        detail.className = 'kardex-card-detail collapse border border-top-0 rounded-bottom px-3 py-2';
 
-        const colorBg = _colorBgKardex(mov.tipo_movimiento);
-        const iconInfo = _iconoKardexDetalle(mov.tipo_movimiento);
-
-        trDetail.innerHTML = `
-            <td colspan="9" class="px-4 py-3" style="background:${colorBg}">
-                <div class="d-flex align-items-start gap-3">
-                    <div class="flex-shrink-0 mt-1">${iconInfo}</div>
-                    <div class="flex-grow-1">
-                        <div class="row g-3">
-                            <div class="col-12 col-md-6">
-                                <dl class="row g-1 mb-0">
-                                    <dt class="col-5 text-muted small fw-normal">Tipo</dt>
-                                    <dd class="col-7 mb-0 small">${_badgeKardexTipo(mov.tipo_movimiento)}</dd>
-                                    <dt class="col-5 text-muted small fw-normal">Motivo</dt>
-                                    <dd class="col-7 mb-0 small fw-semibold">${mov.motivo ?? '—'}</dd>
-                                    <dt class="col-5 text-muted small fw-normal">Documento origen</dt>
-                                    <dd class="col-7 mb-0 small">${_formatReferenciaKardex(mov)}</dd>
-                                </dl>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <dl class="row g-1 mb-0">
-                                    <dt class="col-5 text-muted small fw-normal">Cantidad</dt>
-                                    <dd class="col-7 mb-0 small fw-bold ${colorCantidad}">${signo}${Number(mov.cantidad).toFixed(2)}</dd>
-                                    <dt class="col-5 text-muted small fw-normal">Stock anterior</dt>
-                                    <dd class="col-7 mb-0 small">${Number(mov.stock_anterior).toFixed(2)}</dd>
-                                    <dt class="col-5 text-muted small fw-normal">Stock posterior</dt>
-                                    <dd class="col-7 mb-0 small fw-bold">${Number(mov.stock_posterior).toFixed(2)}</dd>
-                                    <dt class="col-5 text-muted small fw-normal">Empleado</dt>
-                                    <dd class="col-7 mb-0 small">${mov.empleado}</dd>
-                                    <dt class="col-5 text-muted small fw-normal">Fecha</dt>
-                                    <dd class="col-7 mb-0 small"><time datetime="${mov.registrado_en}">${formatDate(mov.registrado_en, true)}</time></dd>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
+        const docOrigen = _formatReferenciaKardex(mov);
+        detail.innerHTML = `
+            <div class="row g-2 small mt-0">
+                <div class="col-12 col-md-6">
+                    <dl class="row g-1 mb-0">
+                        <dt class="col-5 text-muted fw-normal">Documento</dt>
+                        <dd class="col-7 mb-0">${docOrigen}</dd>
+                        <dt class="col-5 text-muted fw-normal">Motivo</dt>
+                        <dd class="col-7 mb-0 fw-semibold">${mov.motivo ?? '—'}</dd>
+                        <dt class="col-5 text-muted fw-normal">Almacén</dt>
+                        <dd class="col-7 mb-0">${mov.almacen}</dd>
+                    </dl>
                 </div>
-            </td>
+                <div class="col-12 col-md-6">
+                    <dl class="row g-1 mb-0">
+                        <dt class="col-5 text-muted fw-normal">Cantidad</dt>
+                        <dd class="col-7 mb-0 fw-bold ${clrCant}">${signo}${Number(mov.cantidad).toFixed(2)}</dd>
+                        <dt class="col-5 text-muted fw-normal">Stock anterior</dt>
+                        <dd class="col-7 mb-0">${Number(mov.stock_anterior).toFixed(2)}</dd>
+                        <dt class="col-5 text-muted fw-normal">Stock posterior</dt>
+                        <dd class="col-7 mb-0 fw-bold">${Number(mov.stock_posterior).toFixed(2)}</dd>
+                        <dt class="col-5 text-muted fw-normal">Empleado</dt>
+                        <dd class="col-7 mb-0">${mov.empleado}</dd>
+                    </dl>
+                </div>
+            </div>
         `;
 
-        tbody.appendChild(tr);
-        tbody.appendChild(trDetail);
+        // toggle al hacer clic en la tarjeta
+        card.addEventListener('click', () => {
+            const isOpen = card.getAttribute('aria-expanded') === 'true';
+            card.setAttribute('aria-expanded', String(!isOpen));
+            card.classList.toggle('rounded-bottom', isOpen);
+            card.classList.toggle('rounded-bottom-0', !isOpen);
+            card.querySelector('.kardex-chevron').style.transform = isOpen ? '' : 'rotate(90deg)';
+            detail.classList.toggle('show', !isOpen);
+        });
+        card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); } });
+
+        wrap.appendChild(card);
+        wrap.appendChild(detail);
+        lista.appendChild(wrap);
     });
-
-    initExpandableRowsLive();
 }
 
-// Genera descripción legible del movimiento (reemplaza "referencia_id #123")
-function _descripcionKardex(mov) {
+function _tituloKardex(mov) {
     const tipo = mov.tipo_movimiento?.toLowerCase();
-    const motivo = mov.motivo ?? '';
-
-    if (tipo === 'entrada') {
-        if (mov.referencia_tipo === 'recepcion' && mov.referencia_id) {
-            return `<span class="small text-success fw-semibold"><i class="fa-solid fa-arrow-down fa-xs me-1" aria-hidden="true"></i>Recepción de compra</span><br><span class="small text-muted">${motivo}</span>`;
-        }
-        return `<span class="small text-success fw-semibold"><i class="fa-solid fa-arrow-down fa-xs me-1" aria-hidden="true"></i>Entrada</span><br><span class="small text-muted">${motivo}</span>`;
-    }
-    if (tipo === 'salida') {
-        if (mov.referencia_tipo === 'venta' && mov.referencia_id) {
-            return `<span class="small text-danger fw-semibold"><i class="fa-solid fa-arrow-up fa-xs me-1" aria-hidden="true"></i>Venta registrada</span><br><span class="small text-muted">${motivo}</span>`;
-        }
-        return `<span class="small text-danger fw-semibold"><i class="fa-solid fa-arrow-up fa-xs me-1" aria-hidden="true"></i>Salida</span><br><span class="small text-muted">${motivo}</span>`;
-    }
-    if (tipo === 'ajuste') {
-        return `<span class="small text-warning fw-semibold"><i class="fa-solid fa-sliders fa-xs me-1" aria-hidden="true"></i>Ajuste de inventario</span><br><span class="small text-muted">${motivo}</span>`;
-    }
-    if (tipo === 'transferencia') {
-        return `<span class="small text-info fw-semibold"><i class="fa-solid fa-right-left fa-xs me-1" aria-hidden="true"></i>Transferencia entre almacenes</span><br><span class="small text-muted">${motivo}</span>`;
-    }
-    return `<span class="small">${motivo || '—'}</span>`;
+    if (tipo === 'entrada') return mov.referencia_tipo === 'recepcion' ? 'Recepción de compra' : 'Entrada de stock';
+    if (tipo === 'salida')  return mov.referencia_tipo === 'venta' ? 'Venta registrada'    : 'Salida de stock';
+    if (tipo === 'ajuste')  return 'Ajuste de inventario';
+    if (tipo === 'transferencia') return 'Transferencia entre almacenes';
+    return mov.motivo ?? '—';
 }
 
-// Color de fondo para la fila de detalle según tipo
-function _colorBgKardex(tipo) {
-    const map = {
-        entrada:       'rgba(25,135,84,0.06)',
-        salida:        'rgba(220,53,69,0.06)',
-        ajuste:        'rgba(255,193,7,0.08)',
-        transferencia: 'rgba(13,202,240,0.06)',
-    };
-    return map[tipo?.toLowerCase()] ?? 'rgba(0,0,0,0.02)';
-}
-
-// Ícono grande para el panel de detalle
-function _iconoKardexDetalle(tipo) {
-    const map = {
-        entrada:       '<i class="fa-solid fa-arrow-down fa-xl text-success" aria-hidden="true"></i>',
-        salida:        '<i class="fa-solid fa-arrow-up fa-xl text-danger" aria-hidden="true"></i>',
-        ajuste:        '<i class="fa-solid fa-sliders fa-xl text-warning" aria-hidden="true"></i>',
-        transferencia: '<i class="fa-solid fa-right-left fa-xl text-info" aria-hidden="true"></i>',
-    };
-    return map[tipo?.toLowerCase()] ?? '<i class="fa-solid fa-circle fa-xl text-secondary" aria-hidden="true"></i>';
-}
-
-// Formatea la referencia de forma legible (sin mostrar número crudo)
 function _formatReferenciaKardex(mov) {
     if (!mov.referencia_tipo) return '<span class="text-muted">—</span>';
-    const tipoLabel = {
-        venta:      'Venta',
-        recepcion:  'Recepción de compra',
-        devolucion: 'Devolución',
-        transferencia: 'Transferencia',
-        ajuste:     'Ajuste manual',
-    }[mov.referencia_tipo] ?? mov.referencia_tipo;
-    if (mov.referencia_id) {
-        return `<span class="badge text-bg-light border">${tipoLabel} #${mov.referencia_id}</span>`;
-    }
-    return `<span class="badge text-bg-light border">${tipoLabel}</span>`;
+    const labels = { venta: 'Venta', recepcion: 'Recepción', devolucion: 'Devolución', transferencia: 'Transferencia', ajuste: 'Ajuste' };
+    const label = labels[mov.referencia_tipo] ?? mov.referencia_tipo;
+    return mov.referencia_id
+        ? `<span class="badge text-bg-light border">${label} #${mov.referencia_id}</span>`
+        : `<span class="badge text-bg-light border">${label}</span>`;
 }
 
 function _badgeKardexTipo(tipo) {
     const map = {
-        entrada:      { cls: 'text-bg-success',              icon: 'fa-arrow-down',  label: 'Entrada'      },
-        salida:       { cls: 'text-bg-danger',               icon: 'fa-arrow-up',    label: 'Salida'       },
-        ajuste:       { cls: 'text-bg-warning text-dark',    icon: 'fa-sliders',     label: 'Ajuste'       },
-        transferencia:{ cls: 'text-bg-info text-dark',       icon: 'fa-right-left',  label: 'Transferencia'},
+        entrada: { cls: 'text-bg-success', icon: 'fa-arrow-down', label: 'Entrada' },
+        salida: { cls: 'text-bg-danger', icon: 'fa-arrow-up', label: 'Salida' },
+        ajuste: { cls: 'text-bg-warning text-dark', icon: 'fa-sliders', label: 'Ajuste' },
+        transferencia: { cls: 'text-bg-info text-dark', icon: 'fa-right-left', label: 'Transferencia' },
     };
-    const entry = map[tipo?.toLowerCase()] ?? { cls: 'text-bg-secondary', icon: 'fa-circle', label: tipo ?? '—' };
-    return `<span class="badge ${entry.cls}"><i class="fa-solid ${entry.icon} fa-xs me-1" aria-hidden="true"></i>${entry.label}</span>`;
+    const e = map[tipo?.toLowerCase()] ?? { cls: 'text-bg-secondary', icon: 'fa-circle', label: tipo ?? '—' };
+    return `<span class="badge ${e.cls}"><i class="fa-solid ${e.icon} fa-xs me-1" aria-hidden="true"></i>${e.label}</span>`;
 }
 
 function abrirKardexDesdeStock(item) {
@@ -781,21 +776,21 @@ function precargarAjuste(item) {
     if (inputProducto) inputProducto.value = `${item.codigo} — ${item.nombre}`;
     document.getElementById('ajuste-producto-id').value = item.id_producto;
     document.getElementById('ajuste-stock-actual').textContent = Number(item.stock_actual).toFixed(2);
-    document.getElementById('ajuste-unidad').textContent       = item.unidad ?? '—';
-    document.getElementById('ajuste-stock-min').textContent    = Number(item.stock_minimo).toFixed(2);
-    document.getElementById('ajuste-stock-max').textContent    = item.stock_maximo != null ? Number(item.stock_maximo).toFixed(2) : '—';
+    document.getElementById('ajuste-unidad').textContent = item.unidad ?? '—';
+    document.getElementById('ajuste-stock-min').textContent = Number(item.stock_minimo).toFixed(2);
+    document.getElementById('ajuste-stock-max').textContent = item.stock_maximo != null ? Number(item.stock_maximo).toFixed(2) : '—';
     document.getElementById('ajuste-stock-nuevo').value = '';
     document.getElementById('ajuste-diferencia').value  = '';
 }
 
 function limpiarInfoAjuste() {
     ajusteProductoData = null;
-    document.getElementById('ajuste-producto-id').value        = '';
+    document.getElementById('ajuste-producto-id').value = '';
     document.getElementById('ajuste-stock-actual').textContent = '—';
-    document.getElementById('ajuste-unidad').textContent       = '—';
-    document.getElementById('ajuste-stock-min').textContent    = '—';
-    document.getElementById('ajuste-stock-max').textContent    = '—';
-    document.getElementById('ajuste-diferencia').value         = '';
+    document.getElementById('ajuste-unidad').textContent = '—';
+    document.getElementById('ajuste-stock-min').textContent = '—';
+    document.getElementById('ajuste-stock-max').textContent = '—';
+    document.getElementById('ajuste-diferencia').value = '';
 }
 
 function limpiarFormAjuste() {
@@ -807,11 +802,11 @@ function limpiarFormAjuste() {
 function calcularDiferenciaAjuste() {
     const stockActualEl = document.getElementById('ajuste-stock-actual');
     const stockNuevoEl  = document.getElementById('ajuste-stock-nuevo');
-    const difEl         = document.getElementById('ajuste-diferencia');
+    const difEl = document.getElementById('ajuste-diferencia');
     if (!stockActualEl || !stockNuevoEl || !difEl) return;
 
     const actual = parseFloat(stockActualEl.textContent);
-    const nuevo  = parseFloat(stockNuevoEl.value);
+    const nuevo = parseFloat(stockNuevoEl.value);
 
     if (isNaN(actual) || isNaN(nuevo)) {
         difEl.value = '';
@@ -823,10 +818,10 @@ function calcularDiferenciaAjuste() {
 }
 
 async function guardarAjuste() {
-    const productoId  = document.getElementById('ajuste-producto-id').value;
-    const almacenId   = document.getElementById('ajuste-almacen').value;
-    const stockNuevo  = parseFloat(document.getElementById('ajuste-stock-nuevo').value);
-    const motivo      = document.getElementById('ajuste-motivo').value.trim();
+    const productoId = document.getElementById('ajuste-producto-id').value;
+    const almacenId = document.getElementById('ajuste-almacen').value;
+    const stockNuevo = parseFloat(document.getElementById('ajuste-stock-nuevo').value);
+    const motivo = document.getElementById('ajuste-motivo').value.trim();
     const stockActual = parseFloat(document.getElementById('ajuste-stock-actual').textContent);
 
     if (!productoId || !almacenId || isNaN(stockNuevo) || !motivo) {
@@ -926,7 +921,6 @@ function renderTablaAlmacenes(almacenes) {
     });
 }
 
-// FIX: poblar responsable de forma asíncrona y luego setear el valor
 async function _poblarSelectsResponsable(idResponsableActual = null) {
     try {
         const data = await apiFetch('/api/empleados');
@@ -942,7 +936,6 @@ async function _poblarSelectsResponsable(idResponsableActual = null) {
                 sel.appendChild(opt);
             });
         });
-        // FIX: setear el responsable actual después de poblar el select
         if (idResponsableActual != null) {
             const selEditar = document.getElementById('editar-alm-responsable');
             if (selEditar) selEditar.value = String(idResponsableActual);
@@ -965,14 +958,13 @@ function initAlmacenesCrud() {
 
     document.getElementById('btn-confirmar-desactivar-almacen')?.addEventListener('click', ejecutarDesactivarAlmacen);
 
-    // FIX: poblar empleados al abrir modal de nuevo almacén
     document.getElementById('modal-nuevo-almacen')?.addEventListener('show.bs.modal', () => {
         _poblarSelectsResponsable();
     });
 }
 
 async function guardarNuevoAlmacen() {
-    const nombre     = document.getElementById('nuevo-alm-nombre').value.trim();
+    const nombre = document.getElementById('nuevo-alm-nombre').value.trim();
     const direccion  = document.getElementById('nuevo-alm-direccion').value.trim();
     const responsable = document.getElementById('nuevo-alm-responsable').value;
 
@@ -1000,10 +992,9 @@ async function guardarNuevoAlmacen() {
     }
 }
 
-// FIX: abrirModalEditarAlmacen ahora carga los empleados y luego setea el responsable
 function abrirModalEditarAlmacen(alm) {
-    document.getElementById('editar-alm-id').value        = alm.id_almacen;
-    document.getElementById('editar-alm-nombre').value    = alm.nombre;
+    document.getElementById('editar-alm-id').value = alm.id_almacen;
+    document.getElementById('editar-alm-nombre').value = alm.nombre;
     document.getElementById('editar-alm-direccion').value = alm.direccion ?? '';
     // Limpiar select mientras carga
     const selResp = document.getElementById('editar-alm-responsable');
@@ -1016,8 +1007,8 @@ function abrirModalEditarAlmacen(alm) {
 }
 
 async function guardarEditarAlmacen() {
-    const id        = document.getElementById('editar-alm-id').value;
-    const nombre    = document.getElementById('editar-alm-nombre').value.trim();
+    const id = document.getElementById('editar-alm-id').value;
+    const nombre = document.getElementById('editar-alm-nombre').value.trim();
     const direccion = document.getElementById('editar-alm-direccion').value.trim();
     const responsable = document.getElementById('editar-alm-responsable').value;
 
@@ -1051,7 +1042,7 @@ function confirmarDesactivarAlmacen(alm) {
 }
 
 async function ejecutarDesactivarAlmacen() {
-    const id  = document.getElementById('btn-confirmar-desactivar-almacen').dataset.almacenId;
+    const id = document.getElementById('btn-confirmar-desactivar-almacen').dataset.almacenId;
     const btn = document.getElementById('btn-confirmar-desactivar-almacen');
     btn.disabled = true;
 
@@ -1074,8 +1065,8 @@ function initTransferenciasFiltros() {
     document.getElementById('btn-filtrar-transf')?.addEventListener('click', cargarTransferencias);
     document.getElementById('btn-limpiar-transf')?.addEventListener('click', () => {
         document.getElementById('filtro-transf-estado').value = '';
-        document.getElementById('filtro-transf-desde').value  = '';
-        document.getElementById('filtro-transf-hasta').value  = '';
+        document.getElementById('filtro-transf-desde').value = '';
+        document.getElementById('filtro-transf-hasta').value = '';
         cargarTransferencias();
     });
 }
@@ -1083,12 +1074,12 @@ function initTransferenciasFiltros() {
 async function cargarTransferencias() {
     const qs = new URLSearchParams();
     const estado = document.getElementById('filtro-transf-estado')?.value;
-    const desde  = document.getElementById('filtro-transf-desde')?.value;
-    const hasta  = document.getElementById('filtro-transf-hasta')?.value;
+    const desde = document.getElementById('filtro-transf-desde')?.value;
+    const hasta = document.getElementById('filtro-transf-hasta')?.value;
 
-    if (estado) qs.set('estado',      estado);
-    if (desde)  qs.set('fecha_desde', desde);
-    if (hasta)  qs.set('fecha_hasta', hasta);
+    if (estado) qs.set('estado', estado);
+    if (desde) qs.set('fecha_desde', desde);
+    if (hasta) qs.set('fecha_hasta', hasta);
 
     try {
         const data = await apiFetch(`${API}/transferencias?${qs}`);
@@ -1098,12 +1089,11 @@ async function cargarTransferencias() {
     }
 }
 
-// FIX TRANSFERENCIAS: tabla muestra todas las transferencias; desplegable carga bien; eliminar producto no borra cantidades
 function renderTablaTransferencias(transferencias) {
-    const tbody    = document.getElementById('tabla-transferencias-body');
+    const tbody = document.getElementById('tabla-transferencias-body');
     const emptyRow = document.getElementById('transf-empty-row');
-    const badge    = document.getElementById('transf-total-badge');
-    const info     = document.getElementById('transf-paginacion-info');
+    const badge = document.getElementById('transf-total-badge');
+    const info = document.getElementById('transf-paginacion-info');
 
     tbody.querySelectorAll('tr.transf-dyn').forEach(r => r.remove());
     badge.textContent = `${transferencias.length} transferencia${transferencias.length !== 1 ? 's' : ''}`;
@@ -1118,13 +1108,12 @@ function renderTablaTransferencias(transferencias) {
     info.textContent = `${transferencias.length} transferencia${transferencias.length !== 1 ? 's' : ''}`;
 
     transferencias.forEach((t, idx) => {
-        const rowId    = `transf-dyn-row-${idx}`;
+        const rowId = `transf-dyn-row-${idx}`;
         const detailId = `transf-dyn-detail-${idx}`;
 
         const tr = document.createElement('tr');
         tr.id = rowId;
         tr.className = 'transf-dyn';
-        // FIX: no ponemos data-expand-trigger en la fila principal para evitar que click en cualquier celda active expansión
         // En vez de eso, el ícono de chevron tiene su propio botón
 
         const badgeEstado = _badgeTransfEstado(t.estado);
@@ -1152,7 +1141,6 @@ function renderTablaTransferencias(transferencias) {
             </td>
         `;
 
-        // FIX: fila detalle con ID único por índice, siempre carga desde API al expandir
         const trDetail = document.createElement('tr');
         trDetail.id = detailId;
         trDetail.className = 'transf-dyn detail-row';
@@ -1181,7 +1169,6 @@ function renderTablaTransferencias(transferencias) {
                 trDetail.style.display = '';
                 expandBtn.setAttribute('aria-expanded', 'true');
                 expandBtn.querySelector('i').className = 'fa-solid fa-chevron-up fa-xs text-muted';
-                // FIX: cargar detalle cuando se abre (solo si no está cargado)
                 if (trDetail.dataset.loaded === 'false') {
                     try {
                         const data = await apiFetch(`${API}/transferencias/${t.id_transferencia}`);
@@ -1231,21 +1218,21 @@ function renderTablaTransferencias(transferencias) {
 
 function _badgeTransfEstado(estado) {
     const map = {
-        pendiente:  '<span class="badge text-bg-warning text-dark">Pendiente</span>',
+        pendiente: '<span class="badge text-bg-warning text-dark">Pendiente</span>',
         completada: '<span class="badge text-bg-success">Completada</span>',
-        anulada:    '<span class="badge text-bg-danger">Anulada</span>',
+        anulada: '<span class="badge text-bg-danger">Anulada</span>',
     };
     return map[estado] ?? `<span class="badge text-bg-secondary">${estado}</span>`;
 }
 
 function abrirDetalleTransferencia(t) {
-    document.getElementById('transf-det-numero').textContent  = `TRF-${String(t.id_transferencia).padStart(3,'0')}`;
-    document.getElementById('transf-det-fecha').textContent   = formatDate(t.fecha);
-    document.getElementById('transf-det-origen').textContent  = t.almacen_origen;
+    document.getElementById('transf-det-numero').textContent = `TRF-${String(t.id_transferencia).padStart(3,'0')}`;
+    document.getElementById('transf-det-fecha').textContent = formatDate(t.fecha);
+    document.getElementById('transf-det-origen').textContent = t.almacen_origen;
     document.getElementById('transf-det-destino').textContent = t.almacen_destino;
     document.getElementById('transf-det-empleado').textContent = t.empleado;
-    document.getElementById('transf-det-motivo').textContent  = t.motivo ?? '—';
-    document.getElementById('transf-det-estado').outerHTML    =
+    document.getElementById('transf-det-motivo').textContent = t.motivo ?? '—';
+    document.getElementById('transf-det-estado').outerHTML =
         `<span id="transf-det-estado">${_badgeTransfEstado(t.estado)}</span>`;
 
     const tbodyProductos = document.getElementById('tabla-transf-det-productos-body');
@@ -1316,11 +1303,36 @@ async function completarTransferenciaAction(id) {
 }
 
 
-// FIX: Items del detalle de transferencia — al eliminar uno se preservan las cantidades de los demás
 let _transfDetalle = [];
 
 function initTransferenciaOffcanvas() {
-    document.getElementById('btn-agregar-producto-transf')?.addEventListener('click', agregarProductoTransf);
+    const inputBuscar = document.getElementById('transf-buscar-producto');
+
+    // Abre/filtra el dropdown mientras se escribe
+    inputBuscar?.addEventListener('input', () => {
+        if (!document.getElementById('transf-origen')?.value) return;
+        renderResultadosTransf(inputBuscar.value);
+    });
+
+    // Al hacer foco/click, si no hay texto, muestra todo el catálogo del almacén
+    inputBuscar?.addEventListener('focus', () => {
+        const origen = document.getElementById('transf-origen')?.value;
+        if (!origen) {
+            showToast('Seleccione primero el almacén de origen.', 'warning');
+            return;
+        }
+        renderResultadosTransf(inputBuscar.value);
+    });
+
+    // Cierra el dropdown al hacer click afuera
+    document.addEventListener('click', (e) => {
+        const dropdown = document.getElementById('transf-resultados-dropdown');
+        if (!dropdown || dropdown.classList.contains('d-none')) return;
+        if (!e.target.closest('#transf-buscar-producto') && !e.target.closest('#transf-resultados-dropdown')) {
+            ocultarResultadosTransf();
+        }
+    });
+
     document.getElementById('form-transferencia')?.addEventListener('submit', e => {
         e.preventDefault();
         guardarTransferencia();
@@ -1334,28 +1346,8 @@ function initTransferenciaOffcanvas() {
     });
 }
 
-function agregarProductoTransf() {
-    const input = document.getElementById('transf-buscar-producto');
-    const texto = input?.value.trim();
-    if (!texto) return;
-
-    const origen = document.getElementById('transf-origen')?.value;
-    if (!origen) {
-        showToast('Seleccione primero el almacén de origen.', 'warning');
-        return;
-    }
-
-    const prod = resolverProductoPorTexto(texto, _transfStockCache);
-    if (!prod) {
-        showToast('Producto no encontrado o sin stock disponible en el almacén de origen.', 'warning');
-        return;
-    }
-    if (_transfDetalle.find(i => i.id_producto === prod.id_producto)) {
-        showToast('Este producto ya fue agregado.', 'warning');
-        return;
-    }
-
-    // FIX: inicializar cantidad como 0 explícitamente para preservar estado
+// Agrega un producto al detalle a partir del click en una fila del dropdown
+function agregarProductoTransfDesdeDropdown(prod) {
     _transfDetalle.push({
         id_producto: prod.id_producto,
         nombre: prod.nombre,
@@ -1363,11 +1355,13 @@ function agregarProductoTransf() {
         unidad: prod.unidad,
         cantidad: 0
     });
-    input.value = '';
+
+    const input = document.getElementById('transf-buscar-producto');
+    if (input) input.value = '';
+    ocultarResultadosTransf();
     renderDetalleTransf();
 }
 
-// FIX: renderDetalleTransf lee las cantidades desde _transfDetalle antes de re-renderizar
 function renderDetalleTransf() {
     const lista    = document.getElementById('transf-detalle-lista');
     const emptyMsg = document.getElementById('transf-detalle-empty');
@@ -1389,7 +1383,7 @@ function renderDetalleTransf() {
         const info = document.createElement('div');
         info.className = 'flex-grow-1';
         info.innerHTML = `<p class="mb-0 small fw-semibold">${item.nombre}</p>
-                          <p class="mb-0 small text-muted">Disponible: ${Number(item.stock_actual).toFixed(2)} ${item.unidad ?? ''}</p>`;
+                        <p class="mb-0 small text-muted">Disponible: ${Number(item.stock_actual).toFixed(2)} ${item.unidad ?? ''}</p>`;
 
         const inputCant = document.createElement('input');
         inputCant.type = 'number';
@@ -1400,9 +1394,7 @@ function renderDetalleTransf() {
         inputCant.step = '0.01';
         inputCant.required = true;
         inputCant.setAttribute('aria-label', `Cantidad a transferir de ${item.nombre}`);
-        // FIX CLAVE: restaurar cantidad desde el array (no se pierde al eliminar otro)
         inputCant.value = item.cantidad > 0 ? item.cantidad : '';
-        // FIX: actualizar el array en lugar de usar índice que puede cambiar
         inputCant.addEventListener('input', () => {
             _transfDetalle[idx].cantidad = parseFloat(inputCant.value) || 0;
         });
@@ -1413,7 +1405,6 @@ function renderDetalleTransf() {
         btnElim.setAttribute('aria-label', `Eliminar ${item.nombre} de la transferencia`);
         btnElim.innerHTML = '<i class="fa-solid fa-xmark" aria-hidden="true"></i>';
         btnElim.addEventListener('click', () => {
-            // FIX: leer y guardar todas las cantidades actuales antes de eliminar
             _guardarCantidadesActuales();
             _transfDetalle.splice(idx, 1);
             renderDetalleTransf();
@@ -1426,7 +1417,6 @@ function renderDetalleTransf() {
     });
 }
 
-// FIX: antes de hacer cualquier splice, leer los valores actuales de los inputs
 function _guardarCantidadesActuales() {
     const inputs = document.querySelectorAll('.transf-item-dyn input[type="number"]');
     inputs.forEach((input, i) => {
@@ -1436,7 +1426,6 @@ function _guardarCantidadesActuales() {
     });
 }
 
-// FIX: validar motivo y que TODOS los productos tienen stock
 async function guardarTransferencia() {
     const origen  = document.getElementById('transf-origen').value;
     const destino = document.getElementById('transf-destino').value;
@@ -1450,7 +1439,6 @@ async function guardarTransferencia() {
         showToast('El origen y destino deben ser almacenes distintos.', 'warning');
         return;
     }
-    // FIX: motivo es obligatorio
     if (!motivo) {
         showToast('El motivo de la transferencia es obligatorio.', 'warning');
         document.getElementById('transf-motivo')?.focus();
@@ -1466,7 +1454,6 @@ async function guardarTransferencia() {
         return;
     }
 
-    // FIX: si hay productos sin cantidad, advertir
     const sinCantidad = _transfDetalle.filter(i => !i.cantidad || i.cantidad <= 0);
     if (sinCantidad.length > 0) {
         showToast(`${sinCantidad.length} producto(s) sin cantidad serán ignorados. ¿Continuar solo con los que tienen cantidad?`, 'warning');
@@ -1582,16 +1569,15 @@ function renderTablaLotes(lotes) {
 
 function _badgeLoteEstado(estado) {
     const map = {
-        vencido:         '<span class="badge text-bg-danger d-flex align-items-center gap-1" style="width:fit-content"><i class="fa-solid fa-calendar-xmark fa-xs" aria-hidden="true"></i>Vencido</span>',
-        proximo:         '<span class="badge text-bg-warning text-dark d-flex align-items-center gap-1" style="width:fit-content"><i class="fa-solid fa-clock fa-xs" aria-hidden="true"></i>Próx. vencer</span>',
-        vigente:         '<span class="badge text-bg-success d-flex align-items-center gap-1" style="width:fit-content"><i class="fa-solid fa-circle-check fa-xs" aria-hidden="true"></i>Vigente</span>',
+        vencido:'<span class="badge text-bg-danger d-flex align-items-center gap-1" style="width:fit-content"><i class="fa-solid fa-calendar-xmark fa-xs" aria-hidden="true"></i>Vencido</span>',
+        proximo:'<span class="badge text-bg-warning text-dark d-flex align-items-center gap-1" style="width:fit-content"><i class="fa-solid fa-clock fa-xs" aria-hidden="true"></i>Próx. vencer</span>',
+        vigente:'<span class="badge text-bg-success d-flex align-items-center gap-1" style="width:fit-content"><i class="fa-solid fa-circle-check fa-xs" aria-hidden="true"></i>Vigente</span>',
         sin_vencimiento: '<span class="badge text-bg-secondary d-flex align-items-center gap-1" style="width:fit-content"><i class="fa-solid fa-infinity fa-xs" aria-hidden="true"></i>Sin vencimiento</span>',
     };
     return map[estado] ?? `<span class="badge text-bg-secondary">${estado}</span>`;
 }
 
 
-// FIX expandable rows: se usa solo para kardex ahora. Transferencias tiene su propio sistema.
 function initExpandableRowsLive() {
     document.querySelectorAll('[data-expand-trigger]:not([data-expand-init])').forEach(trigger => {
         trigger.setAttribute('data-expand-init', '1');

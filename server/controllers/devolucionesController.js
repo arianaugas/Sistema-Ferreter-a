@@ -172,7 +172,7 @@ const create = async (req, res) => {
             // Validar productos y calcular monto dentro de la transacción
             for (const p of productos) {
                 const reqDetalle = transaction.request();
-                reqDetalle.input('id_venta',    sql.Int, id_venta);
+                reqDetalle.input('id_venta', sql.Int, id_venta);
                 reqDetalle.input('id_producto', sql.Int, p.id_producto);
                 const detalleResult = await reqDetalle.query(`
                     SELECT cantidad, precio_unitario
@@ -218,8 +218,8 @@ const create = async (req, res) => {
             reqCab.input('id_venta', sql.Int, id_venta);
             reqCab.input('id_empleado', sql.Int, id_empleado);
             reqCab.input('motivo', sql.VarChar(200), motivo || null);
-            reqCab.input('tipo', sql.VarChar(10),  tipo);
-            reqCab.input('monto_reembolso', sql.Decimal(10,2), monto_reembolso);
+            reqCab.input('tipo', sql.VarChar(10), tipo);
+            reqCab.input('monto_reembolso', sql.Decimal(10, 2), monto_reembolso);
             const cabResult = await reqCab.query(`
                 INSERT INTO devoluciones (id_venta, id_empleado, motivo, tipo, estado, monto_reembolso)
                 OUTPUT INSERTED.*
@@ -233,9 +233,9 @@ const create = async (req, res) => {
                 const reqDet = transaction.request();
                 reqDet.input('id_devolucion', sql.Int, nuevaDev.id_devolucion);
                 reqDet.input('id_producto', sql.Int, p.id_producto);
-                reqDet.input('cantidad', sql.Decimal(10,2), p.cantidad);
+                reqDet.input('cantidad', sql.Decimal(10, 2), p.cantidad);
                 reqDet.input('reingresa_stock', sql.Bit, p.reingresa_stock ? 1 : 0);
-                reqDet.input('precio_devuelto', sql.Decimal(10,2), p.precio_devuelto);
+                reqDet.input('precio_devuelto', sql.Decimal(10, 2), p.precio_devuelto);
                 await reqDet.query(`
                     INSERT INTO detalle_devolucion (id_devolucion, id_producto, cantidad, reingresa_stock, precio_devuelto)
                     VALUES (@id_devolucion, @id_producto, @cantidad, @reingresa_stock, @precio_devuelto)
@@ -275,13 +275,13 @@ const create = async (req, res) => {
 
                     // Kardex
                     const reqKardex = transaction.request();
-                    reqKardex.input('id_producto',     sql.Int,            p.id_producto);
-                    reqKardex.input('id_almacen',      sql.Int,            id_almacen);
-                    reqKardex.input('cantidad',        sql.Decimal(10, 2), p.cantidad);
-                    reqKardex.input('stock_anterior',  sql.Decimal(10, 2), stock_anterior);
+                    reqKardex.input('id_producto', sql.Int, p.id_producto);
+                    reqKardex.input('id_almacen', sql.Int, id_almacen);
+                    reqKardex.input('cantidad', sql.Decimal(10, 2), p.cantidad);
+                    reqKardex.input('stock_anterior', sql.Decimal(10, 2), stock_anterior);
                     reqKardex.input('stock_posterior', sql.Decimal(10, 2), stock_posterior);
-                    reqKardex.input('id_usuario',      sql.Int,            id_usuario);
-                    reqKardex.input('referencia_id',   sql.Int,            nuevaDev.id_devolucion);
+                    reqKardex.input('id_usuario', sql.Int, id_usuario);
+                    reqKardex.input('referencia_id', sql.Int, nuevaDev.id_devolucion);
                     await reqKardex.query(`
                         INSERT INTO kardex (id_producto, id_almacen, tipo_movimiento, motivo, referencia_id, referencia_tipo, cantidad, stock_anterior, stock_posterior, id_usuario)
                         VALUES (@id_producto, @id_almacen, 'entrada', 'Devolución de venta', @referencia_id, 'devolucion', @cantidad, @stock_anterior, @stock_posterior, @id_usuario)
@@ -296,7 +296,7 @@ const create = async (req, res) => {
                 const reqCaja = transaction.request();
                 reqCaja.input('id_caja', sql.Int, id_caja);
                 reqCaja.input('id_usuario', sql.Int, id_usuario);
-                reqCaja.input('monto', sql.Decimal(10,2), monto_reembolso);
+                reqCaja.input('monto', sql.Decimal(10, 2), monto_reembolso);
                 reqCaja.input('referencia_id', sql.Int, nuevaDev.id_devolucion);
                 reqCaja.input('concepto', sql.VarChar(150), `Reembolso por devolución ID ${nuevaDev.id_devolucion}`);
                 await reqCaja.query(`
@@ -306,11 +306,19 @@ const create = async (req, res) => {
 
                 const reqUpCaja = transaction.request();
                 reqUpCaja.input('id_caja', sql.Int, id_caja);
-                reqUpCaja.input('monto', sql.Decimal(10,2), monto_reembolso);
+                reqUpCaja.input('monto', sql.Decimal(10, 2), monto_reembolso);
                 await reqUpCaja.query(
                     'UPDATE cajas SET monto_esperado = monto_esperado - @monto WHERE id_caja = @id_caja'
                 );
             }
+            const reqUpVenta = transaction.request();
+            reqUpVenta.input('id_venta', sql.Int, id_venta);
+            await reqUpVenta.query(`
+                        UPDATE ventas
+                        SET estado = 'con_devolucion'
+                        WHERE id_venta = @id_venta
+                            AND estado <> 'anulada'
+                    `);
 
             return nuevaDev;
         });
@@ -361,10 +369,10 @@ const anular = async (req, res) => {
             const reqDev = transaction.request();
             reqDev.input('id', sql.Int, id);
             const resDev = await reqDev.query(`
-                SELECT id_devolucion, tipo, monto_reembolso
-                FROM devoluciones
-                WHERE id_devolucion = @id AND estado = 'pendiente'
-            `);
+                    SELECT id_devolucion, id_venta, tipo, monto_reembolso
+                    FROM devoluciones
+                    WHERE id_devolucion = @id AND estado = 'pendiente'
+                `);
             if (resDev.recordset.length === 0) {
                 throw Object.assign(
                     new Error('No se puede anular: la devolución no existe o ya no está pendiente.'),
@@ -390,7 +398,7 @@ const anular = async (req, res) => {
                 // (fue registrado ahí cuando se creó la devolución)
                 const reqAlm = transaction.request();
                 reqAlm.input('referencia_id', sql.Int, id);
-                reqAlm.input('id_producto',   sql.Int, item.id_producto);
+                reqAlm.input('id_producto', sql.Int, item.id_producto);
                 const resAlm = await reqAlm.query(`
                     SELECT TOP 1 id_almacen
                     FROM kardex
@@ -434,7 +442,7 @@ const anular = async (req, res) => {
                 reqKardex.input('id_producto', sql.Int, item.id_producto);
                 reqKardex.input('id_almacen', sql.Int, id_almacen);
                 reqKardex.input('cantidad', sql.Decimal(10, 2), item.cantidad);
-                reqKardex.input('stock_anterior',  sql.Decimal(10, 2), stock_anterior);
+                reqKardex.input('stock_anterior', sql.Decimal(10, 2), stock_anterior);
                 reqKardex.input('stock_posterior', sql.Decimal(10, 2), stock_posterior);
                 reqKardex.input('id_usuario', sql.Int, id_usuario);
                 reqKardex.input('referencia_id', sql.Int, parseInt(id));
@@ -488,7 +496,39 @@ const anular = async (req, res) => {
             await reqAnular.query(
                 `UPDATE devoluciones SET estado = 'anulada' WHERE id_devolucion = @id`
             );
+
+
+            // Restaurar estado de la venta si ya no tiene devoluciones activas
+            const reqCheckDevs = transaction.request();
+            reqCheckDevs.input('id_venta_check', sql.Int, resDev.recordset[0].id_venta ?? null);
+
+            // Primero leer el id_venta de esta devolución
+            const resIdVenta = await reqAnular.query(
+                `SELECT id_venta FROM devoluciones WHERE id_devolucion = @id`
+            )
+
         });
+
+        // Revertir estado de la venta si ya no tiene devoluciones no-anuladas
+        const reqRevert = transaction.request();
+        reqRevert.input('id_venta_r', sql.Int, dev.id_venta);
+        const resDevActivas = await reqRevert.query(`
+                            SELECT COUNT(*) AS total
+                            FROM devoluciones
+                            WHERE id_venta = @id_venta_r
+                                AND estado <> 'anulada'
+                                AND id_devolucion <> @id
+                        `);
+        reqRevert.input('id', sql.Int, parseInt(id)); 
+
+        if (resDevActivas.recordset[0].total === 0) {
+            const reqRevertVenta = transaction.request();
+            reqRevertVenta.input('id_venta_rv', sql.Int, dev.id_venta);
+            await reqRevertVenta.query(`
+        UPDATE ventas SET estado = 'pagada'
+        WHERE id_venta = @id_venta_rv AND estado = 'con_devolucion'
+    `);
+        }
 
         return res.json({ ok: true, mensaje: 'Devolución anulada y cambios revertidos correctamente.' });
 

@@ -327,11 +327,11 @@ const ventasController = {
     //para anular una venta
     anular: async (req, res, next) => {
         const { id } = req.params;
-        const { id_caja, id_almacen, motivo_anulacion } = req.body;
+        const { id_caja, motivo_anulacion } = req.body;
         const id_usuario = req.user.id;
 
-        if (!id_caja || !id_almacen) {
-            return res.status(400).json({ error: 'id_caja e id_almacen son obligatorios para proceder con la anulación.' });
+        if (!id_caja) {
+            return res.status(400).json({ error: 'id_caja es obligatorio para proceder con la anulación.' });
         }
 
         try {
@@ -370,8 +370,30 @@ const ventasController = {
                 reqItems.input('id_venta', sql.Int, id);
                 const resItems = await reqItems.query('SELECT id_producto, cantidad FROM detalle_venta WHERE id_venta = @id_venta');
 
+                // REEMPLAZA todo el for loop del paso 4 con esto:
                 for (const item of resItems.recordset) {
-                    // Devolver stock a productos_almacen
+
+                    // Leer el almacén desde el kardex de la venta original
+                    // (evita que el frontend mande un almacén incorrecto)
+                    const reqAlm = tx.request();
+                    reqAlm.input('referencia_id', sql.Int, parseInt(id));
+                    reqAlm.input('id_producto', sql.Int, item.id_producto);
+                    const resAlm = await reqAlm.query(`
+                        SELECT TOP 1 id_almacen
+                        FROM kardex
+                        WHERE referencia_tipo = 'ventas'
+                            AND referencia_id = @referencia_id
+                            AND id_producto = @id_producto
+                            AND tipo_movimiento = 'salida'
+                        ORDER BY id DESC
+                    `);
+
+                    if (resAlm.recordset.length === 0) {
+                        throw new Error(`No se encontró el registro de kardex para el producto ID ${item.id_producto}. No se puede revertir el stock.`);
+                    }
+                    const id_almacen = resAlm.recordset[0].id_almacen;
+
+                    // Devolver stock a productos_almacen (almacén original de la venta)
                     const reqStockAlm = tx.request();
                     reqStockAlm.input('id_producto', sql.Int, item.id_producto);
                     reqStockAlm.input('id_almacen', sql.Int, id_almacen);
@@ -397,10 +419,11 @@ const ventasController = {
                         UPDATE productos SET stock_actual = stock_actual + @cantidad WHERE id_producto = @id_producto
                     `);
 
+                    // Registrar en kardex la entrada (reversión de la salida original)
                     const reqKardex = tx.request();
                     reqKardex.input('id_producto', sql.Int, item.id_producto);
                     reqKardex.input('id_almacen', sql.Int, id_almacen);
-                    reqKardex.input('referencia_id', sql.Int, id);
+                    reqKardex.input('referencia_id', sql.Int, parseInt(id));
                     reqKardex.input('cantidad', sql.Decimal(10, 2), item.cantidad);
                     reqKardex.input('stock_anterior', sql.Decimal(10, 2), stock_anterior);
                     reqKardex.input('stock_posterior', sql.Decimal(10, 2), stock_posterior);
@@ -441,8 +464,8 @@ const ventasController = {
 
                 // 7. Descontar monto_esperado de caja (solo la parte en efectivo)
                 const reqUpCaja = tx.request();
-                reqUpCaja.input('id_caja', sql.Int,           id_caja);
-                reqUpCaja.input('monto',   sql.Decimal(10, 2), montoEfectivoVenta);
+                reqUpCaja.input('id_caja', sql.Int, id_caja);
+                reqUpCaja.input('monto', sql.Decimal(10, 2), montoEfectivoVenta);
                 await reqUpCaja.query(
                     'UPDATE cajas SET monto_esperado = monto_esperado - @monto WHERE id_caja = @id_caja'
                 );

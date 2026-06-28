@@ -52,7 +52,8 @@ const login = async (req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: 24 * 60 * 60 * 1000 * parseInt(process.env.JWT_COOKIE_EXPIRES)|| 3
+            // CORRECTO
+            maxAge: 24 * 60 * 60 * 1000 * (parseInt(process.env.JWT_COOKIE_EXPIRES) || 3)
         };
 
         await query(

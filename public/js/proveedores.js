@@ -57,10 +57,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     //CONSTANTES
     const CONDICION_LABEL = {
-        contado:   { label: 'Contado', cls: 'text-bg-secondary' },
-        '30_dias': { label: '30 días', cls: 'text-bg-info'      },
-        '60_dias': { label: '60 días', cls: 'text-bg-primary'   },
-        '90_dias': { label: '90 días', cls: 'text-bg-warning'   },
+        contado: { label: 'Contado', cls: 'text-bg-secondary' },
+        '30_dias': { label: '30 días', cls: 'text-bg-info' },
+        '60_dias': { label: '60 días', cls: 'text-bg-primary' },
+        '90_dias': { label: '90 días', cls: 'text-bg-warning' },
     };
 
     //UTILIDADES
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function cargarProveedores() {
         const params = new URLSearchParams();
         const buscar = inputBuscar?.value.trim();
-        const cond   = filtroCond?.value;
+        const cond = filtroCond?.value;
         const estado = filtroEstado?.value;
 
         if (buscar) params.set('buscar', buscar);
@@ -175,8 +175,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <li>
                                     <i class="fa-solid fa-globe fa-fw text-muted me-1" aria-hidden="true"></i>
                                     ${p.web
-                                        ? `<a href="${p.web}" target="_blank" rel="noopener" class="text-decoration-none">${p.web}</a>`
-                                        : '—'}
+                    ? `<a href="${p.web}" target="_blank" rel="noopener" class="text-decoration-none">${p.web}</a>`
+                    : '—'}
                                 </li>
                             </ul>
                         </div>
@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const { accion, id, nombre } = btn.dataset;
 
-        if (accion === 'ver-ficha')    abrirFicha(id);
+        if (accion === 'ver-ficha') abrirFicha(id);
         if (accion === 'abrir-editar') abrirEditar(id);
         if (accion === 'desactivar') {
             confirmAction(`¿Desactivar a "${nombre}"?`, () => desactivarProveedor(id));
@@ -231,13 +231,13 @@ document.addEventListener('DOMContentLoaded', () => {
     async function abrirFicha(id) {
         proveedorActivoId = id;
         try {
-            const res  = await fetch(`/api/proveedores/${id}`, { credentials: 'include' });
+            const res = await fetch(`/api/proveedores/${id}`, { credentials: 'include' });
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data.mensaje);
 
             const p = data.proveedor;
 
-            if (modalFichaNombre) modalFichaNombre.textContent  = p.nombre;
+            if (modalFichaNombre) modalFichaNombre.textContent = p.nombre;
             if (fichaRuc) fichaRuc.textContent = p.ruc;
             if (fichaNombre) fichaNombre.textContent = p.nombre;
             if (fichaDireccion) fichaDireccion.textContent = p.direccion || '—';
@@ -293,13 +293,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="fw-semibold">${c.nombre}</td>
                 <td class="text-muted small">${c.cargo || '—'}</td>
                 <td>${c.telefono || '—'}</td>
-                <td>${c.correo   || '—'}</td>
+                <td>${c.correo || '—'}</td>
                 <td>
                     ${c.es_principal
-                        ? `<span class="badge text-bg-success rounded-pill">
+                    ? `<span class="badge text-bg-success rounded-pill">
                                <i class="fa-solid fa-star fa-xs me-1" aria-hidden="true"></i>Principal
                            </span>`
-                        : `<span class="badge text-bg-secondary rounded-pill">Secundario</span>`}
+                    : `<span class="badge text-bg-secondary rounded-pill">Secundario</span>`}
                 </td>
                 <td class="text-end">
                     <button class="btn btn-sm btn-outline-danger"
@@ -335,10 +335,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="text-center">${p.tiempo_entrega_dias ?? '—'}</td>
                 <td>
                     ${p.es_preferido
-                        ? `<span class="badge text-bg-warning rounded-pill">
+                    ? `<span class="badge text-bg-warning rounded-pill">
                                 <i class="fa-solid fa-star fa-xs me-1" aria-hidden="true"></i>Preferido
                             </span>`
-                        : `<span class="badge text-bg-secondary rounded-pill">No</span>`}
+                    : `<span class="badge text-bg-secondary rounded-pill">No</span>`}
                 </td>
                 <td class="text-end">
                     <button class="btn btn-sm btn-outline-danger"
@@ -360,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!btn) return;
         confirmAction('¿Eliminar este contacto?', async () => {
             try {
-                const res  = await fetch(
+                const res = await fetch(
                     `/api/proveedores/${proveedorActivoId}/contactos/${btn.dataset.id}`,
                     { method: 'DELETE', credentials: 'include' }
                 );
@@ -380,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!btn) return;
         confirmAction('¿Desvincular este producto del proveedor?', async () => {
             try {
-                const res  = await fetch(
+                const res = await fetch(
                     `/api/proveedores/${proveedorActivoId}/productos/${btn.dataset.id}`,
                     { method: 'DELETE', credentials: 'include' }
                 );
@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function abrirEditar(id) {
         proveedorActivoId = id;
         try {
-            const res  = await fetch(`/api/proveedores/${id}`, { credentials: 'include' });
+            const res = await fetch(`/api/proveedores/${id}`, { credentials: 'include' });
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data.mensaje);
 
@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (epTelefono) epTelefono.value = p.telefono || '';
             if (epCorreo) epCorreo.value = p.correo || '';
             if (epWeb) epWeb.value = p.web || '';
-            if (epCondicion) epCondicion.value  = p.condicion_pago || 'contado';
+            if (epCondicion) epCondicion.value = p.condicion_pago || 'contado';
             if (epActivo) epActivo.checked = !!p.activo;
 
             bootstrap.Offcanvas.getOrCreateInstance(
@@ -439,7 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
-            const res  = await fetch('/api/proveedores', {
+            const res = await fetch('/api/proveedores', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -475,7 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
-            const res  = await fetch(`/api/proveedores/${proveedorActivoId}`, {
+            const res = await fetch(`/api/proveedores/${proveedorActivoId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -497,7 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //Desactivar proveedor 
     async function desactivarProveedor(id) {
         try {
-            const res  = await fetch(`/api/proveedores/${id}`, {
+            const res = await fetch(`/api/proveedores/${id}`, {
                 method: 'DELETE',
                 credentials: 'include',
             });
@@ -524,7 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
-            const res  = await fetch(`/api/proveedores/${proveedorActivoId}/contactos`, {
+            const res = await fetch(`/api/proveedores/${proveedorActivoId}/contactos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -559,7 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const body = {
-            id_producto: parseInt(vpProductoHidden.value),
+            id_producto: parseInt(document.getElementById('vp-producto').value),
             codigo_proveedor: document.getElementById('vp-codigo-prov').value.trim(),
             precio_compra: parseFloat(document.getElementById('vp-precio').value),
             tiempo_entrega_dias: parseInt(document.getElementById('vp-entrega').value) || null,
@@ -567,7 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
-            const res  = await fetch(`/api/proveedores/${proveedorActivoId}/productos`, {
+            const res = await fetch(`/api/proveedores/${proveedorActivoId}/productos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -590,22 +590,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // DATALIST DE PRODUCTOS (para vincular)
     async function cargarProductosParaVincular() {
         try {
-            const res  = await fetch('/api/productos?activo=1', { credentials: 'include' });
+            const res = await fetch('/api/productos?activo=1', { credentials: 'include' });
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al cargar productos');
 
-            if (!vpProductoLista) return;
+            const sel = document.getElementById('vp-producto');
+            if (!sel) return;
 
             const fragment = document.createDocumentFragment();
+            const def = document.createElement('option');
+            def.value = '';
+            def.disabled = true;
+            def.selected = true;
+            def.textContent = 'Seleccionar producto…';
+            fragment.appendChild(def);
+
             data.productos.forEach(p => {
                 const option = document.createElement('option');
-                option.value = `${p.nombre} (${p.codigo})`;
-                option.dataset.id = p.id_producto;
+                option.value = p.id_producto;
+                option.textContent = `${p.nombre} (${p.codigo})`;
                 fragment.appendChild(option);
             });
 
-            vpProductoLista.innerHTML = '';
-            vpProductoLista.appendChild(fragment);
+            sel.innerHTML = '';
+            sel.appendChild(fragment);
         } catch (err) {
             console.error('No se pudieron cargar productos para vincular:', err);
         }
@@ -629,36 +637,36 @@ document.addEventListener('DOMContentLoaded', () => {
     filtroCond?.addEventListener('change', cargarProveedores);
     filtroEstado?.addEventListener('change', cargarProveedores);
 
-    
+
     // COMPARATIVA
 
     async function cargarCategoriasComparativa() {
-    try {
-        const res = await fetch('/api/categorias/cat', { credentials: 'include' });
-        const data = await res.json();
-        if (!res.ok || !data.ok) throw new Error(data.mensaje);
+        try {
+            const res = await fetch('/api/categorias/cat', { credentials: 'include' });
+            const data = await res.json();
+            if (!res.ok || !data.ok) throw new Error(data.mensaje);
 
-        if (!filtroCompCat) return;
+            if (!filtroCompCat) return;
 
-        const fragment = document.createDocumentFragment();
-        const opcionTodas = document.createElement('option');
-        opcionTodas.value = '';
-        opcionTodas.textContent = 'Todas las categorías';
-        fragment.appendChild(opcionTodas);
+            const fragment = document.createDocumentFragment();
+            const opcionTodas = document.createElement('option');
+            opcionTodas.value = '';
+            opcionTodas.textContent = 'Todas las categorías';
+            fragment.appendChild(opcionTodas);
 
-        data.categorias.forEach(c => {
-            const option = document.createElement('option');
-            option.value = c.id_categoria;
-            option.textContent = c.nombre;
-            fragment.appendChild(option);
-        });
+            data.categorias.forEach(c => {
+                const option = document.createElement('option');
+                option.value = c.id_categoria;
+                option.textContent = c.nombre;
+                fragment.appendChild(option);
+            });
 
-        filtroCompCat.innerHTML = '';
-        filtroCompCat.appendChild(fragment);
-    } catch (err) {
-        console.error('Error al cargar categorías:', err);
+            filtroCompCat.innerHTML = '';
+            filtroCompCat.appendChild(fragment);
+        } catch (err) {
+            console.error('Error al cargar categorías:', err);
+        }
     }
-}
     tabComparativa?.addEventListener('shown.bs.tab', cargarComparativa);
 
     inputBuscarComp?.addEventListener('input', () => {
@@ -719,15 +727,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="fw-semibold">${pv.proveedor}</td>
                     <td>
                         ${esMejor
-                            ? `<span class="badge text-bg-success px-1">${formatMoney(pv.precio_compra)} / ${prod.unidad} ✓</span>`
-                            : `<span class="text-danger fw-semibold">${formatMoney(pv.precio_compra)} / ${prod.unidad}</span>`}
+                        ? `<span class="badge text-bg-success px-1">${formatMoney(pv.precio_compra)} / ${prod.unidad} ✓</span>`
+                        : `<span class="text-danger fw-semibold">${formatMoney(pv.precio_compra)} / ${prod.unidad}</span>`}
                     </td>
                     <td>${pv.tiempo_entrega_dias ? `<span class="badge text-bg-info text-dark">${pv.tiempo_entrega_dias} días</span>` : '—'}</td>
                     <td class="font-monospace small text-muted">${pv.codigo_proveedor || '—'}</td>
                     <td>
                         ${pv.es_preferido
-                            ? `<span class="badge text-bg-warning text-dark"><i class="fa-solid fa-star fa-xs me-1" aria-hidden="true"></i>Preferido</span>`
-                            : `<span class="badge text-bg-light border">Secundario</span>`}
+                        ? `<span class="badge text-bg-warning text-dark"><i class="fa-solid fa-star fa-xs me-1" aria-hidden="true"></i>Preferido</span>`
+                        : `<span class="badge text-bg-light border">Secundario</span>`}
                     </td>
                 </tr>`;
             }).join('');

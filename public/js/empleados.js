@@ -1,4 +1,3 @@
-
 const API = '/api/empleados';
 
 async function apiFetch(url, options = {}) {
@@ -20,6 +19,17 @@ function formatFecha(fechaStr) {
     const mes  = String(fecha.getUTCMonth() + 1).padStart(2, '0');
     const anio = fecha.getUTCFullYear();
     return `${dia}/${mes}/${anio}`;
+}
+
+// Convierte fecha (string ISO o Date) al formato YYYY-MM-DD que acepta <input type="date">
+function fechaParaInput(valor) {
+    if (!valor) return '';
+    const d = new Date(valor);
+    if (isNaN(d.getTime())) return '';
+    const anio = d.getUTCFullYear();
+    const mes  = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const dia  = String(d.getUTCDate()).padStart(2, '0');
+    return `${anio}-${mes}-${dia}`;
 }
 
 function inicialesAvatar(nombre, apellido) {
@@ -317,8 +327,8 @@ async function abrirEditarEmpleado(id) {
         document.getElementById('editar-emp-turno').value = emp.id_turno ?? '';
         document.getElementById('editar-emp-telefono').value = emp.telefono ?? '';
         document.getElementById('editar-emp-correo').value = emp.correo ?? '';
-        document.getElementById('editar-emp-fecha-ingreso').value = emp.fecha_ingreso?.split('T')[0] ?? '';
-        document.getElementById('editar-emp-fecha-cese').value = emp.fecha_cese?.split('T')[0] ?? '';
+        document.getElementById('editar-emp-fecha-ingreso').value = fechaParaInput(emp.fecha_ingreso);
+        document.getElementById('editar-emp-fecha-cese').value = fechaParaInput(emp.fecha_cese);
         document.getElementById('editar-emp-activo').checked = !!emp.activo;
 
         bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-editar-empleado')).show();

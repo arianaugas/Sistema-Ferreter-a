@@ -231,7 +231,11 @@ function formatMoney(amount, symbol = 'S/') {
 
 function formatDate(dateStr, includeTime = false) {
   if (!dateStr) return '—';
-  const d = new Date(dateStr);
+  const normalized = typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
+    ? dateStr + 'T00:00:00'
+    : dateStr;
+  const d = new Date(normalized);
+  if (isNaN(d.getTime())) return '—'; // ← esto mata el "Infinity"
   const date = d.toLocaleDateString('es-PE');
   if (!includeTime) return date;
   const time = d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
@@ -290,12 +294,15 @@ function confirmAction(message, callback) {
 
 function initExpandableRows() {
   document.querySelectorAll('[data-expand-trigger]').forEach(trigger => {
-    trigger.addEventListener('click', () => {
+    if (trigger._expandInit) return; // evitar duplicados
+    trigger._expandInit = true;
+    trigger.addEventListener('click', (e) => {
+      // Evitar que botones internos disparen el expand
+      if (e.target.closest('[data-accion]')) return;
       const detailRow = document.getElementById(
         trigger.getAttribute('data-expand-trigger')
       );
       if (!detailRow) return;
-
       const isOpen = detailRow.classList.toggle('show');
       const icon = trigger.querySelector('[data-expand-icon]');
       if (icon) {

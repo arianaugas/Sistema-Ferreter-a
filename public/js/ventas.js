@@ -1,5 +1,3 @@
-
-
 //  Constante de IGV 
 let IGV_RATE = 0.18;
 
@@ -193,6 +191,10 @@ function renderCarrito() {
 
 //  Agregar al carrito 
 function agregarAlCarrito(producto) {
+  if (!VentasState.id_almacen) {
+    showToast('Selecciona primero el almacén del cual vas a descontar el stock.', 'warning');
+    return;
+  }
   const existente = VentasState.carrito.find(i => i.id_producto === producto.id_producto);
   if (existente) {
     const nuevaCant = existente.cantidad + 1;
@@ -237,7 +239,16 @@ function limpiarCarrito() {
   renderCarrito();
   ocultarClienteSeleccionado();
   const form = document.getElementById('form-nueva-venta');
+  const almacenPrevio = VentasState.id_almacen;
   if (form) form.reset();
+  // form.reset() revierte el <select> de almacén a su placeholder porque las
+  // opciones se cargan dinámicamente; se restaura para no obligar al cajero
+  // a re-seleccionarlo en cada venta.
+  if (almacenPrevio) {
+    const selAlmacen = document.getElementById('pos-almacen');
+    if (selAlmacen) selAlmacen.value = almacenPrevio;
+    VentasState.id_almacen = almacenPrevio;
+  }
   cargarSelectTiposPago(); // restaurar select de tipos de pago
 }
 
@@ -275,10 +286,11 @@ async function buscarProductos(termino) {
     return;
   }
 
-  try {
+ try {
     const params = new URLSearchParams({ activo: '1' });
     if (termino && termino.length >= 2) params.set('nombre', termino);
     if (tieneCategoria) params.set('categoria', selCat.value);
+    if (VentasState.id_almacen) params.set('id_almacen', VentasState.id_almacen);
 
     const data = await apiFetch(`/api/productos?${params}`);
     let productos = Array.isArray(data) ? data : (data.productos || []);
@@ -316,7 +328,7 @@ async function buscarProductos(termino) {
 
       const tdStock = document.createElement('td');
       const stockBadge = document.createElement('span');
-      const stockNum = parseFloat(p.stock_actual) || 0;
+      const stockNum = VentasState.id_almacen ? (parseFloat(p.stock_almacen) || 0) : (parseFloat(p.stock_actual) || 0);
       stockBadge.className = `badge ${stockNum > 5 ? 'text-bg-success' : stockNum > 0 ? 'text-bg-warning' : 'text-bg-danger'}`;
       stockBadge.textContent = `${stockNum} ${p.unidad || ''}`;
       tdStock.appendChild(stockBadge);
@@ -549,6 +561,11 @@ function initFormNuevaVenta() {
       showToast('Debes tener una caja abierta para registrar ventas.', 'error');
       return;
     }
+    if (!VentasState.id_almacen) {
+      showToast('Selecciona el almacén del cual se descontará el stock.', 'warning');
+      document.getElementById('pos-almacen')?.focus();
+      return;
+    }
 
     const tipoComprobante = document.getElementById('pos-tipo-comprobante')?.value;
     const serie = resolverSerie(tipoComprobante);
@@ -593,7 +610,7 @@ function initFormNuevaVenta() {
       id_caja: VentasState.cajaActiva.id_caja,
       id_serie: serie.id_serie,
       tipo_comprobante: tipoComprobante,
-      id_almacen: VentasState.id_almacen || 1, // almacén por defecto
+      id_almacen: VentasState.id_almacen,
       detalle_venta: VentasState.carrito.map(i => ({
         id_producto: i.id_producto,
         cantidad: i.cantidad,
@@ -897,7 +914,6 @@ async function anularVenta(id_venta, numero_comprobante) {
         method: 'PATCH',
         body: JSON.stringify({
           id_caja: VentasState.cajaActiva.id_caja,
-          id_almacen: VentasState.id_almacen || 1,
         }),
       });
       showToast('Venta anulada correctamente.', 'success');
@@ -1026,15 +1042,42 @@ function renderTablaTiposPago() {
 }
 
 
-//  Obtener almacén por defecto  
-async function obtenerAlmacenDefault() {
+//  Cargar almacenes en el select y permitir elegir 
+async function cargarAlmacenesVenta() {
+  const sel = document.getElementById('pos-almacen');
+  if (!sel) return;
   try {
     const data = await apiFetch('/api/inventario/almacenes');
     const almacenes = Array.isArray(data) ? data : (data.almacenes || []);
-    if (almacenes.length > 0) VentasState.id_almacen = almacenes[0].id_almacen;
+    const activos = almacenes.filter(a => a.activo !== false);
+
+    sel.innerHTML = '<option value="" disabled selected>Seleccionar almacén…</option>';
+    activos.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id_almacen;
+      opt.textContent = a.nombre;
+      sel.appendChild(opt);
+    });
+
+    // Si solo hay un almacén activo, se selecciona automáticamente (no hay
+    // nada que elegir); si hay más de uno, el usuario debe escogerlo.
+    if (activos.length === 1) {
+      sel.value = activos[0].id_almacen;
+      VentasState.id_almacen = activos[0].id_almacen;
+    } else {
+      VentasState.id_almacen = null;
+    }
   } catch {
-    VentasState.id_almacen = 1;
+    sel.innerHTML = '<option value="" disabled selected>Error al cargar almacenes</option>';
+    VentasState.id_almacen = null;
   }
+
+  sel.addEventListener('change', () => {
+    VentasState.id_almacen = sel.value ? parseInt(sel.value) : null;
+    // Recargar el catálogo para que el stock mostrado sea el de este almacén
+    const inputBusqueda = document.getElementById('pos-buscar-producto');
+    buscarProductos(inputBusqueda?.value.trim() || '');
+  });
 }
 
 //  Punto de entrada  
@@ -1044,7 +1087,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     cargarSeries(),
     cargarTiposPago(),
     cargarClientesDatalist(),
-    obtenerAlmacenDefault(),
+    cargarAlmacenesVenta(),
     cargarConfigIGV(),
     cargarCategoriasPOS(),
   ]);

@@ -1,5 +1,3 @@
-
-
 // Estado 
 const DevState = {
   lista: [],
@@ -156,7 +154,29 @@ function renderTabla() {
   }
 
   tbody.appendChild(frag);
+
+  // Recalcula en vivo cada vez que cambia una cantidad a devolver
+  tbody.addEventListener('input', (e) => {
+    if (e.target.classList.contains('dev-cant-devolver')) recalcularMontoReembolso();
+  });
+  recalcularMontoReembolso();
   actualizarFooter();
+}
+
+
+//  Recalcular monto a reembolsar segun cantidades ingresadas 
+function recalcularMontoReembolso() {
+  const inputMonto = document.getElementById('nd-monto-reembolso');
+  if (!inputMonto) return;
+
+  let monto = 0;
+  document.querySelectorAll('.dev-cant-devolver').forEach(input => {
+    const cant = parseFloat(input.value);
+    const precio = parseFloat(input.dataset.precioUnitario);
+    if (cant > 0 && !isNaN(precio)) monto += cant * precio;
+  });
+
+  inputMonto.value = monto.toFixed(2);
 }
 
 function actualizarFooter() {
@@ -213,7 +233,7 @@ async function verDetalleDev(id) {
     setEl('#modal-dev-monto', d.tipo === 'reembolso' ? formatMoney(d.monto_reembolso) : '—');
     setEl('#modal-dev-fecha', formatDate(d.fecha, true));
 
-    const tbody = modal.querySelector('#tabla-det-dev-productos tbody');
+    const tbody = modal.querySelector('#modal-dev-detalle');
     if (tbody) {
       tbody.replaceChildren();
       const frag = document.createDocumentFragment();
@@ -221,10 +241,13 @@ async function verDetalleDev(id) {
         const tr = document.createElement('tr');
         const tdNom = document.createElement('td'); tdNom.textContent = it.producto_nombre;
         const tdCant = document.createElement('td'); tdCant.textContent = it.cantidad;
+        const tdPrecio = document.createElement('td'); tdPrecio.textContent = formatMoney(it.precio_devuelto);
+        const tdSubtotal = document.createElement('td');
+        tdSubtotal.className = 'fw-semibold';
+        tdSubtotal.textContent = formatMoney(it.cantidad * it.precio_devuelto);
         const tdReingresa = document.createElement('td');
         tdReingresa.innerHTML = getBadge(it.reingresa_stock ? 'activo' : 'inactivo', it.reingresa_stock ? 'Sí' : 'No');
-        const tdPrecio = document.createElement('td'); tdPrecio.textContent = formatMoney(it.precio_devuelto);
-        tr.append(tdNom, tdCant, tdReingresa, tdPrecio);
+        tr.append(tdNom, tdCant, tdPrecio, tdSubtotal, tdReingresa);
         frag.appendChild(tr);
       });
       tbody.appendChild(frag);
@@ -306,7 +329,7 @@ async function buscarVentaParaDevolucion(comprobante) {
 
 //  Renderizar productos de la venta para seleccionar devolución 
 function renderProductosParaDevolucion(items) {
-  const tbody = document.querySelector('#tabla-dev-productos-venta tbody');
+  const tbody = document.getElementById('tbody-productos-devolucion');
   if (!tbody) return;
   tbody.replaceChildren();
 
@@ -343,6 +366,7 @@ function renderProductosParaDevolucion(items) {
     inputCant.step = '0.01';
     inputCant.value = '0';
     inputCant.dataset.idProducto = item.id_producto;
+    inputCant.dataset.precioUnitario = item.precio_unitario;
     inputCant.setAttribute('aria-label', `Cantidad a devolver de ${item.producto_nombre}`);
     tdCantDev.appendChild(inputCant);
 
@@ -386,6 +410,7 @@ function initFormNuevaDevolucion() {
       if (!id_venta) {
         panelVenta?.classList.add('d-none');
         if (tbody) tbody.innerHTML = '<tr id="dev-productos-empty"><td colspan="5" class="text-center text-muted py-3">Busca una venta para ver sus productos.</td></tr>';
+        document.getElementById('nd-monto-reembolso').value = '0.00';
         DevState.ventaOriginal = null;
         return;
       }
@@ -494,9 +519,9 @@ function initFiltros() {
     btnLimpiar.addEventListener('click', () => {
       // Usar los IDs correctos que sí existen en el HTML
       ['filtro-estado-devolucion', 'filtro-tipo-devolucion',
-      'filtro-fecha-desde-dev', 'filtro-fecha-hasta-dev'].forEach(id => {
-        const el = document.getElementById(id); if (el) el.value = '';
-      });
+        'filtro-fecha-desde-dev', 'filtro-fecha-hasta-dev'].forEach(id => {
+          const el = document.getElementById(id); if (el) el.value = '';
+        });
       cargarDevoluciones();
     });
   }

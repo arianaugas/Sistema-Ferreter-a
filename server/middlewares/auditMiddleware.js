@@ -9,7 +9,10 @@ const TABLA_MAP = [
     { patron: '/auth/users', tabla: 'usuarios', pk: 'id_usuario' },
     { patron: '/compras', tabla: 'ordenes_compra', pk: 'id_orden' },
     { patron: '/devoluciones', tabla: 'devoluciones', pk: 'id_devolucion' },
-    { patron: '/inventario', tabla: 'inventario', pk: null }, // ver al trabajar el módulo INVENTARIO
+    { patron: '/inventario/transferencias', tabla: 'transferencias_almacen', pk: 'id_transferencia' },
+    { patron: '/inventario/almacenes', tabla: 'almacenes', pk: 'id_almacen' },
+    { patron: '/inventario/ajuste', tabla: 'kardex', pk: 'id' },
+    { patron: '/inventario/lotes', tabla: 'lotes', pk: 'id_lote' },
     { patron: '/proveedores', tabla: 'proveedores', pk: 'id_proveedor' },
     { patron: '/categorias/sub', tabla: 'subcategorias', pk: 'id_subcategoria' }, // antes que /categorias/cat
     { patron: '/categorias/cat', tabla: 'categorias', pk: 'id_categoria' },

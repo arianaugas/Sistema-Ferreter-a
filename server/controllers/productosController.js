@@ -26,7 +26,7 @@ async function unidadExiste(id) {
 
 //funcion q trae todos los productos
 const getAll = async (req, res) => {
-    const { nombre, categoria, subcategoria, marca, activo, fecha_desde, fecha_hasta } = req.query;
+    const { nombre, categoria, subcategoria, marca, activo, fecha_desde, fecha_hasta, id_almacen } = req.query;
     try {
         let where = 'WHERE 1=1';
         const params = {};
@@ -87,6 +87,7 @@ const getAll = async (req, res) => {
                 p.precio_compra,
                 p.precio_venta,
                 p.stock_actual,
+                ISNULL(pa.stock, 0) AS stock_almacen,
                 p.stock_minimo,
                 p.activo,
                 p.creado_en,
@@ -101,9 +102,10 @@ const getAll = async (req, res) => {
             INNER JOIN categorias c ON c.id_categoria = sc.id_categoria
             LEFT JOIN marcas m ON m.id_marca = p.id_marca
             INNER JOIN unidades_medida u ON u.id_unidad = p.id_unidad
+            LEFT JOIN productos_almacen pa ON pa.id_producto = p.id_producto AND pa.id_almacen = @id_almacen
             ${where}
             ORDER BY p.nombre ASC`,
-            params
+            { ...params, id_almacen: { type: sql.Int, value: id_almacen ? parseInt(id_almacen) : null } }
         );
 
         return res.json({

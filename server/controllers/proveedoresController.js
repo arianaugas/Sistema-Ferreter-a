@@ -494,6 +494,30 @@ const getComparativa = async (req, res) => {
     }
 };
 
+const getProductosByProveedor = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await query(
+            `SELECT
+                p.id_producto,
+                p.nombre,
+                p.codigo,
+                pp.precio_compra,
+                pp.codigo_proveedor,
+                pp.tiempo_entrega_dias
+            FROM productos_proveedor pp
+            INNER JOIN productos p ON p.id_producto = pp.id_producto
+            WHERE pp.id_proveedor = @id AND p.activo = 1
+            ORDER BY p.nombre ASC`,
+            { id: { type: sql.Int, value: id } }
+        );
+        return res.json({ ok: true, productos: result.recordset });
+    } catch (err) {
+        console.error('Error getProductosByProveedor:', err);
+        return res.status(500).json({ ok: false, mensaje: 'Error al obtener productos del proveedor.' });
+    }
+};
+
 module.exports = {
     getAll,
     getById,
@@ -504,5 +528,6 @@ module.exports = {
     removeContacto,
     addProducto,
     removeProducto,
-    getComparativa
+    getComparativa,
+    getProductosByProveedor
 };

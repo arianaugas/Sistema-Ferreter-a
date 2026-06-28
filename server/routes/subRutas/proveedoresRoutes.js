@@ -19,6 +19,7 @@ router.post('/:id/contactos', revisarToken, usersPermitidos, provCtrl.addContact
 router.delete('/:id/contactos/:idContacto', revisarToken, usersPermitidos, provCtrl.removeContacto);
 
 // Productos del proveedor
+router.get('/:id/productos', revisarToken, provCtrl.getProductosByProveedor);
 router.post('/:id/productos', revisarToken, usersPermitidos, provCtrl.addProducto);
 router.delete('/:id/productos/:idProducto', revisarToken, usersPermitidos, provCtrl.removeProducto);
 
