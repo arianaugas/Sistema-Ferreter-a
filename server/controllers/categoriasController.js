@@ -1,5 +1,4 @@
-const { query } = require('../db/conexion_sql');
-const sql = require('mssql/msnodesqlv8');
+const { sql, query } = require('../db/conexion_sql');
 
 // Obtener todas las categorías activas
 const getAll = async (req, res) => {
@@ -76,6 +75,18 @@ const actualizarCategoria = async (req, res) => {
   if (!nombre) return res.status(400).json({ ok: false, mensaje: 'Nombre es obligatorio' });
 
   try {
+
+    // Verificar que el nombre no esté en uso por OTRA categoría
+    const existe = await query(
+      `SELECT id_categoria FROM categorias WHERE nombre = @nombre AND id_categoria <> @id`,
+      {
+        nombre: { type: sql.VarChar, value: nombre },
+        id: { type: sql.Int, value: id }
+      }
+    );
+    if (existe.recordset.length > 0) {
+      return res.status(400).json({ ok: false, mensaje: 'El nombre ya está registrado.' });
+    }
 
     //realizamos el updated
     const result = await query(

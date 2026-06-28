@@ -1,29 +1,34 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+
+    // Al cargar la página, verificar si hay un empleado pendiente de crear usuario
+   // Leer el pendiente ANTES de cualquier carga, procesarlo después
+    const pendienteRaw = sessionStorage.getItem('nuevo_usuario_para_empleado');
+    if (pendienteRaw) sessionStorage.removeItem('nuevo_usuario_para_empleado');
 
     // Tabla usuarios
-    const tbodyUsuarios  = document.getElementById('tabla-usuarios-body');
+    const tbodyUsuarios = document.getElementById('tabla-usuarios-body');
     const totalBadge = document.getElementById('usuarios-total-badge');
     // Filtros
-    const filtroNombre  = document.getElementById('filtro-usuario-nombre');
+    const filtroNombre = document.getElementById('filtro-usuario-nombre');
     const filtroRol = document.getElementById('filtro-usuario-rol');
-    const filtroEstado   = document.getElementById('filtro-usuario-estado');
+    const filtroEstado = document.getElementById('filtro-usuario-estado');
     const btnFiltrar = document.getElementById('btn-filtrar-usuarios');
-    const btnLimpiarFiltros  = document.getElementById('btn-limpiar-filtros-usuarios');
+    const btnLimpiarFiltros = document.getElementById('btn-limpiar-filtros-usuarios');
     // Tabla roles
     const tbodyRoles = document.getElementById('tabla-roles-body');
     // Modal ver usuario
     const modalVerEl = document.getElementById('modal-ver-usuario');
     // Modal nuevo usuario
     const formNuevo = document.getElementById('form-nuevo-usuario');
-    const selEmpleadoNuevo   = document.getElementById('nuevo-usr-empleado');
+    const selEmpleadoNuevo = document.getElementById('nuevo-usr-empleado');
     const selRolNuevo = document.getElementById('nuevo-usr-rol');
     const btnTogglePassNuevo = document.getElementById('btn-toggle-pass-nuevo');
     const inputPassNuevo = document.getElementById('nuevo-usr-contrasena');
     // Modal editar usuario
     const formEditar = document.getElementById('form-editar-usuario');
-    const selRolEditar  = document.getElementById('editar-usr-rol');
-    const btnTogglePassEdit  = document.getElementById('btn-toggle-pass-editar');
-    const inputPassEditar  = document.getElementById('editar-usr-nueva-contrasena');
+    const selRolEditar = document.getElementById('editar-usr-rol');
+    const btnTogglePassEdit = document.getElementById('btn-toggle-pass-editar');
+    const inputPassEditar = document.getElementById('editar-usr-nueva-contrasena');
     // Modal eliminar rol
     const btnConfirmarElimRol = document.getElementById('btn-confirmar-eliminar-rol');
     const elimRolNombre = document.getElementById('eliminar-rol-nombre');
@@ -34,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     //ESTADO LOCAL
     let usuariosCache = [];  // para no re-fetch al abrir modales
-    let rolesCache    = [];
+    let rolesCache = [];
 
     //UTILIDADES
     function iniciales(nombre, apellido) {
@@ -49,13 +54,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     //CARGA INICIAL
-    cargarRoles();  // primero roles
-    cargarUsuarios();
+    //CARGA INICIAL
+    cargarRoles();
+    await cargarUsuarios();
+
+    // Si llegamos desde empleados con un empleado pendiente de usuario,
+    // abrimos el modal ahora que usuariosCache ya está lleno
+    if (pendienteRaw) {
+        try {
+            const { id_empleado, nombreEmpleado } = JSON.parse(pendienteRaw);
+            const modalEl = document.getElementById('modal-nuevo-usuario');
+            const selEmp = document.getElementById('nuevo-usr-empleado');
+            if (modalEl && selEmp) {
+                await cargarEmpleadosSinUsuario();
+                selEmp.value = String(id_empleado);
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                showToast(`Crea el usuario para ${nombreEmpleado}.`, 'info');
+            }
+        } catch (_) { }
+    }
 
     //ROLES — getAll y render
     async function cargarRoles() {
         try {
-            const res  = await fetch('/api/auth/roles', { credentials: 'include' });
+            const res = await fetch('/api/auth/roles', { credentials: 'include' });
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data.error || 'Error al cargar roles');
 
@@ -99,20 +121,20 @@ document.addEventListener('DOMContentLoaded', () => {
     function poblarSelectsRoles(roles) {
         // Select filtro
         const opcionesFiltro = roles.map(r => `<option value="${r.id_rol}">${r.nombre}</option>`).join('');
-        filtroRol.innerHTML  = `<option value="">Todos los roles</option>${opcionesFiltro}`;
+        filtroRol.innerHTML = `<option value="">Todos los roles</option>${opcionesFiltro}`;
 
         // Selects de nuevo y editar usuario
         const opcionesSelect = roles.map(r => `<option value="${r.id_rol}">${r.nombre}</option>`).join('');
-        selRolNuevo.innerHTML  = `<option value="" disabled selected>Seleccionar rol</option>${opcionesSelect}`;
+        selRolNuevo.innerHTML = `<option value="" disabled selected>Seleccionar rol</option>${opcionesSelect}`;
         selRolEditar.innerHTML = opcionesSelect;
     }
 
     //USUARIOS — getAll y render
     async function cargarUsuarios(params = {}) {
         try {
-            const qs  = new URLSearchParams(params).toString();
+            const qs = new URLSearchParams(params).toString();
             const url = `/api/auth/users${qs ? '?' + qs : ''}`;
-            const res  = await fetch(url, { credentials: 'include' });
+            const res = await fetch(url, { credentials: 'include' });
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data.error || 'Error al cargar usuarios');
 
@@ -188,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const estado = filtroEstado.value;
 
         if (busq) params.busqueda = busq;
-        if (rol) params.id_rol   = rol;
+        if (rol) params.id_rol = rol;
         if (estado !== '') params.activo = estado;
 
         cargarUsuarios(params);
@@ -196,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnLimpiarFiltros.addEventListener('click', () => {
         filtroNombre.value = '';
-        filtroRol.value    = '';
+        filtroRol.value = '';
         filtroEstado.value = '';
         cargarUsuarios();
     });
@@ -213,9 +235,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!btn) return;
 
         const accion = btn.dataset.accion;
-        const id  = parseInt(btn.dataset.usuarioId);
+        const id = parseInt(btn.dataset.usuarioId);
 
-        if (accion === 'ver-usuario')    abrirVerUsuario(id);
+        if (accion === 'ver-usuario') abrirVerUsuario(id);
         if (accion === 'editar-usuario') abrirEditarUsuario(id);
         if (accion === 'toggle-usuario') toggleUsuario(id);
     });
@@ -226,9 +248,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!btn) return;
 
         const accion = btn.dataset.accion;
-        const id  = parseInt(btn.dataset.rolId);
+        const id = parseInt(btn.dataset.rolId);
 
-        if (accion === 'editar-rol')   abrirEditarRol(id);
+        if (accion === 'editar-rol') abrirEditarRol(id);
         //if (accion === 'eliminar-rol') abrirEliminarRol(id, btn.dataset.rolNombre);
     });
 
@@ -239,16 +261,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!u) return;
 
         const ini = iniciales(u.nombre_empleado, u.apellido_empleado);
-        document.getElementById('ver-usr-avatar').textContent        = ini;
-        document.getElementById('ver-usr-username').textContent      = u.username;
-        document.getElementById('ver-usr-estado-badge').textContent  = u.activo ? 'Activo' : 'Inactivo';
+        document.getElementById('ver-usr-avatar').textContent = ini;
+        document.getElementById('ver-usr-username').textContent = u.username;
+        document.getElementById('ver-usr-estado-badge').textContent = u.activo ? 'Activo' : 'Inactivo';
         document.getElementById('ver-usr-estado-badge').dataset.status = u.activo ? 'activo' : 'inactivo';
-        document.getElementById('ver-usr-empleado').textContent      = `${u.nombre_empleado} ${u.apellido_empleado}`;
-        document.getElementById('ver-usr-rol').textContent           = u.rol;
-        document.getElementById('ver-usr-estado').textContent        = u.activo ? 'Activo' : 'Inactivo';
+        document.getElementById('ver-usr-empleado').textContent = `${u.nombre_empleado} ${u.apellido_empleado}`;
+        document.getElementById('ver-usr-rol').textContent = u.rol;
+        document.getElementById('ver-usr-estado').textContent = u.activo ? 'Activo' : 'Inactivo';
         document.getElementById('ver-usr-ultimo-acceso').textContent = formatDate(u.ultimo_acceso, true);
-        document.getElementById('ver-usr-creado-en').textContent     = formatDate(u.creado_en);
-        document.getElementById('ver-usr-id').textContent            = `#${u.id_usuario}`;
+        document.getElementById('ver-usr-creado-en').textContent = formatDate(u.creado_en);
+        document.getElementById('ver-usr-id').textContent = `#${u.id_usuario}`;
 
         // Botón Editar dentro del modal ver, pasa el id al modal editar
         document.getElementById('ver-usr-btn-editar').dataset.usuarioId = id;
@@ -271,30 +293,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function cargarEmpleadosSinUsuario() {
-    try {
-        // Empleados activos desde el endpoint de empleados
-        const res  = await fetch('/api/empleados?activo=1', { credentials: 'include' });
-        const data = await res.json();
-        if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al cargar empleados');
+        try {
+            // Empleados activos desde el endpoint de empleados
+            const res = await fetch('/api/empleados?activo=1', { credentials: 'include' });
+            const data = await res.json();
+            if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al cargar empleados');
 
-        // Excluimos los que ya tienen un usuario asociado
-        const idsAsignados = new Set(usuariosCache.map(u => u.id_empleado));
-        const disponibles = data.empleados.filter(e => !idsAsignados.has(e.id_empleado));
+            // Excluimos los que ya tienen un usuario asociado
+            const idsAsignados = new Set(usuariosCache.map(u => u.id_empleado));
+            const disponibles = data.empleados.filter(e => !idsAsignados.has(e.id_empleado));
 
-        if (!disponibles.length) {
-            selEmpleadoNuevo.innerHTML = `<option value="" disabled selected>No hay empleados disponibles</option>`;
-            return;
+            if (!disponibles.length) {
+                selEmpleadoNuevo.innerHTML = `<option value="" disabled selected>No hay empleados disponibles</option>`;
+                return;
+            }
+
+            const opciones = disponibles
+                .map(e => `<option value="${e.id_empleado}">${e.nombre} ${e.apellido} — DNI ${e.dni}</option>`)
+                .join('');
+            selEmpleadoNuevo.innerHTML = `<option value="" disabled selected>Seleccionar empleado</option>${opciones}`;
+        } catch (err) {
+            console.error(err);
+            showToast('Error al cargar empleados', 'error');
         }
-
-        const opciones = disponibles
-            .map(e => `<option value="${e.id_empleado}">${e.nombre} ${e.apellido} — DNI ${e.dni}</option>`)
-            .join('');
-        selEmpleadoNuevo.innerHTML = `<option value="" disabled selected>Seleccionar empleado</option>${opciones}`;
-    } catch (err) {
-        console.error(err);
-        showToast('Error al cargar empleados', 'error');
     }
-}
 
     // Toggle mostrar contraseña
     btnTogglePassNuevo.addEventListener('click', () => {
@@ -314,17 +336,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const body = {
             id_empleado: parseInt(selEmpleadoNuevo.value),
-            id_rol:      parseInt(selRolNuevo.value),
-            username:    document.getElementById('nuevo-usr-username').value.trim(),
-            contrasena:  inputPassNuevo.value
+            id_rol: parseInt(selRolNuevo.value),
+            username: document.getElementById('nuevo-usr-username').value.trim(),
+            contrasena: inputPassNuevo.value
         };
 
         try {
-            const res  = await fetch('/api/auth/users', {
-                method:      'POST',
+            const res = await fetch('/api/auth/users', {
+                method: 'POST',
                 credentials: 'include',
-                headers:     { 'Content-Type': 'application/json' },
-                body:        JSON.stringify(body)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
             });
             const data = await res.json();
 
@@ -346,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!u) return;
 
         limpiarModal(formEditar);
-        document.getElementById('editar-usr-id').value       = u.id_usuario;
+        document.getElementById('editar-usr-id').value = u.id_usuario;
         document.getElementById('editar-usr-empleado').value = `${u.nombre_empleado} ${u.apellido_empleado}`;
         document.getElementById('editar-usr-username').value = u.username;
         document.getElementById('editar-usr-activo').checked = !!u.activo;
@@ -369,24 +391,24 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const id     = parseInt(document.getElementById('editar-usr-id').value);
+        const id = parseInt(document.getElementById('editar-usr-id').value);
         const activo = document.getElementById('editar-usr-activo').checked;
 
         const body = {
             username: document.getElementById('editar-usr-username').value.trim(),
-            id_rol:   parseInt(selRolEditar.value),
-            activo:   activo
+            id_rol: parseInt(selRolEditar.value),
+            activo: activo
         };
 
         // Si hay nueva contraseña, llamar al endpoint aparte
         const nuevaPass = inputPassEditar.value.trim();
 
         try {
-            const res  = await fetch(`/api/auth/users/${id}`, {
-                method:      'PUT',
+            const res = await fetch(`/api/auth/users/${id}`, {
+                method: 'PUT',
                 credentials: 'include',
-                headers:     { 'Content-Type': 'application/json' },
-                body:        JSON.stringify(body)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
             });
             const data = await res.json();
 
@@ -426,18 +448,18 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             if (u.activo) {
                 // Desactivar
-                const res  = await fetch(`/api/auth/users/${id}`, {
+                const res = await fetch(`/api/auth/users/${id}`, {
                     method: 'DELETE', credentials: 'include'
                 });
                 const data = await res.json();
                 if (!res.ok || !data.ok) throw new Error(data.mensaje);
             } else {
                 // Reactivar vía PUT con activo: true
-                const res  = await fetch(`/api/auth/users/${id}`, {
-                    method:  'PUT',
+                const res = await fetch(`/api/auth/users/${id}`, {
+                    method: 'PUT',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
-                    body:    JSON.stringify({ username: u.username, id_rol: u.id_rol, activo: true })
+                    body: JSON.stringify({ username: u.username, id_rol: u.id_rol, activo: true })
                 });
                 const data = await res.json();
                 if (!res.ok || !data.ok) throw new Error(data.mensaje);
@@ -464,16 +486,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const body = {
-            nombre:      document.getElementById('nuevo-rol-nombre').value.trim(),
+            nombre: document.getElementById('nuevo-rol-nombre').value.trim(),
             descripcion: document.getElementById('nuevo-rol-descripcion').value.trim() || null
         };
 
         try {
-            const res  = await fetch('/api/auth/roles', {
-                method:      'POST',
+            const res = await fetch('/api/auth/roles', {
+                method: 'POST',
                 credentials: 'include',
-                headers:     { 'Content-Type': 'application/json' },
-                body:        JSON.stringify(body)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
             });
             const data = await res.json();
 
@@ -496,8 +518,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!r) return;
 
         limpiarModal(formEditarRol);
-        document.getElementById('editar-rol-id').value          = r.id_rol;
-        document.getElementById('editar-rol-nombre').value      = r.nombre;
+        document.getElementById('editar-rol-id').value = r.id_rol;
+        document.getElementById('editar-rol-nombre').value = r.nombre;
         document.getElementById('editar-rol-descripcion').value = r.descripcion ?? '';
     }
 
@@ -508,18 +530,18 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const id   = parseInt(document.getElementById('editar-rol-id').value);
+        const id = parseInt(document.getElementById('editar-rol-id').value);
         const body = {
-            nombre:      document.getElementById('editar-rol-nombre').value.trim(),
+            nombre: document.getElementById('editar-rol-nombre').value.trim(),
             descripcion: document.getElementById('editar-rol-descripcion').value.trim() || null
         };
 
         try {
-            const res  = await fetch(`/api/auth/roles/${id}`, {
-                method:      'PUT',
+            const res = await fetch(`/api/auth/roles/${id}`, {
+                method: 'PUT',
                 credentials: 'include',
-                headers:     { 'Content-Type': 'application/json' },
-                body:        JSON.stringify(body)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
             });
             const data = await res.json();
 

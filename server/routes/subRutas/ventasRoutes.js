@@ -3,10 +3,10 @@ const router = express.Router();
 const ventasController = require('../../controllers/ventasController');
 const seriesController = require('../../controllers/seriesController');
 const tiposPagoController = require('../../controllers/tiposPagoController');
-const { revisarToken, permitirRoles} = require('../../middlewares/auth');
+const { revisarToken, verificarAccesoModulo} = require('../../middlewares/auth');
 
-//usuarios permitidos, mjorar dsps
-const usersPermitidos = permitirRoles('Administrador', 'Vendedor')
+//usuarios permitidos
+const usersPermitidos = verificarAccesoModulo('/ventas');
 
 // Rutas de Series de Comprobantes
 router.get('/series', revisarToken, seriesController.getAll);

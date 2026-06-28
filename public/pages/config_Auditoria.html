@@ -471,30 +471,34 @@ Auditoría — Tabla de todos los cambios registrados en el sistema, con filtros
                 </div>
 
 
-                <!-- Nav pills -->
-                <ul class="nav nav-pills mb-4" id="nav-config" role="tablist">
+                <!-- Nav tabs -->
+                <ul class="nav nav-tabs mb-4" id="nav-config" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active btn-color" id="pill-parametros-btn" data-bs-toggle="pill"
+                        <button class="nav-link active" id="pill-parametros-btn" data-bs-toggle="tab"
                             data-bs-target="#pill-parametros" type="button" role="tab" aria-controls="pill-parametros"
                             aria-selected="true">
-                            <i aria-hidden="true"></i>
                             Parámetros del sistema
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link btn-color" id="pill-turnos-btn" data-bs-toggle="pill"
+                        <button class="nav-link" id="pill-turnos-btn" data-bs-toggle="tab"
                             data-bs-target="#pill-turnos" type="button" role="tab" aria-controls="pill-turnos"
                             aria-selected="false">
-                            <i class="fa-regular fa-clock" aria-hidden="true"></i>
                             Turnos
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link btn-color" id="pill-auditoria-btn" data-bs-toggle="pill"
+                        <button class="nav-link" id="pill-auditoria-btn" data-bs-toggle="tab"
                             data-bs-target="#pill-auditoria" type="button" role="tab" aria-controls="pill-auditoria"
                             aria-selected="false">
-                            <i aria-hidden="true"></i>
                             Registro de auditoría
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-permisos" data-bs-toggle="tab"
+                            data-bs-target="#section-permisos" type="button" role="tab" aria-controls="section-permisos"
+                            aria-selected="false">
+                            Permisos de roles
                         </button>
                     </li>
                 </ul>
@@ -623,25 +627,20 @@ Auditoría — Tabla de todos los cambios registrados en el sistema, con filtros
                                         </div>
                                         <div class="card-body py-4 px-4">
                                             <dl class="row g-0 mb-0">
-                                                <dt class="col-5 text-muted small fw-normal py-2 border-bottom">Negocio
-                                                </dt>
-                                                <dd class="col-7 fw-semibold small py-2 border-bottom mb-0">Ferretería
-                                                    San Martín</dd>
+                                                <dt class="col-5 text-muted small fw-normal py-2 border-bottom">Negocio</dt>
+                                                <dd id="preview-negocio" class="col-7 fw-semibold small py-2 border-bottom mb-0">—</dd>
 
-                                                <dt class="col-5 text-muted small fw-normal py-2 border-bottom">IGV
-                                                    aplicado</dt>
+                                                <dt class="col-5 text-muted small fw-normal py-2 border-bottom">IGV aplicado</dt>
                                                 <dd class="col-7 fw-semibold small py-2 border-bottom mb-0">
-                                                    <span class="text-success">18%</span>
-                                                    <span class="text-muted ms-1">(0.18)</span>
+                                                    <span id="preview-igv-pct" class="text-success">—</span>
+                                                    <span id="preview-igv-dec" class="text-muted ms-1"></span>
                                                 </dd>
 
-                                                <dt class="col-5 text-muted small fw-normal py-2 border-bottom">Moneda
-                                                </dt>
-                                                <dd class="col-7 fw-semibold small py-2 border-bottom mb-0">Sol peruano
-                                                </dd>
+                                                <dt class="col-5 text-muted small fw-normal py-2 border-bottom">Moneda</dt>
+                                                <dd id="preview-moneda" class="col-7 fw-semibold small py-2 border-bottom mb-0">—</dd>
 
                                                 <dt class="col-5 text-muted small fw-normal py-2">Símbolo</dt>
-                                                <dd class="col-7 fw-semibold small py-2 mb-0 font-monospace">S/</dd>
+                                                <dd id="preview-simbolo" class="col-7 fw-semibold small py-2 mb-0 font-monospace">—</dd>
                                             </dl>
                                         </div>
                                     </div>
@@ -755,8 +754,23 @@ Auditoría — Tabla de todos los cambios registrados en el sistema, con filtros
                                 <div class="col-12 col-lg-7">
                                     <div class="card border-0 shadow-sm contenido-header">
                                         <div
-                                            class="card-header bg-transparent border-bottom py-3 d-flex align-items-center justify-content-between">
-                                            <h2 class="h6 fw-semibold mb-0">Asignación de turnos a empleados</h2>
+                                            class="card-header bg-transparent border-bottom py-3 d-flex flex-wrap align-items-center gap-2 justify-content-between">
+                                            <h2 class="h6 fw-semibold mb-0 me-auto">Asignación de turnos a empleados
+                                            </h2>
+
+                                            <input type="search" id="filtro-emp-turno-busqueda"
+                                                class="form-control form-control-sm" style="max-width: 160px;"
+                                                placeholder="Buscar empleado..." aria-label="Buscar empleado">
+
+                                            <select id="filtro-emp-turno-cargo" class="form-select form-select-sm"
+                                                style="max-width: 150px;" aria-label="Filtrar por cargo">
+                                                <option value="">Todos los cargos</option>
+                                            </select>
+
+                                            <select id="filtro-emp-turno-rol" class="form-select form-select-sm"
+                                                style="max-width: 150px;" aria-label="Filtrar por rol">
+                                                <option value="">Todos los roles</option>
+                                            </select>
                                         </div>
                                         <div class="card-body p-0">
                                             <div class="table-responsive">
@@ -765,6 +779,8 @@ Auditoría — Tabla de todos los cambios registrados en el sistema, con filtros
                                                     <thead>
                                                         <tr>
                                                             <th scope="col">Empleado</th>
+                                                            <th scope="col">Cargo</th>
+                                                            <th scope="col">Rol</th>
                                                             <th scope="col">Turno actual</th>
                                                             <th scope="col"><span class="visually-hidden">Acción</span>
                                                             </th>
@@ -897,6 +913,32 @@ Auditoría — Tabla de todos los cambios registrados en el sistema, con filtros
                         </section>
 
                     </div><!-- /pill-auditoria -->
+
+                    <!-- PANEL: PERMISOS -->
+                    <div class="tab-pane fade" id="section-permisos" role="tabpanel" aria-labelledby="tab-permisos">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header d-flex align-items-center gap-3 flex-wrap">
+                                <h2 class="h6 mb-0 fw-semibold">
+                                   
+                                    Permisos por rol
+                                </h2>
+                                <select id="permisos-select-rol" class="form-select form-select-sm w-auto ms-auto">
+                                    <option value="">Seleccionar rol...</option>
+                                </select>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="permisos-tabla-container" class="p-4 text-muted text-center">
+                                    Selecciona un rol para ver y editar sus permisos.
+                                </div>
+                            </div>
+                            <div class="card-footer d-flex justify-content-end gap-2">
+                                <button type="button" id="btn-guardar-permisos" class="btn btn-sm btn-primary d-none">
+                                    <i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i>
+                                    Guardar permisos
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
                 </div><!-- /tab-content -->
 

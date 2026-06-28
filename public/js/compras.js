@@ -6,6 +6,7 @@ const ComprasState = {
   pagina: 1,
   porPagina: 10,
   productosOrden: [],// líneas del formulario nueva orden
+  cajaActiva: null,
 };
 
 // Fetch helper
@@ -593,10 +594,18 @@ function initFormRecepcion() {
       return;
     }
 
+    if (!ComprasState.cajaActiva) {
+      showToast('Necesitas una caja abierta para registrar el pago al proveedor.', 'error');
+      return;
+    }
+
     try {
       await apiFetch(`/api/compras/${id_orden}/recepciones`, {
         method: 'POST',
-        body: JSON.stringify({ productos, id_almacen, guia_remision: guia }),
+        body: JSON.stringify({
+          productos, id_almacen, guia_remision: guia,
+          id_caja: ComprasState.cajaActiva.id_caja,
+        }),
       });
       showToast('Recepción registrada exitosamente.', 'success');
       bootstrap.Offcanvas.getInstance(document.getElementById('offcanvas-nueva-recepcion'))?.hide();
@@ -825,6 +834,7 @@ async function cargarAlmacenesSelect() {
 
 // Punto de entrada
 document.addEventListener('DOMContentLoaded', async () => {
+  ComprasState.cajaActiva = await asegurarCajaDeTrabajo();
   await Promise.all([
     cargarProveedoresSelect(),
     cargarProductosDatalist(),

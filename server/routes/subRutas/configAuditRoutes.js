@@ -2,29 +2,21 @@ const express = require('express');
 const router  = express.Router();
 
 const configCtrl = require('../../controllers/configYAuditController');
-const { revisarToken, permitirRoles } = require('../../middlewares/auth');
+const { revisarToken, verificarAccesoModulo } = require('../../middlewares/auth');
 
-// Solo admin puede leer/escribir configuración (IGNORAR)
-/*const soloAdmin = (req, res, next) => {
-    const rolesPermitidos = [1, 2]; // ajusta según tus ids de rol
-    if (!rolesPermitidos.includes(req.user?.id_rol)) {
-        return res.status(403).json({ error: 'No tiene permisos para este recurso.' });
-    }
-    next();
-};*/
-
-//usuarios permitidos, mjorar dsps
-const usersPermitidos = permitirRoles('Administrador')
+//usuarios permitidos
+const usersPermitidos = verificarAccesoModulo('/configuracion-auditoria');
 
 //rutas de auditoria
-router.get('/auditoria', revisarToken, usersPermitidos, configCtrl.getLogs);
-router.get('/auditoria/:id', revisarToken, usersPermitidos, configCtrl.getLogById);
+router.get('/auditoria', revisarToken, configCtrl.getLogs);
+router.get('/auditoria/:id', revisarToken, configCtrl.getLogById);
 
 //rutas de turnos
 router.get('/turnos', revisarToken, configCtrl.getTurnos);
 router.get('/turnos/:id', revisarToken, configCtrl.getTurnoById);
 router.post('/turnos', revisarToken, usersPermitidos, configCtrl.crearTurno);
 router.put('/turnos/:id', revisarToken, usersPermitidos, configCtrl.editarTurno);
+router.delete('/turnos/:id', revisarToken, usersPermitidos, configCtrl.eliminarTurno);
 
 //rutas de asignacion de turno a empleados
 router.get('/turnos-empleados', revisarToken, configCtrl.getEmpleadosConTurno);

@@ -15,6 +15,7 @@ const devolucionesRoutes = require('./subRutas/devolucionesRoutes');//importamos
 const ventasRoutes = require('./subRutas/ventasRoutes');//importamos las rutas de VENTAS
 const cajaRoutes = require('./subRutas/cajaRoutes');//importamos las rutas de CAJA
 const clientesRoutes = require('./subRutas/clientesRoutes');//importamos las rutas de CLIENTES
+const permisosRoutes = require('./subRutas/permisosRoutes');//importamos las rutas q restringen el acceso al sistema
 
 //rutas
 router.use('/auth', authYUserRoutes);//usamos las rutas de AUTH y USUARIOS
@@ -31,6 +32,7 @@ router.use('/devoluciones', devolucionesRoutes);//usamos las rutas de devolucion
 router.use('/ventas', ventasRoutes);//usamos las rutas de ventas
 router.use('/caja', cajaRoutes);//usamos las ruta de ventas
 router.use('/clientes', clientesRoutes);//usamos las rutas de clientes
+router.use('/permisos', permisosRoutes);//usamos las rutas de permisos
 
 //exportamos
 module.exports = router;

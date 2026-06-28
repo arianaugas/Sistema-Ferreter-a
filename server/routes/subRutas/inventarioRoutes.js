@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const invCtrl = require('../../controllers/inventarioController');
-const { revisarToken, permitirRoles } = require('../../middlewares/auth');
+const { revisarToken, verificarAccesoModulo} = require('../../middlewares/auth');
 
-//usuarios permitidos, mjorar dsps, INVENTAR UN ROL MÁS DSPS
-const usersPermitidos = permitirRoles('Administrador', 'Vendedor', 'Almacenero')
+//usuarios permitidos
+const usersPermitidos = verificarAccesoModulo('/inventario');
 
 //rutas de Almacenes
 router.get('/almacenes', revisarToken, invCtrl.getAlmacenes);
@@ -30,6 +30,6 @@ router.get('/lotes/:idProducto', revisarToken, invCtrl.getLotes);
 router.get('/transferencias', revisarToken, invCtrl.getTransferencias);
 router.get('/transferencias/:id', revisarToken, invCtrl.getTransferenciaById);
 router.post('/transferencias', revisarToken, usersPermitidos, invCtrl.crearTransferencia);
-router.patch('/transferencias/:id/completar', usersPermitidos, revisarToken, invCtrl.completarTransferencia);
+router.patch('/transferencias/:id/completar', revisarToken,usersPermitidos, invCtrl.completarTransferencia);
 
 module.exports = router;

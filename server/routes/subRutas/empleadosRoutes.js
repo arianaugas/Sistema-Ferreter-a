@@ -3,10 +3,10 @@ const router = express.Router();
 
 //importamos los controllers y middlewares de EMPLEADOS Y CARGOS
 const empleCtrl = require('../../controllers/empleadosController');
-const { revisarToken, permitirRoles } = require('../../middlewares/auth');
+const { revisarToken, verificarAccesoModulo } = require('../../middlewares/auth');
 
-//usuarios permitidos, mjorar dsps
-const usersPermitidos = permitirRoles('Administrador')
+//usuarios q tienen acceso permitido
+const usersPermitidos = verificarAccesoModulo('/empleados');
 
 //rutas de cargos
 router.get('/cargos', revisarToken, empleCtrl.getCargos);

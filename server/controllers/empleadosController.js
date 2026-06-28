@@ -214,9 +214,9 @@ const getById = async (req, res) => {
 
 
 const crearEmpleado = async (req, res) => {
-    const { dni, nombre, apellido, id_cargo, telefono, correo, fecha_ingreso, fecha_cese } = req.body;
+    const { dni, nombre, apellido, id_cargo, id_turno, telefono, correo, fecha_ingreso, fecha_cese } = req.body;
 
-    if (!dni || !nombre || !apellido || !id_cargo || !fecha_ingreso) {
+    if (!dni || !nombre || !apellido || !id_cargo || !id_turno || !fecha_ingreso) {
         return res.status(400).json({ ok: false, mensaje: 'Complete los campos obligatorios.' });
     }
 
@@ -248,11 +248,12 @@ const crearEmpleado = async (req, res) => {
         }
 
         const result = await query(
-            `INSERT INTO empleados (id_cargo, dni, nombre, apellido, telefono, correo, fecha_ingreso, fecha_cese, activo)
+            `INSERT INTO empleados (id_cargo, id_turno, dni, nombre, apellido, telefono, correo, fecha_ingreso, fecha_cese, activo)
             OUTPUT INSERTED.*
-            VALUES (@id_cargo, @dni, @nombre, @apellido, @telefono, @correo, @fecha_ingreso, @fecha_cese, 1)`,
+            VALUES (@id_cargo, @id_turno, @dni, @nombre, @apellido, @telefono, @correo, @fecha_ingreso, @fecha_cese, 1)`,
             {
                 id_cargo: { type: sql.Int, value: id_cargo },
+                id_turno: { type: sql.Int, value: id_turno || null },
                 dni: { type: sql.VarChar, value: dni },
                 nombre: { type: sql.VarChar, value: nombre },
                 apellido: { type: sql.VarChar, value: apellido },
@@ -271,9 +272,9 @@ const crearEmpleado = async (req, res) => {
 
 const editarEmpleado = async (req, res) => {
     const { id } = req.params;
-    const { dni, nombre, apellido, id_cargo, telefono, correo, fecha_ingreso, fecha_cese, activo } = req.body;
+    const { dni, nombre, apellido, id_cargo, id_turno, telefono, correo, fecha_ingreso, fecha_cese, activo } = req.body;
 
-    if (!dni || !nombre || !apellido || !id_cargo || !fecha_ingreso || activo === undefined) {
+    if (!dni || !nombre || !apellido || !id_cargo || !id_turno || !fecha_ingreso || activo === undefined) {
         return res.status(400).json({ ok: false, mensaje: 'Complete los campos obligatorios.' });
     }
 
@@ -319,6 +320,7 @@ const editarEmpleado = async (req, res) => {
         const result = await query(
             `UPDATE empleados
             SET id_cargo = @id_cargo,
+                id_turno = @id_turno,
                 dni = @dni,
                 nombre = @nombre,
                 apellido = @apellido,
@@ -331,6 +333,7 @@ const editarEmpleado = async (req, res) => {
             WHERE id_empleado = @id`,
             {
                 id_cargo: { type: sql.Int, value: id_cargo },
+                id_turno: { type: sql.Int, value: id_turno || null },
                 dni: { type: sql.VarChar, value: dni },
                 nombre: { type: sql.VarChar, value: nombre },
                 apellido: { type: sql.VarChar, value: apellido },

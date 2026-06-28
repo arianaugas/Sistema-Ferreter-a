@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const comprasCtrl = require('../../controllers/comprasController');//controllers de compras
-const { revisarToken, permitirRoles } = require('../../middlewares/auth');
+const { revisarToken, verificarAccesoModulo} = require('../../middlewares/auth');
 
-//usuarios permitidos, mjorar dsps
-const usersPermitidos = permitirRoles('Administrador', 'Vendedor','Almacenero');
+//usuarios permitidos
+const usersPermitidos = verificarAccesoModulo('/compras');
 
 //Rutas de Compras
 router.get('/', revisarToken, comprasCtrl.getOrdenes);

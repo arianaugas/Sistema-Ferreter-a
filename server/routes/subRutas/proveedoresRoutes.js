@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const provCtrl = require('../../controllers/proveedoresController');
-const { revisarToken, permitirRoles } = require('../../middlewares/auth');
+const { revisarToken, verificarAccesoModulo } = require('../../middlewares/auth');
 
-//usuarios permitidos, mjorar dsps
-const usersPermitidos = permitirRoles('Administrador');//por el moment
+//usuarios permitidos
+const usersPermitidos = verificarAccesoModulo('/proveedores');
 
 // Proveedores
 router.get('/comparativa', revisarToken, provCtrl.getComparativa);
@@ -16,7 +16,7 @@ router.delete('/:id', revisarToken, usersPermitidos, provCtrl.desactivarProveedo
 
 // Contactos
 router.post('/:id/contactos', revisarToken, usersPermitidos, provCtrl.addContacto);
-router.delete('/:id/contactos/:idContacto', usersPermitidos, revisarToken, provCtrl.removeContacto);
+router.delete('/:id/contactos/:idContacto', revisarToken, usersPermitidos, provCtrl.removeContacto);
 
 // Productos del proveedor
 router.post('/:id/productos', revisarToken, usersPermitidos, provCtrl.addProducto);

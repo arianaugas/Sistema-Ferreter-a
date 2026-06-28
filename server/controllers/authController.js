@@ -38,10 +38,10 @@ const login = async (req, res) => {
         }
 
         const user = {
-            id:          usuario.id_usuario,
+            id: usuario.id_usuario,
             id_empleado: usuario.id_empleado,
-            username:    usuario.username,
-            rol:         usuario.rol
+            username: usuario.username,
+            rol: usuario.rol
         };
 
         const token = jwt.sign(user, process.env.JWT_SECRET, {
@@ -50,7 +50,9 @@ const login = async (req, res) => {
 
         const cookieOption = {
             httpOnly: true,
-            maxAge: 24 * 60 * 60 * 1000 * parseInt(process.env.JWT_COOKIE_EXPIRES)
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 24 * 60 * 60 * 1000 * parseInt(process.env.JWT_COOKIE_EXPIRES)|| 3
         };
 
         await query(
@@ -63,11 +65,11 @@ const login = async (req, res) => {
         return res.json({
             ok: true,
             usuario: {
-                id:          usuario.id_usuario,
+                id: usuario.id_usuario,
                 id_empleado: usuario.id_empleado,
-                username:    usuario.username,
-                rol:         usuario.rol,
-                nombre:      usuario.nombre_empleado
+                username: usuario.username,
+                rol: usuario.rol,
+                nombre: usuario.nombre_empleado
             }
         });
 
@@ -121,13 +123,13 @@ const logout = (req, res) => {
     //limpiamos la cookie
     res.clearCookie('token');
     res.json({
-        ok:true
+        ok: true
     });
 }
 
 //exportamos las funciones
-module.exports = { 
-    login, 
-    logout, 
-    getUsuario 
+module.exports = {
+    login,
+    logout,
+    getUsuario
 };

@@ -231,7 +231,7 @@ const anularOrden = async (req, res) => {
 // Crear recepción de mercadería
 const crearRecepcion = async (req, res) => {
     const { id } = req.params; // id_orden
-    const { productos, id_almacen, guia_remision } = req.body;
+    const { productos, id_almacen, guia_remision, id_caja } = req.body;
     const id_usuario = req.user.id;
     const id_empleado = req.user.id_empleado; //traemos el user del tokenn
 
@@ -240,6 +240,9 @@ const crearRecepcion = async (req, res) => {
     }
     if (!id_empleado) {
         return res.status(400).json({ ok: false, mensaje: 'No se pudo obtener el empleado desde la sesión.' });
+    }
+    if (!id_caja) {
+        return res.status(400).json({ ok: false, mensaje: 'Debes indicar desde qué caja se paga esta recepción.' });
     }
 
     try {
@@ -271,7 +274,9 @@ const crearRecepcion = async (req, res) => {
                 OUTPUT INSERTED.id_recepcion
                 VALUES (@id_orden, @id_almacen, @id_empleado, @numero_guia)`
             );
+            
             const id_recepcion = recResult.recordset[0].id_recepcion;
+            let costoTotal = 0;
 
             for (const p of productos) {
                 // Obtener el precio unitario pactado si no se envía en el cuerpo
@@ -291,6 +296,7 @@ const crearRecepcion = async (req, res) => {
                         precio_unitario = 0;
                     }
                 }
+                costoTotal += precio_unitario * parseFloat(p.cantidad);
 
                 // 2. Insertar detalle de recepción
                 const reqDetRec = transaction.request();
@@ -373,6 +379,44 @@ const crearRecepcion = async (req, res) => {
                 }
             }
 
+            // 5b. Validar fondos en caja y registrar el egreso del pago al proveedor
+            const reqCaja = transaction.request();
+            reqCaja.input('id_caja', sql.Int, id_caja);
+            const cajaRes = await reqCaja.query(
+                `SELECT estado, monto_esperado FROM cajas WITH (UPDLOCK, HOLDLOCK) WHERE id_caja = @id_caja`
+            );
+            if (cajaRes.recordset.length === 0) {
+                throw new Error('La caja indicada no existe.');
+            }
+            const caja = cajaRes.recordset[0];
+            if (caja.estado !== 'abierta') {
+                throw new Error('La caja indicada no está abierta.');
+            }
+            const montoDisponible = parseFloat(caja.monto_esperado);
+            if (montoDisponible < costoTotal) {
+                throw new Error(`Fondos insuficientes en caja para esta recepción. Disponible: S/ ${montoDisponible.toFixed(2)}, requerido: S/ ${costoTotal.toFixed(2)}.`);
+            }
+
+            if (costoTotal > 0) {
+                const reqMovCaja = transaction.request();
+                reqMovCaja.input('id_caja', sql.Int, id_caja);
+                reqMovCaja.input('id_usuario', sql.Int, id_usuario);
+                reqMovCaja.input('referencia_id', sql.Int, id_recepcion);
+                reqMovCaja.input('monto', sql.Decimal(10, 2), costoTotal);
+                reqMovCaja.input('concepto', sql.VarChar(150), `Pago a proveedor por recepción ID ${id_recepcion}`);
+                await reqMovCaja.query(`
+                    INSERT INTO movimientos_caja (id_caja, id_usuario, tipo, concepto, referencia_id, monto, registrado_en)
+                    VALUES (@id_caja, @id_usuario, 'egreso', @concepto, @referencia_id, @monto, GETDATE())
+                `);
+
+                const reqUpCaja = transaction.request();
+                reqUpCaja.input('id_caja', sql.Int, id_caja);
+                reqUpCaja.input('monto', sql.Decimal(10, 2), costoTotal);
+                await reqUpCaja.query(
+                    'UPDATE cajas SET monto_esperado = monto_esperado - @monto WHERE id_caja = @id_caja'
+                );
+            }
+
             // 6. Verificar si la orden está totalmente recibida
             const checkResult = await transaction.request()
                 .input('id_orden', sql.Int, id)
@@ -389,6 +433,9 @@ const crearRecepcion = async (req, res) => {
         return res.status(201).json({ ok: true, mensaje: 'Recepción registrada con éxito.' });
     } catch (err) {
         console.error('Error al crear recepción:', err);
+        if (err.message.startsWith('Fondos insuficientes') || err.message.startsWith('La caja indicada')) {
+            return res.status(400).json({ ok: false, mensaje: err.message });
+        }
         return res.status(500).json({ ok: false, mensaje: 'Error al procesar la recepción.' });
     }
 };

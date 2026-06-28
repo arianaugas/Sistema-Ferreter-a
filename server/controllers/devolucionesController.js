@@ -289,7 +289,9 @@ const create = async (req, res) => {
                 }
             }
 
-            // Si es reembolso: registrar egreso en caja
+            // Si es reembolso: registrar egreso en caja.
+            // Regla de negocio: TODO reembolso se entrega en efectivo desde la
+            // caja física, sin importar cómo pagó el cliente originalmente.
             if (tipo === 'reembolso') {
                 const reqCaja = transaction.request();
                 reqCaja.input('id_caja', sql.Int, id_caja);

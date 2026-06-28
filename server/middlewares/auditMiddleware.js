@@ -1,21 +1,23 @@
 const { sql, query } = require('../db/conexion_sql');
 
-// Mapa URL -> tabla afectada + clave primaria (para poder leer el estado anterior y el registro_id real)
+// Mapa URL: tabla afectada + clave primaria (para poder leer el estado anterior y el registro_id real)
 const TABLA_MAP = [
     { patron: '/clientes', tabla: 'clientes', pk: 'id_cliente' },
     { patron: '/ventas', tabla: 'ventas', pk: 'id_venta' },
     { patron: '/caja', tabla: 'cajas', pk: 'id_caja' },
     { patron: '/productos', tabla: 'productos', pk: 'id_producto' },
-    { patron: '/empleados', tabla: 'empleados', pk: 'id_empleado' },
     { patron: '/auth/users', tabla: 'usuarios', pk: 'id_usuario' },
     { patron: '/compras', tabla: 'ordenes_compra', pk: 'id_orden' },
     { patron: '/devoluciones', tabla: 'devoluciones', pk: 'id_devolucion' },
     { patron: '/inventario', tabla: 'inventario', pk: null }, // ver al trabajar el módulo INVENTARIO
     { patron: '/proveedores', tabla: 'proveedores', pk: 'id_proveedor' },
-    { patron: '/subcategorias', tabla: 'subcategorias', pk: 'id_subcategoria' },  // antes que /categorias
-    { patron: '/categorias', tabla: 'categorias', pk: 'id_categoria' },
+    { patron: '/categorias/sub', tabla: 'subcategorias', pk: 'id_subcategoria' }, // antes que /categorias/cat
+    { patron: '/categorias/cat', tabla: 'categorias', pk: 'id_categoria' },
     { patron: '/catalogo/marcas', tabla: 'marcas', pk: 'id_marca' },
     { patron: '/catalogo/unidades', tabla: 'unidades_medida', pk: 'id_unidad' },
+    { patron: '/configuracion/turnos-empleados', tabla: 'empleados', pk: 'id_empleado' }, // antes que /empleados y /configuracion
+    { patron: '/configuracion/turnos', tabla: 'turnos', pk: 'id_turno' }, // antes que /configuracion (turnos-empleados también empieza con "/configuracion/turnos", por eso ese va primero)
+    { patron: '/empleados', tabla: 'empleados', pk: 'id_empleado' },
     { patron: '/configuracion', tabla: 'configuracion', pk: 'id_config', matchCol: 'clave', matchParam: 'clave' },
 ];
 

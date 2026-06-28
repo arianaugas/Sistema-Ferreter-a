@@ -24,11 +24,10 @@ CREATE TABLE auditoria (
     CONSTRAINT pk_auditoria PRIMARY KEY (id_auditoria)
 );
 
--- ============================================================
+
 -- MÓDULO: TURNOS (Configuración)
 -- Horarios de trabajo del negocio. Se gestionan desde Configuración
 -- y se asignan a los empleados (módulo Empleados y Acceso, abajo).
--- ============================================================
 CREATE TABLE turnos (
     id_turno INT NOT NULL IDENTITY(1,1),
     nombre VARCHAR(40) NOT NULL, -- Ej: 'Turno Mañana', 'Turno Tarde'
@@ -572,3 +571,27 @@ CREATE SEQUENCE seq_orden_compra
     START WITH 1
     INCREMENT BY 1
     NO CYCLE;
+
+-- modulos — catálogo fijo de módulos del sistema
+-- ============================================================
+CREATE TABLE modulos (
+    id_modulo INT NOT NULL IDENTITY(1,1),
+    nombre VARCHAR(60) NOT NULL,
+    ruta VARCHAR(100) NOT NULL,
+    descripcion VARCHAR(150) NULL,
+    CONSTRAINT pk_modulos PRIMARY KEY (id_modulo),
+    CONSTRAINT uq_modulos_ruta UNIQUE (ruta)
+);
+
+-- permisos_rol — qué módulos puede acceder cada rol (todo o nada: si tiene
+-- acceso, puede ver/crear/editar/eliminar dentro de ese módulo)
+CREATE TABLE permisos_rol (
+    id_permiso INT NOT NULL IDENTITY(1,1),
+    id_rol INT NOT NULL,
+    id_modulo INT NOT NULL,
+    tiene_acceso BIT NOT NULL DEFAULT 0,
+    CONSTRAINT pk_permisos_rol PRIMARY KEY (id_permiso),
+    CONSTRAINT uq_permisos_rol UNIQUE (id_rol, id_modulo),
+    CONSTRAINT fk_permisos_rol_rol FOREIGN KEY (id_rol) REFERENCES roles(id_rol),
+    CONSTRAINT fk_permisos_rol_modulo FOREIGN KEY (id_modulo) REFERENCES modulos(id_modulo)
+);

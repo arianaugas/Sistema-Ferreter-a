@@ -136,9 +136,18 @@ const clientesController = {
             const { id } = req.params;
             const { tipo_documento, numero_documento, nombre, telefono, correo, activo } = req.body;
 
+            // Validaciones básicas de campos obligatorios (igual que en create)
+            if (!tipo_documento || !numero_documento || !nombre) {
+                return res.status(400).json({ error: "Los campos tipo_documento, numero_documento y nombre son obligatorios" });
+            }
+
             // Verificar si existe el cliente
             const queryExiste = "SELECT id_cliente FROM clientes WHERE id_cliente = @id";
             const resExiste = await query(queryExiste, { id: { type: sql.Int, value: id } });
+
+            if (resExiste.recordset.length === 0) {
+                return res.status(404).json({ error: "Cliente no encontrado" });
+            }
 
             // Validar longitud del documento según su tipo (DNI=8, RUC=11, CE=12)
             const errorDocumento = validarLongitudDocumento(tipo_documento, numero_documento);
@@ -150,10 +159,6 @@ const clientesController = {
             const errorTelefono = validarTelefono(telefono);
             if (errorTelefono) {
                 return res.status(400).json({ error: errorTelefono });
-            }
-
-            if (resExiste.recordset.length === 0) {
-                return res.status(404).json({ error: "Cliente no encontrado" });
             }
 
             // Verificar que si cambia el documento, no choque con el de otro cliente existente

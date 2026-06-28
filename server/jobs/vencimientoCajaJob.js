@@ -28,13 +28,23 @@ async function revisarCajasVencidas() {
     }
 }
 
-// Arranca el job en segundo plano. Se llama una vez al iniciar el servidor.
-// También corre inmediatamente al arrancar, para cubrir el caso de que el
-// servidor haya estado apagado justo cuando una caja debía vencer.
+let _intervalo = null;
+
 function iniciarJobVencimientoCaja() {
-    revisarCajasVencidas(); // primera corrida inmediata
-    setInterval(revisarCajasVencidas, INTERVALO_REVISION_MS);
+    if (_intervalo) return; // evita duplicados si se llama más de una vez
+    revisarCajasVencidas();
+    _intervalo = setInterval(revisarCajasVencidas, INTERVALO_REVISION_MS);
     console.log('[vencimientoCajaJob] Job de vencimiento de caja iniciado (revisión cada 60s).');
 }
 
-module.exports = { iniciarJobVencimientoCaja };
+function detenerJobVencimientoCaja() {
+    if (_intervalo) {
+        clearInterval(_intervalo);
+        _intervalo = null;
+    }
+}
+
+module.exports = { 
+    iniciarJobVencimientoCaja, 
+    detenerJobVencimientoCaja 
+};

@@ -314,6 +314,7 @@ async function abrirEditarEmpleado(id) {
         document.getElementById('editar-emp-nombre').value = emp.nombre;
         document.getElementById('editar-emp-apellido').value = emp.apellido;
         document.getElementById('editar-emp-cargo').value = emp.id_cargo;
+        document.getElementById('editar-emp-turno').value = emp.id_turno ?? '';
         document.getElementById('editar-emp-telefono').value = emp.telefono ?? '';
         document.getElementById('editar-emp-correo').value = emp.correo ?? '';
         document.getElementById('editar-emp-fecha-ingreso').value = emp.fecha_ingreso?.split('T')[0] ?? '';
@@ -333,6 +334,7 @@ document.getElementById('btn-ficha-editar')?.addEventListener('click', () => {
 });
 
 // Nuevo empleado
+// REEMPLAZAR el addEventListener de 'form-nuevo-empleado' completo:
 document.getElementById('form-nuevo-empleado')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const telefonoRaw = document.getElementById('nuevo-emp-telefono').value.trim();
@@ -344,6 +346,7 @@ document.getElementById('form-nuevo-empleado')?.addEventListener('submit', async
         nombre: document.getElementById('nuevo-emp-nombre').value.trim(),
         apellido: document.getElementById('nuevo-emp-apellido').value.trim(),
         id_cargo: document.getElementById('nuevo-emp-cargo').value,
+        id_turno: document.getElementById('nuevo-emp-turno').value || null,
         telefono: telefonoRaw || null,
         correo: document.getElementById('nuevo-emp-correo').value.trim() || null,
         fecha_ingreso: document.getElementById('nuevo-emp-fecha-ingreso').value,
@@ -351,16 +354,28 @@ document.getElementById('form-nuevo-empleado')?.addEventListener('submit', async
     };
 
     try {
-        await apiFetch(API, { method: 'POST', body: JSON.stringify(body) });
-        showToast('Empleado registrado correctamente.', 'success');
+        const res = await apiFetch(API, { method: 'POST', body: JSON.stringify(body) });
+        showToast('Empleado registrado. Ahora crea su usuario de acceso.', 'success');
         bootstrap.Modal.getInstance(document.getElementById('modal-nuevo-empleado'))?.hide();
         document.getElementById('form-nuevo-empleado').reset();
         cargarEmpleados();
+
+        // Abrir modal de creación de usuario con el empleado preseleccionado
+        const idEmpleado = res.empleado?.id_empleado;
+        if (idEmpleado) {
+            abrirModalNuevoUsuarioParaEmpleado(idEmpleado, `${body.nombre} ${body.apellido}`);
+        }
     } catch (err) {
         showToast(err.message, 'error');
     }
 });
 
+// Función para abrir el modal de usuario preseleccionado desde empleados
+async function abrirModalNuevoUsuarioParaEmpleado(id_empleado, nombreEmpleado) {
+    sessionStorage.setItem('nuevo_usuario_para_empleado', JSON.stringify({ id_empleado, nombreEmpleado }));
+    // Redirigir directamente a la página de usuarios para abrir el modal
+    window.location.href = '/usuarios';
+}
 // Editar empleado
 document.getElementById('form-editar-empleado')?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -374,6 +389,7 @@ document.getElementById('form-editar-empleado')?.addEventListener('submit', asyn
         nombre: document.getElementById('editar-emp-nombre').value.trim(),
         apellido: document.getElementById('editar-emp-apellido').value.trim(),
         id_cargo: document.getElementById('editar-emp-cargo').value,
+        id_turno: document.getElementById('editar-emp-turno').value || null,
         telefono: telefonoRaw || null,
         correo: document.getElementById('editar-emp-correo').value.trim() || null,
         fecha_ingreso: document.getElementById('editar-emp-fecha-ingreso').value,
@@ -448,8 +464,34 @@ document.getElementById('btn-limpiar-filtros-empleados')?.addEventListener('clic
     cargarEmpleados();
 });
 
+async function cargarTurnosParaEmpleados() {
+    try {
+        const data = await apiFetch('/api/configuracion/turnos');
+        const turnos = (data.turnos || []).filter(t => t.activo);
+        const selects = [
+            document.getElementById('nuevo-emp-turno'),
+            document.getElementById('editar-emp-turno')
+        ];
+        selects.forEach(sel => {
+            if (!sel) return;
+            const primera = sel.options[0];
+            sel.innerHTML = '';
+            sel.appendChild(primera);
+            turnos.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id_turno;
+                opt.textContent = t.nombre;
+                sel.appendChild(opt);
+            });
+        });
+    } catch (err) {
+        showToast('Error al cargar turnos.', 'error');
+    }
+}
+
 //Inicializamos el dom
 document.addEventListener('DOMContentLoaded', () => {
     cargarCargos();
+    cargarTurnosParaEmpleados();
     cargarEmpleados();
 });

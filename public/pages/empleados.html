@@ -737,6 +737,15 @@ Formulario para agregar nuevo cargo.
                                         placeholder="correo@ejemplo.com" maxlength="100" autocomplete="email">
                                 </div>
                                 <div class="col-12 col-md-6">
+                                    <label for="nuevo-emp-turno" class="form-label">Turno <span class="text-danger"
+                                            aria-hidden="true">*</span></label>
+                                    <select id="nuevo-emp-turno" name="id_turno" class="form-select" required
+                                        aria-required="true">
+                                        <option value="" disabled selected>Seleccionar turno</option>
+                                    </select>
+                                    <div class="invalid-feedback">Seleccione un turno.</div>
+                                </div>
+                                <div class="col-12 col-md-6">
                                     <label for="nuevo-emp-fecha-ingreso" class="form-label">Fecha de ingreso <span
                                             class="text-danger" aria-hidden="true">*</span></label>
                                     <input type="date" id="nuevo-emp-fecha-ingreso" name="fecha_ingreso"
@@ -893,6 +902,15 @@ Formulario para agregar nuevo cargo.
                                     <label for="editar-emp-correo" class="form-label">Correo electrónico</label>
                                     <input type="email" id="editar-emp-correo" name="correo" class="form-control"
                                         maxlength="100" autocomplete="email">
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="editar-emp-turno" class="form-label">Turno <span class="text-danger"
+                                            aria-hidden="true">*</span></label>
+                                    <select id="editar-emp-turno" name="id_turno" class="form-select" required
+                                        aria-required="true">
+                                        <option value="" disabled>Seleccionar turno</option>
+                                    </select>
+                                    <div class="invalid-feedback">Seleccione un turno.</div>
                                 </div>
                                 <div class="col-12 col-md-6">
                                     <label for="editar-emp-fecha-ingreso" class="form-label">Fecha de ingreso <span

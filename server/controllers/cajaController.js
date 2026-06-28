@@ -60,17 +60,14 @@ const cajaController = {
     },
     
     // se abre la caja (solo Cajero o Administrador, cada uno con su propia caja individual)
+    // se abre la caja (el permiso de quién puede hacerlo lo controla
     abrirCaja: async (req, res, next) => {
         try {
             const { monto_inicial } = req.body;
             const id_empleado = req.user.id_empleado; // siempre del token, nunca del body, ojito
-            const rolesPermitidos = ['Cajero', 'Administrador'];
 
             if (!id_empleado) {
                 return res.status(400).json({ error: 'No se pudo obtener el empleado desde la sesión.' });
-            }
-            if (!rolesPermitidos.includes(req.user.rol)) {
-                return res.status(403).json({ error: 'Solo el Cajero o el Administrador pueden abrir caja.' });
             }
             if (monto_inicial === undefined || monto_inicial < 0) {
                 return res.status(400).json({ error: "El monto_inicial es obligatorio y no puede ser negativo." });
@@ -102,15 +99,11 @@ const cajaController = {
             }
 
             const horaFin = resTurnoInfo.recordset[0].hora_fin;
-            // Construimos la fecha de cierre programada combinando HOY + hora_fin del turno.
-            // Se calcula en SQL (no en JS)
-            const queryFechaCierre = `
-                SELECT CAST(CAST(GETDATE() AS DATE) AS DATETIME2) + CAST(@hora_fin AS DATETIME2) AS fecha_cierre
-            `;
-            const resFechaCierre = await query(queryFechaCierre, {
-                hora_fin: { type: sql.VarChar, value: horaFin }
-            });
-            const fechaCierreProgramada = resFechaCierre.recordset[0].fecha_cierre;
+            
+            const msDesdeMedianoche = Number(horaFin);
+            const hoyMedianoche = new Date();
+            hoyMedianoche.setHours(0, 0, 0, 0);
+            const fechaCierreProgramada = new Date(hoyMedianoche.getTime() + msDesdeMedianoche);
 
             const queryTurno = "SELECT ISNULL(MAX(numero_turno), 0) + 1 AS siguiente_turno FROM cajas WHERE id_empleado = @id_empleado";
             const resTurno = await query(queryTurno, { id_empleado: { type: sql.Int, value: id_empleado } });
@@ -203,11 +196,7 @@ const cajaController = {
             const { id } = req.params;
             const { monto_real, observacion } = req.body;
             const id_empleado_que_cierra = req.user.id_empleado; // quién está cerrando realmente
-            const rolesPermitidos = ['Cajero', 'Administrador'];
-
-            if (!rolesPermitidos.includes(req.user.rol)) {
-                return res.status(403).json({ error: 'Solo el Cajero o el Administrador pueden cerrar caja.' });
-            }
+        
             if (monto_real === undefined) {
                 return res.status(400).json({ error: "Es obligatorio enviar el monto_real para el arqueo de caja." });
             }

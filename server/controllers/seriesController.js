@@ -1,5 +1,4 @@
-const { query } = require('../db/conexion_sql');
-const sql = require('mssql/msnodesqlv8');
+const { sql , query } = require('../db/conexion_sql');
 
 const seriesController = {
     // 1. Obtener todas las series (con filtros opcionales)

@@ -15,7 +15,7 @@ const { iniciarJobVencimientoCaja } = require('./server/jobs/vencimientoCajaJob'
 
 //creamos el servidor
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 
 //midlewares globales
 app.use(express.json())//convertimos to a json

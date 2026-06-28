@@ -19,7 +19,7 @@ const getAll = async (req, res) => {
         if (activo !== undefined && activo !== '') {
             where += ' AND p.activo = @activo';
             params.activo = { type: sql.Bit, value: parseInt(activo) };
-        } 
+        }
 
         //validamos las fechas CAMBIE AQUI
         if (fecha_desde) {
@@ -448,24 +448,26 @@ const getComparativa = async (req, res) => {
         const productos = productosResult.recordset;
 
         if (productos.length > 0) {
-            const ids = productos.map(p => p.id_producto).join(',');
 
+            // DESPUÉS
             const detalleResult = await query(
                 `SELECT
-                pp.id,
-                pp.codigo_proveedor,
-                pp.precio_compra,
-                pp.tiempo_entrega_dias,
-                pp.es_preferido,
-                pp.id_producto,
-                pv.id_proveedor,
-                pv.nombre AS proveedor,
-                pv.ruc
+                    pp.id,
+                    pp.codigo_proveedor,
+                    pp.precio_compra,
+                    pp.tiempo_entrega_dias,
+                    pp.es_preferido,
+                    pp.id_producto,
+                    pv.id_proveedor,
+                    pv.nombre AS proveedor,
+                    pv.ruc
                 FROM productos_proveedor pp
                 INNER JOIN proveedores pv ON pv.id_proveedor = pp.id_proveedor
-                WHERE pp.id_producto IN (${ids}) AND pv.activo = 1
+                INNER JOIN (${productos.map((_, i) => `SELECT @id${i} AS id_producto`).join(' UNION ALL ')}) ids
+                    ON ids.id_producto = pp.id_producto
+                WHERE pv.activo = 1
                 ORDER BY pp.id_producto, pp.precio_compra ASC`,
-                {}
+                Object.fromEntries(productos.map((p, i) => [`id${i}`, { type: sql.Int, value: p.id_producto }]))
             );
 
             // Agrupar proveedores por producto en JS

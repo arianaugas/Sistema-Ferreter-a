@@ -4,12 +4,16 @@ const router = express.Router();
 //importamos los controllers y middlewares de AUTH , USUARIOSS Y ROLES
 const authCtrl = require('../../controllers/authController')
 const usuariosCtrl = require('../../controllers/usuariosController')
-const { revisarToken, permitirRoles } = require('../../middlewares/auth')
+const { revisarToken, verificarAccesoModulo} = require('../../middlewares/auth');
 const { validarLogin } = require('../../middlewares/validationMiddleware')
 const rolesCtrl = require('../../controllers/rolesController');
+const { getMisPermisos } = require('../../controllers/permisosController');
 
-//usuarios permitidos, mjorar dsps
-const usersPermitidos = permitirRoles('Administrador')
+//usuarios permitidos
+const usersPermitidos = verificarAccesoModulo('/usuarios');
+
+//rutas de permisos: restringen el acceso al sistema segun rol
+router.get('/mis-permisos', revisarToken, getMisPermisos);
 
 //rutas de AUTH
 router.post('/login', validarLogin, authCtrl.login);

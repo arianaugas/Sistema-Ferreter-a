@@ -1,4 +1,4 @@
-const { sql, query } = require('../db/conexion_sql');
+const { sql, query, withTransaction } = require('../db/conexion_sql');
 
 //ESTO ES DE CONFIGURACIONNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 
@@ -61,9 +61,9 @@ const update = async (req, res) => {
 
         const result = await query(
             `UPDATE configuracion
-             SET valor = @valor
-             OUTPUT INSERTED.*
-             WHERE clave = @clave`,
+            SET valor = @valor
+            OUTPUT INSERTED.*
+            WHERE clave = @clave`,
             {
                 clave: { type: sql.VarChar, value: clave },
                 valor: { type: sql.VarChar, value: String(valor) }
@@ -77,7 +77,7 @@ const update = async (req, res) => {
 };
 
 
-//ESTO ES DE AUDITORIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+//ESTO ES DE AUDITORIA
 
 // Listar registros de auditoría con filtros
 const getLogs = async (req, res) => {
@@ -122,11 +122,11 @@ const getLogs = async (req, res) => {
                 a.registrado_en,
                 u.username AS usuario_nombre,
                 e.nombre + ' ' + e.apellido AS empleado_nombre
-             FROM auditoria a
-             LEFT JOIN usuarios u ON a.id_usuario = u.id_usuario
-             LEFT JOIN empleados e ON u.id_empleado = e.id_empleado
-             ${where}
-             ORDER BY a.registrado_en DESC`,
+            FROM auditoria a
+            LEFT JOIN usuarios u ON a.id_usuario = u.id_usuario
+            LEFT JOIN empleados e ON u.id_empleado = e.id_empleado
+            ${where}
+            ORDER BY a.registrado_en DESC`,
             params
         );
 
@@ -156,10 +156,10 @@ const getLogById = async (req, res) => {
                 a.registrado_en,
                 u.username AS usuario_nombre,
                 e.nombre + ' ' + e.apellido AS empleado_nombre
-             FROM auditoria a
-             LEFT JOIN usuarios u ON a.id_usuario = u.id_usuario
-             LEFT JOIN empleados e ON u.id_empleado = e.id_empleado
-             WHERE a.id_auditoria = @id`,
+            FROM auditoria a
+            LEFT JOIN usuarios u ON a.id_usuario = u.id_usuario
+            LEFT JOIN empleados e ON u.id_empleado = e.id_empleado
+            WHERE a.id_auditoria = @id`,
             { id: { type: sql.Int, value: id } }
         );
 
@@ -184,7 +184,7 @@ const getLogById = async (req, res) => {
 };
 
 
-//ESTO ES DE TURNOSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+//ESTO ES DE TURNOS
 
 // Lista todos los turnos (activos e inactivos)
 const getTurnos = async (req, res) => {
@@ -222,8 +222,12 @@ const getTurnoById = async (req, res) => {
 const crearTurno = async (req, res) => {
     const { nombre, hora_inicio, hora_fin } = req.body;
 
+    const horaRegex = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
     if (!nombre || !hora_inicio || !hora_fin) {
         return res.status(400).json({ ok: false, mensaje: 'Nombre, hora_inicio y hora_fin son obligatorios.' });
+    }
+    if (!horaRegex.test(hora_inicio) || !horaRegex.test(hora_fin)) {
+        return res.status(400).json({ ok: false, mensaje: 'Formato de hora inválido. Use HH:mm (00:00 – 23:59).' });
     }
     if (hora_inicio === hora_fin) {
         return res.status(400).json({ ok: false, mensaje: 'La hora de inicio y fin no pueden ser iguales.' });
@@ -278,9 +282,9 @@ const editarTurno = async (req, res) => {
 
         const result = await query(
             `UPDATE turnos
-             SET nombre = @nombre, hora_inicio = @hora_inicio, hora_fin = @hora_fin, activo = @activo
-             OUTPUT INSERTED.*
-             WHERE id_turno = @id`,
+            SET nombre = @nombre, hora_inicio = @hora_inicio, hora_fin = @hora_fin, activo = @activo
+            OUTPUT INSERTED.*
+            WHERE id_turno = @id`,
             {
                 id: { type: sql.Int, value: id },
                 nombre: { type: sql.VarChar, value: nombre },
@@ -301,14 +305,38 @@ const editarTurno = async (req, res) => {
 // Lista los empleados con su turno asignado actual (para la pantalla de asignación)
 const getEmpleadosConTurno = async (req, res) => {
     try {
-        const result = await query(
-            `SELECT e.id_empleado, e.nombre, e.apellido, e.dni, e.activo,
-                t.id_turno, t.nombre AS turno_nombre, t.hora_inicio, t.hora_fin
+        const { id_cargo, id_rol, busqueda } = req.query;
+
+        let queryStr = `
+            SELECT e.id_empleado, e.nombre, e.apellido, e.dni, e.activo,
+                t.id_turno, t.nombre AS turno_nombre, t.hora_inicio, t.hora_fin,
+                c.id_cargo, c.nombre AS cargo_nombre,
+                r.id_rol, r.nombre AS rol_nombre
             FROM empleados e
             LEFT JOIN turnos t ON t.id_turno = e.id_turno
+            LEFT JOIN cargos c ON c.id_cargo = e.id_cargo
+            LEFT JOIN usuarios u ON u.id_empleado = e.id_empleado
+            LEFT JOIN roles r ON r.id_rol = u.id_rol
             WHERE e.activo = 1
-            ORDER BY e.apellido ASC, e.nombre ASC`
-        );
+        `;
+        const params = {};
+
+        if (id_cargo) {
+            queryStr += ' AND e.id_cargo = @id_cargo';
+            params.id_cargo = { type: sql.Int, value: parseInt(id_cargo) };
+        }
+        if (id_rol) {
+            queryStr += ' AND r.id_rol = @id_rol';
+            params.id_rol = { type: sql.Int, value: parseInt(id_rol) };
+        }
+        if (busqueda) {
+            queryStr += ' AND (e.nombre LIKE @busqueda OR e.apellido LIKE @busqueda OR e.dni LIKE @busqueda)';
+            params.busqueda = { type: sql.VarChar, value: `%${busqueda}%` };
+        }
+
+        queryStr += ' ORDER BY e.apellido ASC, e.nombre ASC';
+
+        const result = await query(queryStr, params);
         return res.json({ ok: true, empleados: result.recordset });
     } catch (err) {
         console.error('Error en getEmpleadosConTurno:', err);
@@ -355,6 +383,57 @@ const asignarTurnoEmpleado = async (req, res) => {
     }
 };
 
+
+// Eliminar un turno. Si hay empleados con ese turno asignado, quedan en
+// id_turno = NULL (el frontend avisa esto antes de confirmar). Si el turno
+// ya tiene historial en `cajas` (alguien abrió caja con él alguna vez), NO
+// se permite borrar: perderíamos ese dato histórico.
+const eliminarTurno = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const enHistorialCajas = await query(
+            `SELECT TOP 1 id_caja FROM cajas WHERE id_turno = @id`,
+            { id: { type: sql.Int, value: id } }
+        );
+        if (enHistorialCajas.recordset.length > 0) {
+            return res.status(400).json({
+                ok: false,
+                mensaje: 'No se puede eliminar este turno porque ya tiene cajas registradas en su historial. Puedes desactivarlo en su lugar.'
+            });
+        }
+
+        const empleadosAfectados = await query(
+            `SELECT id_empleado FROM empleados WHERE id_turno = @id`,
+            { id: { type: sql.Int, value: id } }
+        );
+
+        const resultado = await withTransaction(async (transaction) => {
+            if (empleadosAfectados.recordset.length > 0) {
+                const reqNull = transaction.request();
+                reqNull.input('id', sql.Int, id);
+                await reqNull.query(`UPDATE empleados SET id_turno = NULL WHERE id_turno = @id`);
+            }
+
+            const reqDel = transaction.request();
+            reqDel.input('id', sql.Int, id);
+            return await reqDel.query(`DELETE FROM turnos OUTPUT DELETED.* WHERE id_turno = @id`);
+        });
+
+        if (resultado.recordset.length === 0) {
+            return res.status(404).json({ ok: false, mensaje: 'Turno no encontrado.' });
+        }
+
+        return res.json({
+            ok: true,
+            mensaje: 'Turno eliminado correctamente.',
+            empleadosDesvinculados: empleadosAfectados.recordset.length
+        });
+    } catch (err) {
+        console.error('Error al eliminar turno:', err);
+        return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor.' });
+    }
+};
+
 module.exports = { 
     getAll, 
     getByKey, 
@@ -365,6 +444,7 @@ module.exports = {
     getTurnoById,
     crearTurno,
     editarTurno,
+    eliminarTurno,
     getEmpleadosConTurno,
     asignarTurnoEmpleado
 };

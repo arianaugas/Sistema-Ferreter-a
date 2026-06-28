@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const devCtrl = require('../../controllers/devolucionesController');//controllers de devoluciones
-const { revisarToken, permitirRoles } = require('../../middlewares/auth');
+const { revisarToken, verificarAccesoModulo} = require('../../middlewares/auth');
 
-//usuarios permitidos, mjorar dsps
-const usersPermitidos = permitirRoles('Administrador', 'Vendedor')
+//usuarios permitidos
+const usersPermitidos = verificarAccesoModulo('/devoluciones');
 
 //Rutas de devoluciones
 router.get('/', revisarToken, devCtrl.getAll);

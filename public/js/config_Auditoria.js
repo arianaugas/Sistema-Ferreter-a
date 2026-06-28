@@ -26,20 +26,41 @@ async function cargarConfiguracion() {
     const configs = Array.isArray(data.configuracion) ? data.configuracion : [];
 
     configs.forEach(cfg => {
-      // Intentar encontrar un input con id = cfg-<clave>
+      // Input del formulario
       const input = document.getElementById(`cfg-${cfg.clave}`);
       if (input) {
         input.value = cfg.valor ?? '';
         input.dataset.clave = cfg.clave;
       }
 
-      // Caso especial: el IGV tiene un badge informativo al lado (ej: "18 %")
+      // Badge IGV en el formulario
       if (cfg.clave === 'igv') {
         const badge = document.getElementById('cfg-igv-badge');
         if (badge) {
           const porcentaje = Number(cfg.valor) * 100;
           badge.textContent = isNaN(porcentaje) ? '— %' : `${porcentaje} %`;
         }
+      }
+
+      // Vista previa dinámica
+      if (cfg.clave === 'negocio') {
+        const el = document.getElementById('preview-negocio');
+        if (el) el.textContent = cfg.valor || '—';
+      }
+      if (cfg.clave === 'igv') {
+        const pct = document.getElementById('preview-igv-pct');
+        const dec = document.getElementById('preview-igv-dec');
+        const porcentaje = Number(cfg.valor) * 100;
+        if (pct) pct.textContent = isNaN(porcentaje) ? '—' : `${porcentaje}%`;
+        if (dec) dec.textContent = isNaN(porcentaje) ? '' : `(${cfg.valor})`;
+      }
+      if (cfg.clave === 'moneda') {
+        const el = document.getElementById('preview-moneda');
+        if (el) el.textContent = cfg.valor || '—';
+      }
+      if (cfg.clave === 'simbolo') {
+        const el = document.getElementById('preview-simbolo');
+        if (el) el.textContent = cfg.valor || '—';
       }
     });
 
@@ -455,10 +476,16 @@ function renderTablaTurnos(turnos) {
       <td>${formatHora(t.hora_inicio)} – ${formatHora(t.hora_fin)}</td>
       <td>${getBadge(t.activo ? 'activo' : 'inactivo')}</td>
       <td class="text-end">
-        <button type="button" class="btn btn-sm" data-accion="editar-turno" data-turno-id="${t.id_turno}"
-          aria-label="Editar turno ${t.nombre}">
-          <i class="fa-regular fa-pen-to-square" aria-hidden="true"></i>
-        </button>
+        <div class="d-flex gap-1 justify-content-end">
+          <button type="button" class="btn btn-sm" data-accion="editar-turno" data-turno-id="${t.id_turno}"
+            aria-label="Editar turno ${t.nombre}">
+            <i class="fa-regular fa-pen-to-square" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="btn btn-sm text-danger" data-accion="eliminar-turno" data-turno-id="${t.id_turno}"
+            aria-label="Eliminar turno ${t.nombre}">
+            <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+          </button>
+        </div>
       </td>
     </tr>
   `).join('');
@@ -485,6 +512,33 @@ function limpiarFormTurno() {
   document.getElementById('turno-activo').checked = true;
 }
 
+async function eliminarTurno(id) {
+  const t = turnosCache.find(x => x.id_turno === id);
+  if (!t) return;
+
+  // Antes de preguntar, revisamos cuántos empleados tienen ESTE turno
+  // asignado para avisar exactamente qué va a pasar.
+  let cantidadAfectados = 0;
+  try {
+    const data = await apiFetch('/api/configuracion/turnos-empleados');
+    cantidadAfectados = (data.empleados || []).filter(e => e.id_turno === id).length;
+  } catch (_) { /* si falla, seguimos con el aviso genérico */ }
+
+  const aviso = cantidadAfectados > 0
+    ? `Hay ${cantidadAfectados} empleado(s) con el turno "${t.nombre}" asignado. Si lo eliminas, esos empleados quedarán SIN turno asignado. ¿Deseas continuar?`
+    : `¿Seguro que deseas eliminar el turno "${t.nombre}"?`;
+
+  confirmAction(aviso, async () => {
+    try {
+      await apiFetch(`/api/configuracion/turnos/${id}`, { method: 'DELETE' });
+      showToast('Turno eliminado correctamente', 'success');
+      cargarTurnos();
+    } catch (err) {
+      showToast(err.message || 'Error al eliminar el turno', 'error');
+    }
+  });
+}
+
 function initFormTurno() {
   const form = document.getElementById('form-turno');
   const btnCancelar = document.getElementById('btn-cancelar-turno');
@@ -492,9 +546,17 @@ function initFormTurno() {
   if (!form || !tbody) return;
 
   tbody.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-accion="editar-turno"]');
-    if (!btn) return;
-    abrirEditarTurno(parseInt(btn.dataset.turnoId));
+    const btnEditar = e.target.closest('[data-accion="editar-turno"]');
+    if (btnEditar) {
+      abrirEditarTurno(parseInt(btnEditar.dataset.turnoId));
+      return;
+    }
+
+    const btnEliminar = e.target.closest('[data-accion="eliminar-turno"]');
+    if (btnEliminar) {
+      eliminarTurno(parseInt(btnEliminar.dataset.turnoId));
+      return;
+    }
   });
 
   btnCancelar?.addEventListener('click', limpiarFormTurno);
@@ -535,12 +597,57 @@ function initFormTurno() {
 //  ASIGNACIÓN DE TURNO A EMPLEADOS 
 
 async function cargarEmpleadosConTurno() {
+  const busqueda = document.getElementById('filtro-emp-turno-busqueda')?.value.trim() || '';
+  const id_cargo = document.getElementById('filtro-emp-turno-cargo')?.value || '';
+  const id_rol = document.getElementById('filtro-emp-turno-rol')?.value || '';
+
+  const params = new URLSearchParams();
+  if (busqueda) params.set('busqueda', busqueda);
+  if (id_cargo) params.set('id_cargo', id_cargo);
+  if (id_rol) params.set('id_rol', id_rol);
+
   try {
-    const data = await apiFetch('/api/configuracion/turnos-empleados');
+    const data = await apiFetch(`/api/configuracion/turnos-empleados?${params.toString()}`);
     renderTablaEmpleadosTurno(data.empleados || []);
   } catch (err) {
     showToast('Error al cargar empleados: ' + err.message, 'error');
   }
+}
+
+// Carga las opciones de los selects de filtro (cargo y rol)
+async function cargarFiltrosEmpleadoTurno() {
+  const selCargo = document.getElementById('filtro-emp-turno-cargo');
+  const selRol = document.getElementById('filtro-emp-turno-rol');
+
+  try {
+    const data = await apiFetch('/api/empleados/cargos');
+    (data.cargos || []).forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id_cargo;
+      opt.textContent = c.nombre;
+      selCargo?.appendChild(opt);
+    });
+  } catch (_) { /* el select se queda con "Todos los cargos" */ }
+
+  try {
+    const data = await apiFetch('/api/auth/roles');
+    (data.roles || []).forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.id_rol;
+      opt.textContent = r.nombre;
+      selRol?.appendChild(opt);
+    });
+  } catch (_) { /* el select se queda con "Todos los roles" */ }
+}
+
+function initFiltrosEmpleadoTurno() {
+  let timeoutBusqueda;
+  document.getElementById('filtro-emp-turno-busqueda')?.addEventListener('input', () => {
+    clearTimeout(timeoutBusqueda);
+    timeoutBusqueda = setTimeout(() => cargarEmpleadosConTurno(), 300);
+  });
+  document.getElementById('filtro-emp-turno-cargo')?.addEventListener('change', () => cargarEmpleadosConTurno());
+  document.getElementById('filtro-emp-turno-rol')?.addEventListener('change', () => cargarEmpleadosConTurno());
 }
 
 function renderTablaEmpleadosTurno(empleados) {
@@ -548,7 +655,7 @@ function renderTablaEmpleadosTurno(empleados) {
   if (!tbody) return;
 
   if (!empleados.length) {
-    tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-3">Sin empleados registrados</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">No hay empleados que coincidan con el filtro</td></tr>`;
     return;
   }
 
@@ -564,6 +671,8 @@ function renderTablaEmpleadosTurno(empleados) {
   tbody.innerHTML = empleados.map(e => `
     <tr>
       <td>${e.nombre} ${e.apellido} <span class="text-muted small">(${e.dni})</span></td>
+      <td>${e.cargo_nombre || '—'}</td>
+      <td>${e.rol_nombre || '<span class="text-muted">Sin cuenta</span>'}</td>
       <td>
         <select class="form-select form-select-sm" data-accion="cambiar-turno" data-empleado-id="${e.id_empleado}">
           ${opcionesTurno(e.id_turno)}
@@ -602,6 +711,119 @@ function initAsignacionTurnos() {
   });
 }
 
+// PERMISOS DE ROLES 
+
+let _permisosEditando = []; // copia local para editar antes de guardar
+
+async function cargarRolesEnSelect() {
+    const sel = document.getElementById('permisos-select-rol');
+    if (!sel) return;
+    try {
+        const data = await apiFetch('/api/auth/roles');
+        (data.roles || [])
+            .filter(r => r.nombre !== 'Administrador') // admin no es configurable
+            .forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.id_rol;
+                opt.textContent = r.nombre;
+                sel.appendChild(opt);
+            });
+    } catch (err) {
+        showToast('Error al cargar roles: ' + err.message, 'error');
+    }
+}
+
+async function cargarPermisosRol(id_rol) {
+    const container = document.getElementById('permisos-tabla-container');
+    const btnGuardar = document.getElementById('btn-guardar-permisos');
+    if (!container) return;
+
+    container.innerHTML = '<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin"></i> Cargando...</div>';
+
+    try {
+        const data = await apiFetch(`/api/permisos/rol/${id_rol}`);
+        _permisosEditando = data.permisos.map(p => ({ ...p })); // copia editable
+
+        const table = document.createElement('table');
+        table.className = 'table table-hover align-middle mb-0';
+        table.innerHTML = `
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Módulo</th>
+                    <th class="text-center" style="width:160px">Acceso</th>
+                </tr>
+            </thead>`;
+
+        const tbody = document.createElement('tbody');
+
+        _permisosEditando.forEach((p, idx) => {
+            const tr = document.createElement('tr');
+
+            const tdNombre = document.createElement('td');
+            tdNombre.className = 'ps-3 fw-medium';
+            tdNombre.textContent = p.nombre;
+            tr.appendChild(tdNombre);
+
+            const td = document.createElement('td');
+            td.className = 'text-center';
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'form-check form-switch d-flex justify-content-center mb-0';
+
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.className = 'form-check-input';
+            input.role = 'switch';
+            input.id = `perm-${idx}-acceso`;
+            input.checked = !!p.tiene_acceso;
+
+            input.addEventListener('change', () => {
+                _permisosEditando[idx].tiene_acceso = input.checked ? 1 : 0;
+            });
+
+            wrapper.appendChild(input);
+            td.appendChild(wrapper);
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        container.replaceChildren(table);
+        if (btnGuardar) btnGuardar.classList.remove('d-none');
+
+    } catch (err) {
+        container.innerHTML = `<div class="text-danger p-4">Error: ${err.message}</div>`;
+    }
+}
+
+function initPermisosRoles() {
+    const sel = document.getElementById('permisos-select-rol');
+    const btnGuardar = document.getElementById('btn-guardar-permisos');
+
+    sel?.addEventListener('change', () => {
+        if (sel.value) cargarPermisosRol(sel.value);
+        else {
+            document.getElementById('permisos-tabla-container').innerHTML =
+                '<div class="p-4 text-muted text-center">Selecciona un rol para ver y editar sus permisos.</div>';
+            btnGuardar?.classList.add('d-none');
+        }
+    });
+
+    btnGuardar?.addEventListener('click', async () => {
+        const id_rol = sel?.value;
+        if (!id_rol) return;
+        try {
+            await apiFetch(`/api/permisos/rol/${id_rol}`, {
+                method: 'PUT',
+                body: JSON.stringify({ permisos: _permisosEditando }),
+            });
+            showToast('Permisos guardados correctamente.', 'success');
+        } catch (err) {
+            showToast('Error al guardar: ' + err.message, 'error');
+        }
+    });
+}
+
 // Punto de entrada
 document.addEventListener('DOMContentLoaded', () => {
   cargarConfiguracion();
@@ -609,7 +831,11 @@ document.addEventListener('DOMContentLoaded', () => {
   initFormEditarConfig();
   initFiltrosAuditoria();
   cargarAuditoria();
+  cargarFiltrosEmpleadoTurno();
+  initFiltrosEmpleadoTurno();
   cargarTurnos();
   initFormTurno();
   initAsignacionTurnos();
+  cargarRolesEnSelect();
+  initPermisosRoles();
 });

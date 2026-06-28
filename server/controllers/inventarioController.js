@@ -635,58 +635,51 @@ const completarTransferencia = async (req, res) => {
             { id: { type: sql.Int, value: id } }
         );
 
-        // Validar stock suficiente en origen antes de ejecutar la transacción
-        for (const item of detalleResult.recordset) {
-            const stockRes = await query(
-                `SELECT pa.stock, p.nombre
-                 FROM productos_almacen pa
-                 INNER JOIN productos p ON p.id_producto = pa.id_producto
-                 WHERE pa.id_producto = @id_producto AND pa.id_almacen = @id_almacen`,
-                {
-                    id_producto: { type: sql.Int, value: item.id_producto },
-                    id_almacen:  { type: sql.Int, value: transferencia.id_almacen_origen }
-                }
-            );
-            const stockDisp = stockRes.recordset.length > 0 ? parseFloat(stockRes.recordset[0].stock) : 0;
-            const nombreProd = stockRes.recordset[0]?.nombre ?? `ID ${item.id_producto}`;
-            if (stockDisp < parseFloat(item.cantidad)) {
-                throw new Error(`Stock insuficiente para "${nombreProd}". Disponible en origen: ${stockDisp.toFixed(2)}, requerido: ${parseFloat(item.cantidad).toFixed(2)}.`);
-            }
-        }
-
         await withTransaction(async (transaction) => {
             for (const item of detalleResult.recordset) {
                 const cantidad = parseFloat(item.cantidad);
 
-                // 1. Obtener stock en almacén origen para Kardex
-                const stockOrigenRes = await query(
-                    `SELECT stock FROM productos_almacen WHERE id_producto = @id_producto AND id_almacen = @id_almacen`,
-                    {
-                        id_producto: { type: sql.Int, value: item.id_producto },
-                        id_almacen:  { type: sql.Int, value: transferencia.id_almacen_origen }
-                    }
+                // 1. Obtener (y BLOQUEAR) el stock en almacén origen
+                //hace que la db retenga el lock sobre esta fila hasta que la transacción termine
+                const reqStockOrigen = transaction.request();
+                reqStockOrigen.input('id_producto', sql.Int, item.id_producto);
+                reqStockOrigen.input('id_almacen',  sql.Int, transferencia.id_almacen_origen);
+                const stockOrigenRes = await reqStockOrigen.query(
+                    `SELECT pa.stock, p.nombre
+                    FROM productos_almacen pa WITH (UPDLOCK, HOLDLOCK)
+                    INNER JOIN productos p ON p.id_producto = pa.id_producto
+                    WHERE pa.id_producto = @id_producto AND pa.id_almacen = @id_almacen`
                 );
-                const stockOrigenAntes = parseFloat(stockOrigenRes.recordset[0].stock);
+
+                const stockOrigenAntes = stockOrigenRes.recordset.length > 0
+                    ? parseFloat(stockOrigenRes.recordset[0].stock)
+                    : 0;
+                const nombreProd = stockOrigenRes.recordset[0]?.nombre ?? `ID ${item.id_producto}`;
+
+                if (stockOrigenAntes < cantidad) {
+                    throw new Error(`Stock insuficiente para "${nombreProd}". Disponible en origen: ${stockOrigenAntes.toFixed(2)}, requerido: ${cantidad.toFixed(2)}.`);
+                }
+
                 const stockOrigenDespues = stockOrigenAntes - cantidad;
 
                 // 2. Restar stock en almacén origen
                 const reqDescontar = transaction.request();
                 reqDescontar.input('id_producto', sql.Int, item.id_producto);
-                reqDescontar.input('id_almacen',  sql.Int, transferencia.id_almacen_origen);
-                reqDescontar.input('cantidad',     sql.Decimal(10, 2), cantidad);
+                reqDescontar.input('id_almacen', sql.Int, transferencia.id_almacen_origen);
+                reqDescontar.input('cantidad', sql.Decimal(10, 2), cantidad);
                 await reqDescontar.query(
                     `UPDATE productos_almacen
-                     SET stock = stock - @cantidad
-                     WHERE id_producto = @id_producto AND id_almacen = @id_almacen`
+                    SET stock = stock - @cantidad
+                    WHERE id_producto = @id_producto AND id_almacen = @id_almacen`
                 );
 
-                // 3. Obtener stock en almacén destino ANTES del upsert (para el Kardex de entrada)
-                const stockDestinoRes = await query(
-                    `SELECT stock FROM productos_almacen WHERE id_producto = @id_producto AND id_almacen = @id_almacen`,
-                    {
-                        id_producto: { type: sql.Int, value: item.id_producto },
-                        id_almacen:  { type: sql.Int, value: transferencia.id_almacen_destino }
-                    }
+                // 3. Obtener (y BLOQUEAR) stock en almacén destino ANTES del upsert
+                const reqStockDestino = transaction.request();
+                reqStockDestino.input('id_producto', sql.Int, item.id_producto);
+                reqStockDestino.input('id_almacen',  sql.Int, transferencia.id_almacen_destino);
+                const stockDestinoRes = await reqStockDestino.query(
+                    `SELECT stock FROM productos_almacen WITH (UPDLOCK, HOLDLOCK)
+                    WHERE id_producto = @id_producto AND id_almacen = @id_almacen`
                 );
                 const stockDestinoAntes = stockDestinoRes.recordset.length > 0
                     ? parseFloat(stockDestinoRes.recordset[0].stock)
@@ -700,47 +693,47 @@ const completarTransferencia = async (req, res) => {
                 reqAgregar.input('cantidad',     sql.Decimal(10, 2), cantidad);
                 await reqAgregar.query(
                     `IF EXISTS (SELECT 1 FROM productos_almacen WHERE id_producto = @id_producto AND id_almacen = @id_almacen)
-                         UPDATE productos_almacen SET stock = stock + @cantidad
-                         WHERE id_producto = @id_producto AND id_almacen = @id_almacen
-                     ELSE
-                         INSERT INTO productos_almacen (id_producto, id_almacen, stock)
-                         VALUES (@id_producto, @id_almacen, @cantidad)`
+                        UPDATE productos_almacen SET stock = stock + @cantidad
+                        WHERE id_producto = @id_producto AND id_almacen = @id_almacen
+                    ELSE
+                        INSERT INTO productos_almacen (id_producto, id_almacen, stock)
+                        VALUES (@id_producto, @id_almacen, @cantidad)`
                 );
 
                 // 5. El stock global (productos.stock_actual) no cambia: la transferencia solo mueve entre almacenes
 
                 // 6. Registrar en Kardex la SALIDA del origen (cantidad negativa: el stock de ese almacén baja)
                 const reqKardexSalida = transaction.request();
-                reqKardexSalida.input('id_producto',       sql.Int, item.id_producto);
-                reqKardexSalida.input('id_almacen',         sql.Int, transferencia.id_almacen_origen);
+                reqKardexSalida.input('id_producto', sql.Int, item.id_producto);
+                reqKardexSalida.input('id_almacen', sql.Int, transferencia.id_almacen_origen);
                 reqKardexSalida.input('id_almacen_destino', sql.Int, transferencia.id_almacen_destino);
-                reqKardexSalida.input('referencia_id',      sql.Int, id);
-                reqKardexSalida.input('cantidad',           sql.Decimal(10, 2), cantidad);
-                reqKardexSalida.input('stock_antes',        sql.Decimal(10, 2), stockOrigenAntes);
-                reqKardexSalida.input('stock_despues',      sql.Decimal(10, 2), stockOrigenDespues);
-                reqKardexSalida.input('id_usuario',         sql.Int, id_usuario);
+                reqKardexSalida.input('referencia_id', sql.Int, id);
+                reqKardexSalida.input('cantidad',sql.Decimal(10, 2), cantidad);
+                reqKardexSalida.input('stock_antes',sql.Decimal(10, 2), stockOrigenAntes);
+                reqKardexSalida.input('stock_despues', sql.Decimal(10, 2), stockOrigenDespues);
+                reqKardexSalida.input('id_usuario', sql.Int, id_usuario);
                 await reqKardexSalida.query(
                     `INSERT INTO kardex (id_producto, id_almacen, tipo_movimiento, motivo, referencia_id, referencia_tipo, cantidad, stock_anterior, stock_posterior, id_usuario)
-                     VALUES (@id_producto, @id_almacen, 'transferencia',
-                     'Transferencia al almacén ' + CAST(@id_almacen_destino AS VARCHAR(10)),
-                     @referencia_id, 'transferencia', -@cantidad, @stock_antes, @stock_despues, @id_usuario)`
+                    VALUES (@id_producto, @id_almacen, 'transferencia',
+                    'Transferencia al almacén ' + CAST(@id_almacen_destino AS VARCHAR(10)),
+                    @referencia_id, 'transferencia', -@cantidad, @stock_antes, @stock_despues, @id_usuario)`
                 );
 
                 // 7. Registrar en Kardex la ENTRADA al destino (cantidad positiva: el stock de ese almacén sube)
                 const reqKardexEntrada = transaction.request();
-                reqKardexEntrada.input('id_producto',     sql.Int, item.id_producto);
-                reqKardexEntrada.input('id_almacen',       sql.Int, transferencia.id_almacen_destino);
+                reqKardexEntrada.input('id_producto', sql.Int, item.id_producto);
+                reqKardexEntrada.input('id_almacen', sql.Int, transferencia.id_almacen_destino);
                 reqKardexEntrada.input('id_almacen_origen', sql.Int, transferencia.id_almacen_origen);
-                reqKardexEntrada.input('referencia_id',    sql.Int, id);
-                reqKardexEntrada.input('cantidad',         sql.Decimal(10, 2), cantidad);
-                reqKardexEntrada.input('stock_antes',      sql.Decimal(10, 2), stockDestinoAntes);
-                reqKardexEntrada.input('stock_despues',    sql.Decimal(10, 2), stockDestinoDespues);
-                reqKardexEntrada.input('id_usuario',       sql.Int, id_usuario);
+                reqKardexEntrada.input('referencia_id', sql.Int, id);
+                reqKardexEntrada.input('cantidad', sql.Decimal(10, 2), cantidad);
+                reqKardexEntrada.input('stock_antes', sql.Decimal(10, 2), stockDestinoAntes);
+                reqKardexEntrada.input('stock_despues', sql.Decimal(10, 2), stockDestinoDespues);
+                reqKardexEntrada.input('id_usuario', sql.Int, id_usuario);
                 await reqKardexEntrada.query(
                     `INSERT INTO kardex (id_producto, id_almacen, tipo_movimiento, motivo, referencia_id, referencia_tipo, cantidad, stock_anterior, stock_posterior, id_usuario)
-                     VALUES (@id_producto, @id_almacen, 'transferencia',
-                     'Transferencia desde el almacén ' + CAST(@id_almacen_origen AS VARCHAR(10)),
-                     @referencia_id, 'transferencia', @cantidad, @stock_antes, @stock_despues, @id_usuario)`
+                    VALUES (@id_producto, @id_almacen, 'transferencia',
+                    'Transferencia desde el almacén ' + CAST(@id_almacen_origen AS VARCHAR(10)),
+                    @referencia_id, 'transferencia', @cantidad, @stock_antes, @stock_despues, @id_usuario)`
                 );
             }
 
@@ -801,11 +794,11 @@ const getAllLotes = async (req, res) => {
                     WHEN l.fecha_vencimiento <= CAST(DATEADD(DAY, 30, GETDATE()) AS DATE) THEN 'proximo'
                     ELSE 'vigente'
                 END AS estado_vencimiento
-             FROM lotes l
-             INNER JOIN almacenes a ON a.id_almacen = l.id_almacen
-             INNER JOIN productos p ON p.id_producto = l.id_producto
-             WHERE 1=1 ${whereExtra}
-             ORDER BY l.fecha_vencimiento ASC`,
+            FROM lotes l
+            INNER JOIN almacenes a ON a.id_almacen = l.id_almacen
+            INNER JOIN productos p ON p.id_producto = l.id_producto
+            WHERE 1=1 ${whereExtra}
+            ORDER BY l.fecha_vencimiento ASC`,
             params
         );
 

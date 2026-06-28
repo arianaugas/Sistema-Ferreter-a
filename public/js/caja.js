@@ -578,7 +578,6 @@ async function iniciarModulo() {
         cargarMovimientos(Caja.cajaActiva.id_caja),
       ]);
     } else {
-      // Sin caja activa: limpiar tabla de movimientos
       const tbody = document.querySelector('#tabla-movimientos-caja tbody');
       if (tbody) {
         tbody.replaceChildren();
@@ -594,8 +593,14 @@ async function iniciarModulo() {
 
     await cargarHistorial();
   } catch (err) {
-    console.error('Error al iniciar módulo de caja:', err);
-    showToast('No se pudo cargar el estado de la caja.', 'error');
+    // 403 = el usuario no es Cajero ni Admin, simplemente no tiene caja propia
+    if (err.message.includes('403') || err.message.toLowerCase().includes('permiso')) {
+      renderEstadoCaja(null); // mostrar estado "Cerrada" sin toast de error
+    } else {
+      console.error('Error al iniciar módulo de caja:', err);
+      showToast('No se pudo cargar el estado de la caja.', 'error');
+    }
+    await cargarHistorial();
   }
 }
 

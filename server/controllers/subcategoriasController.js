@@ -1,5 +1,4 @@
-const { query, withTransaction } = require('../db/conexion_sql');
-const sql = require('mssql/msnodesqlv8');
+const { sql, query, withTransaction } = require('../db/conexion_sql');
 
 // Obtener todas las subcategorías activas (falta aplicar el filtro de categorias)
 const getAll = async (req, res) => {
