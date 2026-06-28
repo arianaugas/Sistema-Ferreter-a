@@ -1,14 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const devCtrl = require('../../controllers/devolucionesController');//controllers de devoluciones
-const { revisarToken } = require('../../middlewares/auth');
+const { revisarToken, permitirRoles } = require('../../middlewares/auth');
+
+//usuarios permitidos, mjorar dsps
+const usersPermitidos = permitirRoles('Administrador', 'Vendedor')
 
 //Rutas de devoluciones
 router.get('/', revisarToken, devCtrl.getAll);
-router.get('/:id', revisarToken, devCtrl.getById);
-router.post('/', revisarToken, devCtrl.create);
-router.patch('/:id/procesar', revisarToken, devCtrl.procesar);
-router.patch('/:id/anular', revisarToken, devCtrl.anular);
+router.get('/:id', revisarToken , devCtrl.getById);
+router.post('/', revisarToken, usersPermitidos ,devCtrl.create);
+router.patch('/:id/procesar', revisarToken, usersPermitidos , devCtrl.procesar);
+router.patch('/:id/anular', revisarToken, usersPermitidos , devCtrl.anular);
 
 
 module.exports = router;

@@ -1,15 +1,15 @@
 const { sql, query } = require('../db/conexion_sql');
 
-// CARGOSSSSSSSSSSSSSSSS
+// CARGOS
 const getCargos = async (req, res) => {
     try {
         const result = await query(
             `SELECT c.id_cargo, c.nombre, c.activo,
                     COUNT(e.id_empleado) AS total_empleados
-             FROM cargos c
-             LEFT JOIN empleados e ON e.id_cargo = c.id_cargo AND e.activo = 1
-             GROUP BY c.id_cargo, c.nombre, c.activo
-             ORDER BY c.nombre ASC`
+            FROM cargos c
+            LEFT JOIN empleados e ON e.id_cargo = c.id_cargo AND e.activo = 1
+            GROUP BY c.id_cargo, c.nombre, c.activo
+            ORDER BY c.nombre ASC`
         );
         return res.json({ ok: true, cargos: result.recordset });
     } catch (err) {
@@ -37,8 +37,8 @@ const crearCargo = async (req, res) => {
 
         const result = await query(
             `INSERT INTO cargos (nombre, activo)
-             OUTPUT INSERTED.*
-             VALUES (@nombre, @activo)`,
+            OUTPUT INSERTED.*
+            VALUES (@nombre, @activo)`,
             {
                 nombre: { type: sql.VarChar, value: nombre },
                 activo: { type: sql.Bit, value: activo !== undefined ? (activo ? 1 : 0) : 1 }
@@ -82,9 +82,9 @@ const editarCargo = async (req, res) => {
 
         const result = await query(
             `UPDATE cargos
-             SET nombre = @nombre, activo = @activo
-             OUTPUT INSERTED.*
-             WHERE id_cargo = @id`,
+            SET nombre = @nombre, activo = @activo
+            OUTPUT INSERTED.*
+            WHERE id_cargo = @id`,
             {
                 nombre: { type: sql.VarChar, value: nombre },
                 activo: { type: sql.Bit, value: activo ? 1 : 0 },
@@ -124,7 +124,7 @@ const eliminarCargo = async (req, res) => {
     }
 };
 
-//EMPLEADOSSSSSSSSSSSSSS
+//EMPLEADOS
 const getAll = async (req, res) => {
     const { busqueda, id_cargo, activo } = req.query;
     try {
@@ -249,8 +249,8 @@ const crearEmpleado = async (req, res) => {
 
         const result = await query(
             `INSERT INTO empleados (id_cargo, dni, nombre, apellido, telefono, correo, fecha_ingreso, fecha_cese, activo)
-             OUTPUT INSERTED.*
-             VALUES (@id_cargo, @dni, @nombre, @apellido, @telefono, @correo, @fecha_ingreso, @fecha_cese, 1)`,
+            OUTPUT INSERTED.*
+            VALUES (@id_cargo, @dni, @nombre, @apellido, @telefono, @correo, @fecha_ingreso, @fecha_cese, 1)`,
             {
                 id_cargo: { type: sql.Int, value: id_cargo },
                 dni: { type: sql.VarChar, value: dni },
@@ -318,17 +318,17 @@ const editarEmpleado = async (req, res) => {
 
         const result = await query(
             `UPDATE empleados
-             SET id_cargo = @id_cargo,
-                 dni = @dni,
-                 nombre = @nombre,
-                 apellido = @apellido,
-                 telefono = @telefono,
-                 correo = @correo,
-                 fecha_ingreso = @fecha_ingreso,
-                 fecha_cese = @fecha_cese,
-                 activo = @activo
-             OUTPUT INSERTED.*
-             WHERE id_empleado = @id`,
+            SET id_cargo = @id_cargo,
+                dni = @dni,
+                nombre = @nombre,
+                apellido = @apellido,
+                telefono = @telefono,
+                correo = @correo,
+                fecha_ingreso = @fecha_ingreso,
+                fecha_cese = @fecha_cese,
+                activo = @activo
+            OUTPUT INSERTED.*
+            WHERE id_empleado = @id`,
             {
                 id_cargo: { type: sql.Int, value: id_cargo },
                 dni: { type: sql.VarChar, value: dni },
@@ -349,6 +349,49 @@ const editarEmpleado = async (req, res) => {
     }
 };
 
+const desactivarEmpleado = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Verificar que el empleado exista y esté activo
+        const existe = await query(
+            `SELECT id_empleado, activo FROM empleados WHERE id_empleado = @id`,
+            { id: { type: sql.Int, value: id } }
+        );
+
+        if (existe.recordset.length === 0) {
+            return res.status(404).json({ ok: false, mensaje: 'El empleado no existe.' });
+        }
+        if (!existe.recordset[0].activo) {
+            return res.status(400).json({ ok: false, mensaje: 'El empleado ya está inactivo.' });
+        }
+
+        // Verificar que no tenga una caja abierta
+        const cajaAbierta = await query(
+            `SELECT id_caja FROM cajas WHERE id_empleado = @id AND estado IN ('abierta', 'vencida')`,
+            { id: { type: sql.Int, value: id } }
+        );
+        if (cajaAbierta.recordset.length > 0) {
+            return res.status(400).json({ ok: false, mensaje: 'No se puede desactivar el empleado porque tiene una caja abierta. Ciérrala primero.' });
+        }
+
+        const result = await query(
+            `UPDATE empleados
+            SET activo = 0
+            OUTPUT INSERTED.id_empleado, INSERTED.nombre, INSERTED.apellido, INSERTED.activo
+            WHERE id_empleado = @id`,
+            { id: { type: sql.Int, value: id } }
+        );
+
+        return res.json({ ok: true, mensaje: 'Empleado desactivado correctamente.', empleado: result.recordset[0] });
+
+    } catch (err) {
+        console.error('Error al desactivar empleado:', err);
+        return res.status(500).json({ ok: false, mensaje: 'Error al desactivar el empleado.' });
+    }
+};
+
+
 module.exports = {
     getCargos,
     crearCargo,
@@ -357,5 +400,6 @@ module.exports = {
     getAll,
     getById,
     crearEmpleado,
-    editarEmpleado
+    editarEmpleado,
+    desactivarEmpleado 
 };

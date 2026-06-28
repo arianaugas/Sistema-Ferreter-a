@@ -96,13 +96,13 @@ const getAll = async (req, res) => {
                 m.nombre AS marca,
                 u.abreviatura AS unidad,
                 CASE WHEN p.stock_actual <= p.stock_minimo THEN 1 ELSE 0 END AS stock_critico
-             FROM productos p
-             INNER JOIN subcategorias sc ON sc.id_subcategoria = p.id_subcategoria
-             INNER JOIN categorias c ON c.id_categoria = sc.id_categoria
-             LEFT JOIN marcas m ON m.id_marca = p.id_marca
-             INNER JOIN unidades_medida u ON u.id_unidad = p.id_unidad
-             ${where}
-             ORDER BY p.nombre ASC`,
+            FROM productos p
+            INNER JOIN subcategorias sc ON sc.id_subcategoria = p.id_subcategoria
+            INNER JOIN categorias c ON c.id_categoria = sc.id_categoria
+            LEFT JOIN marcas m ON m.id_marca = p.id_marca
+            INNER JOIN unidades_medida u ON u.id_unidad = p.id_unidad
+            ${where}
+            ORDER BY p.nombre ASC`,
             params
         );
 
@@ -161,8 +161,8 @@ const getById = async (req, res) => {
         // Imágenes del producto
         const imagenesResult = await query(
             `SELECT id_imagen, url_img 
-             FROM imagenes_producto 
-             WHERE id_producto = @id`,
+            FROM imagenes_producto 
+            WHERE id_producto = @id`,
             { id: { type: sql.Int, value: id } }
         );
 
@@ -178,11 +178,11 @@ const getById = async (req, res) => {
                 k.referencia_id,
                 k.referencia_tipo,
                 e.nombre + ' ' + e.apellido AS usuario
-             FROM kardex k
-             INNER JOIN usuarios u ON u.id_usuario = k.id_usuario
-             INNER JOIN empleados e ON e.id_empleado = u.id_empleado
-             WHERE k.id_producto = @id
-             ORDER BY k.registrado_en DESC`,
+            FROM kardex k
+            INNER JOIN usuarios u ON u.id_usuario = k.id_usuario
+            INNER JOIN empleados e ON e.id_empleado = u.id_empleado
+            WHERE k.id_producto = @id
+            ORDER BY k.registrado_en DESC`,
             { id: { type: sql.Int, value: id } }
         );
 
@@ -267,10 +267,10 @@ const crearProducto = async (req, res) => {
             reqProd.input('tiene_lote', sql.Bit, tiene_lote);
             const prodResult = await reqProd.query(
                 `INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, descripcion,
-         precio_compra, precio_venta, stock_minimo, stock_maximo, ubicacion, tiene_lote)
-         OUTPUT INSERTED.*
-         VALUES (@id_subcategoria, @id_marca, @id_unidad, @codigo, @nombre, @descripcion,
-         @precio_compra, @precio_venta, @stock_minimo, @stock_maximo, @ubicacion, @tiene_lote)`
+                precio_compra, precio_venta, stock_minimo, stock_maximo, ubicacion, tiene_lote)
+                OUTPUT INSERTED.*
+                VALUES (@id_subcategoria, @id_marca, @id_unidad, @codigo, @nombre, @descripcion,
+                @precio_compra, @precio_venta, @stock_minimo, @stock_maximo, @ubicacion, @tiene_lote)`
             );
 
             const nuevoProducto = prodResult.recordset[0];
@@ -295,91 +295,6 @@ const crearProducto = async (req, res) => {
         return res.status(500).json({ ok: false, mensaje: 'Error al crear producto.' });
     }
 };
-
-//funcion q ediar un producto
-/*const editarProducto = async (req, res) => {
-    const id = req.params.id;
-    const {
-        precio_compra, precio_venta, stock_minimo, stock_maximo,
-        ubicacion, nombre, id_subcategoria, tiene_lote, activo
-    } = req.body;
-
-    if (!nombre || !id_subcategoria || stock_maximo == null ||
-        !precio_compra || !precio_venta || activo == null || stock_minimo == null ||
-        !ubicacion || tiene_lote == null) {
-        return res.status(400).json({ ok: false, mensaje: 'Complete los campos obligatorios.' });
-    }
-
-    // Validar que precio_compra y precio_venta sean positivos
-    if (Number(precio_compra) <= 0 || Number(precio_venta) <= 0) {
-        return res.status(400).json({ ok: false, mensaje: 'Los precios deben ser mayores a 0.' });
-    }
-
-    // Validar que stock_minimo no sea negativo
-    if (Number(stock_minimo) < 0) {
-        return res.status(400).json({ ok: false, mensaje: 'El stock mínimo no puede ser negativo.' });
-    }
-
-    // Validar que stock_maximo >= stock_minimo y que sea mayor a 0
-    if (Number(stock_maximo) <= 0) {
-        return res.status(400).json({ ok: false, mensaje: 'El stock máximo debe ser mayor a 0.' });
-    }
-    if (Number(stock_maximo) < Number(stock_minimo)) {
-        return res.status(400).json({ ok: false, mensaje: 'El stock máximo no puede ser menor al mínimo.' });
-    }
-
-    try {
-        // Verificar que el producto exista
-        const existe = await query(
-            `SELECT id_producto FROM productos WHERE id_producto = @id`,
-            { id: { type: sql.Int, value: id } }
-        );
-        if (existe.recordset.length === 0) {
-            return res.status(404).json({ ok: false, mensaje: 'El producto no existe.' });
-        }
-
-        // Verificar que la subcategoría exista
-        if (!(await subcatExiste(id_subcategoria))) {
-            return res.status(400).json({ ok: false, mensaje: 'Subcategoría no encontrada.' });
-        }
-
-        const dataProducts = await query(
-            `UPDATE productos 
-                SET id_subcategoria = @id_subcategoria,  
-                    nombre = @nombre, 
-                    precio_compra = @precio_compra, 
-                    precio_venta = @precio_venta, 
-                    stock_minimo = @stock_minimo, 
-                    stock_maximo = @stock_maximo, 
-                    ubicacion = @ubicacion, 
-                    tiene_lote = @tiene_lote,
-                    activo = @activo
-                OUTPUT INSERTED.*
-                WHERE id_producto = @id`,
-            {
-                id_subcategoria: { type: sql.Int, value: id_subcategoria },
-                nombre: { type: sql.VarChar, value: nombre },
-                precio_compra: { type: sql.Decimal, value: precio_compra },
-                precio_venta: { type: sql.Decimal, value: precio_venta },
-                stock_minimo: { type: sql.Decimal, value: stock_minimo },
-                stock_maximo: { type: sql.Decimal, value: stock_maximo },
-                ubicacion: { type: sql.VarChar, value: ubicacion },
-                tiene_lote: { type: sql.Bit, value: tiene_lote },
-                activo: { type: sql.Bit, value: activo },
-                id: { type: sql.Int, value: id }
-            }
-        );
-
-        return res.status(200).json({ ok: true, producto: dataProducts.recordset[0] });
-
-    } catch (err) {
-        console.error('Error al editar producto:', err);
-        if (err?.code === 'EREF') {
-            return res.status(400).json({ ok: false, mensaje: 'Violación de clave foránea.' });
-        }
-        return res.status(500).json({ ok: false, mensaje: 'Error al editar producto.' });
-    }
-};*/
 
 const editarProducto = async (req, res) => {
     const id = req.params.id;
@@ -529,6 +444,7 @@ const desactivarProducto = async (req, res) => {
     }
 };
 
+
 const uploadImage = async (req, res) => {
     const id = req.params.id;
     try {
@@ -544,10 +460,16 @@ const uploadImage = async (req, res) => {
             return res.status(400).json({ ok: false, mensaje: 'No se recibió ninguna imagen.' });
         }
 
+        // Eliminar imágenes anteriores antes de insertar la nueva
+        await query(
+            `DELETE FROM imagenes_producto WHERE id_producto = @id`,
+            { id: { type: sql.Int, value: id } }
+        );
+
         const result = await query(
             `INSERT INTO imagenes_producto (id_producto, url_img)
-             OUTPUT INSERTED.*
-             VALUES (@id_producto, @url_img)`,
+            OUTPUT INSERTED.*
+            VALUES (@id_producto, @url_img)`,
             {
                 id_producto: { type: sql.Int, value: id },
                 url_img: { type: sql.VarChar, value: req.fileUrl }
@@ -568,7 +490,7 @@ const deleteImage = async (req, res) => {
         // Verificar que la imagen exista y pertenezca al producto
         const existe = await query(
             `SELECT id_imagen, url_img FROM imagenes_producto 
-             WHERE id_imagen = @idImagen AND id_producto = @id`,
+            WHERE id_imagen = @idImagen AND id_producto = @id`,
             {
                 idImagen: { type: sql.Int, value: idImagen },
                 id: { type: sql.Int, value: id }

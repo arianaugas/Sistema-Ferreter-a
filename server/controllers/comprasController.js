@@ -118,9 +118,10 @@ const crearOrden = async (req, res) => {
         }
 
         const result = await withTransaction(async (transaction) => {
-            const countResult = await transaction.request()
-                .query("SELECT ISNULL(MAX(CAST(SUBSTRING(numero_orden, 4, LEN(numero_orden)) AS INT)), 0) + 1 AS siguiente FROM ordenes_compra");
-            const num = countResult.recordset[0].siguiente.toString().padStart(4, '0');
+            //consultamos una sequencia de sql
+            const seqResult = await transaction.request()
+                .query(`SELECT NEXT VALUE FOR seq_orden_compra AS siguiente`);
+            const num = seqResult.recordset[0].siguiente.toString().padStart(4, '0');
             const numero_orden = `OC-${num}`;
 
             // Leer IGV desde configuracion

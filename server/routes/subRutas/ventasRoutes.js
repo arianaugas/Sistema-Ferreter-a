@@ -3,28 +3,30 @@ const router = express.Router();
 const ventasController = require('../../controllers/ventasController');
 const seriesController = require('../../controllers/seriesController');
 const tiposPagoController = require('../../controllers/tiposPagoController');
-const { revisarToken } = require('../../middlewares/auth');
+const { revisarToken, permitirRoles} = require('../../middlewares/auth');
 
+//usuarios permitidos, mjorar dsps
+const usersPermitidos = permitirRoles('Administrador', 'Vendedor')
 
 // Rutas de Series de Comprobantes
 router.get('/series', revisarToken, seriesController.getAll);
 router.get('/series/:id', revisarToken, seriesController.getById);
-router.post('/series', revisarToken, seriesController.crear);
-router.put('/series/:id', revisarToken, seriesController.actualizar);
-router.delete('/series/:id', revisarToken, seriesController.eliminar);
+router.post('/series', revisarToken, usersPermitidos, seriesController.crear);
+router.put('/series/:id', revisarToken, usersPermitidos, seriesController.actualizar);
+router.delete('/series/:id', revisarToken, usersPermitidos, seriesController.eliminar);
 
 // Rutas de Tipos de Pago
 router.get('/tipos-pago', revisarToken, tiposPagoController.getAll);
 router.get('/tipos-pago/:id', revisarToken, tiposPagoController.getById);
-router.post('/tipos-pago', revisarToken, tiposPagoController.crear);
-router.put('/tipos-pago/:id', revisarToken, tiposPagoController.actualizar);
-router.delete('/tipos-pago/:id', revisarToken, tiposPagoController.eliminar);
+router.post('/tipos-pago', revisarToken, usersPermitidos, tiposPagoController.crear);
+router.put('/tipos-pago/:id', revisarToken, usersPermitidos, tiposPagoController.actualizar);
+router.delete('/tipos-pago/:id', revisarToken, usersPermitidos, tiposPagoController.eliminar);
 
 // Rutas de Ventas
 router.get('/', revisarToken, ventasController.getAll);
 router.get('/:id', revisarToken, ventasController.getById);
-router.post('/', revisarToken, ventasController.create);
-router.patch('/:id/anular', revisarToken, ventasController.anular);
+router.post('/', revisarToken, usersPermitidos, ventasController.create);
+router.patch('/:id/anular', revisarToken, usersPermitidos, ventasController.anular);
 
 
 module.exports = router;

@@ -8,17 +8,20 @@ const { revisarToken, permitirRoles } = require('../../middlewares/auth')
 const { validarLogin } = require('../../middlewares/validationMiddleware')
 const rolesCtrl = require('../../controllers/rolesController');
 
+//usuarios permitidos, mjorar dsps
+const usersPermitidos = permitirRoles('Administrador')
+
 //rutas de AUTH
 router.post('/login', validarLogin, authCtrl.login);
 router.post('/logout', revisarToken, authCtrl.logout);
 router.get('/me', revisarToken, authCtrl.getUsuario)
 
 //rutas de USUARIOS (gestión de cuentas: solo Administrador)
-router.get('/users', revisarToken, permitirRoles('Administrador'), usuariosCtrl.getAll);
-router.get('/users/:id', revisarToken, permitirRoles('Administrador'), usuariosCtrl.getById);
-router.post('/users', revisarToken, permitirRoles('Administrador'), usuariosCtrl.crearUsuario);
-router.put('/users/:id', revisarToken, permitirRoles('Administrador'), usuariosCtrl.editarUsuario);
-router.delete('/users/:id', revisarToken, permitirRoles('Administrador'), usuariosCtrl.desactivarUsuario);
+router.get('/users', revisarToken, usuariosCtrl.getAll);
+router.get('/users/:id', revisarToken, usuariosCtrl.getById);
+router.post('/users', revisarToken, usersPermitidos, usuariosCtrl.crearUsuario);
+router.put('/users/:id', revisarToken, usersPermitidos, usuariosCtrl.editarUsuario);
+router.delete('/users/:id', revisarToken, usersPermitidos, usuariosCtrl.desactivarUsuario);
 
 // cambiar-contrasena se deja solo con revisarToken: cada usuario cambia la suya y ya exige la contraseña anterior
 router.put('/users/:id/cambiar-contrasena', revisarToken, usuariosCtrl.cambiarContrasena);
@@ -26,8 +29,8 @@ router.put('/users/:id/cambiar-contrasena', revisarToken, usuariosCtrl.cambiarCo
 //rutas de ROLES (lectura libre, escritura solo Administrador)
 router.get('/roles', revisarToken, rolesCtrl.getAll);
 router.get('/roles/:id', revisarToken, rolesCtrl.getById);
-router.post('/roles', revisarToken, permitirRoles('Administrador'), rolesCtrl.crearRol);
-router.put('/roles/:id', revisarToken, permitirRoles('Administrador'), rolesCtrl.editarRol);
+router.post('/roles', revisarToken, usersPermitidos, rolesCtrl.crearRol);
+router.put('/roles/:id', revisarToken, usersPermitidos, rolesCtrl.editarRol);
 //router.delete('/roles/:id',revisarToken, rolesCtrl.eliminarRol); ignorar
 
 //exportamos

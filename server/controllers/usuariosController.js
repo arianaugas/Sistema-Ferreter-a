@@ -216,6 +216,14 @@ const cambiarContrasena = async (req, res) => {
     const id = req.params.id;
     const { contrasenaAnterior, contrasenaNueva } = req.body;
 
+    // Solo el propio usuario o un Administrador pueden cambiar la contraseña
+    const esAdmin    = req.user.rol === 'Administrador';
+    const esPropioId = parseInt(id) === parseInt(req.user.id);
+
+    if (!esAdmin && !esPropioId) {
+        return res.status(403).json({ ok: false, mensaje: 'No tienes permiso para cambiar la contraseña de otro usuario.' });
+    }
+
     if (!contrasenaAnterior || !contrasenaNueva) {
         return res.status(400).json({ ok: false, mensaje: 'Complete todos los campos de contraseñas.' });
     }
@@ -225,7 +233,7 @@ const cambiarContrasena = async (req, res) => {
     }
 
     try {
-        //Obtener contraseña actual del usuario
+        ////Obtener contraseña actual del usuario
         const result = await query(
             `SELECT contrasena FROM usuarios WHERE id_usuario = @id`,
             { id: { type: sql.Int, value: id } }
@@ -254,10 +262,7 @@ const cambiarContrasena = async (req, res) => {
             }
         );
 
-        res.json({
-            ok: true,
-            mensaje: 'Contraseña cambiada con éxito.'
-        });
+        res.json({ ok: true, mensaje: 'Contraseña cambiada con éxito.' });
     } catch (err) {
         console.error('Error al cambiar contraseña:', err);
         res.status(500).json({ ok: false, mensaje: 'Error al cambiar la contraseña.' });

@@ -1,16 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const comprasCtrl = require('../../controllers/comprasController');//controllers de compras
-const { revisarToken } = require('../../middlewares/auth');
+const { revisarToken, permitirRoles } = require('../../middlewares/auth');
 
+//usuarios permitidos, mjorar dsps
+const usersPermitidos = permitirRoles('Administrador', 'Vendedor','Almacenero');
 
 //Rutas de Compras
 router.get('/', revisarToken, comprasCtrl.getOrdenes);
 router.get('/:id', revisarToken, comprasCtrl.getOrdenById);
-router.post('/', revisarToken, comprasCtrl.crearOrden);
-router.patch('/:id/enviar', revisarToken, comprasCtrl.enviarOrden);
-router.patch('/:id/anular', revisarToken, comprasCtrl.anularOrden);
-router.post('/:id/recepciones', revisarToken, comprasCtrl.crearRecepcion);
-router.get('/:id/recepciones', revisarToken, comprasCtrl.getRecepcionesByOrdenId);
+router.post('/', revisarToken, usersPermitidos, comprasCtrl.crearOrden);
+router.patch('/:id/enviar', revisarToken, usersPermitidos,comprasCtrl.enviarOrden);
+router.patch('/:id/anular', revisarToken, usersPermitidos, comprasCtrl.anularOrden);
+router.post('/:id/recepciones', revisarToken, usersPermitidos, comprasCtrl.crearRecepcion);
+router.get('/:id/recepciones', revisarToken,comprasCtrl.getRecepcionesByOrdenId);
 
 module.exports = router

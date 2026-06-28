@@ -3,7 +3,7 @@ const router = express.Router();
 //importamos los controladores y middlewares de marcas y unidades
 const marcasCtrl = require('../../controllers/marcasController');
 const unidadesCtrl = require('../../controllers/unidadesController');
-const { revisarToken } = require('../../middlewares/auth')
+const { revisarToken, permitirRoles } = require('../../middlewares/auth');
 
 //rutas de marcas
 router.get('/marcas', revisarToken, marcasCtrl.getAll);

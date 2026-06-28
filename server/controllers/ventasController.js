@@ -411,19 +411,7 @@ const ventasController = {
                     `);
                 }
 
-                // 5. Registrar egreso en caja
-                const reqMovCaja = tx.request();
-                reqMovCaja.input('id_caja', sql.Int, id_caja);
-                reqMovCaja.input('id_usuario', sql.Int, id_usuario);
-                reqMovCaja.input('referencia_id', sql.Int, id);
-                reqMovCaja.input('monto', sql.Decimal(10, 2), total);
-                reqMovCaja.input('concepto', sql.VarChar(150), `Anulación de venta N° ${numero_comprobante}`);
-                await reqMovCaja.query(`
-                    INSERT INTO movimientos_caja (id_caja, id_usuario, tipo, concepto, referencia_id, monto, registrado_en)
-                    VALUES (@id_caja, @id_usuario, 'egreso', @concepto, @referencia_id, @monto, GETDATE())
-                `);
-
-                // 6. Descontar monto esperado de caja (solo la parte que fue en efectivo)
+                // 5. Calcular cuánto fue pagado en efectivo en esta venta
                 const reqEfectivoVenta = tx.request();
                 reqEfectivoVenta.input('id_venta', sql.Int, id);
                 const resEfectivoVenta = await reqEfectivoVenta.query(`
@@ -434,10 +422,30 @@ const ventasController = {
                 `);
                 const montoEfectivoVenta = parseFloat(resEfectivoVenta.recordset[0].monto_efectivo);
 
+                // 6. Registrar egreso en caja SOLO por el monto en efectivo
+                //    (Yape, tarjeta, etc. no afectan el conteo físico de la caja)
+                if (montoEfectivoVenta > 0) {
+                    const reqMovCaja = tx.request();
+                    reqMovCaja.input('id_caja', sql.Int, id_caja);
+                    reqMovCaja.input('id_usuario', sql.Int, id_usuario);
+                    reqMovCaja.input('referencia_id', sql.Int, parseInt(id));
+                    reqMovCaja.input('monto', sql.Decimal(10, 2), montoEfectivoVenta);
+                    reqMovCaja.input('concepto', sql.VarChar(150), `Anulación de venta N° ${numero_comprobante}`);
+                    await reqMovCaja.query(`
+                        INSERT INTO movimientos_caja
+                            (id_caja, id_usuario, tipo, concepto, referencia_id, monto, registrado_en)
+                        VALUES
+                            (@id_caja, @id_usuario, 'egreso', @concepto, @referencia_id, @monto, GETDATE())
+                    `);
+                }
+
+                // 7. Descontar monto_esperado de caja (solo la parte en efectivo)
                 const reqUpCaja = tx.request();
-                reqUpCaja.input('id_caja', sql.Int, id_caja);
-                reqUpCaja.input('monto', sql.Decimal(10, 2), montoEfectivoVenta);
-                await reqUpCaja.query('UPDATE cajas SET monto_esperado = monto_esperado - @monto WHERE id_caja = @id_caja');
+                reqUpCaja.input('id_caja', sql.Int,           id_caja);
+                reqUpCaja.input('monto',   sql.Decimal(10, 2), montoEfectivoVenta);
+                await reqUpCaja.query(
+                    'UPDATE cajas SET monto_esperado = monto_esperado - @monto WHERE id_caja = @id_caja'
+                );
 
                 return { numero_comprobante, monto_devuelto: total };
             });

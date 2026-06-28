@@ -268,11 +268,11 @@ CREATE TABLE kardex (
     id_kardex INT NOT NULL IDENTITY(1,1),
     id_producto INT NOT NULL,
     id_almacen INT NOT NULL,
-    tipo_movimiento VARCHAR(15)   NOT NULL
+    tipo_movimiento VARCHAR(15) NOT NULL
         CHECK (tipo_movimiento IN ('entrada','salida','ajuste','transferencia')),
     motivo VARCHAR(100) NOT NULL,
     referencia_id INT NULL,
-    referencia_tipo VARCHAR(30)   NULL,
+    referencia_tipo VARCHAR(30) NULL,
     cantidad DECIMAL(10,2) NOT NULL,
     stock_anterior DECIMAL(10,2) NOT NULL,
     stock_posterior DECIMAL(10,2) NOT NULL,
@@ -564,3 +564,11 @@ CREATE TABLE movimientos_caja (
         REFERENCES usuarios (id_usuario),
     CONSTRAINT chk_mov_monto CHECK (monto > 0)
 );
+
+
+-- SECUENCIA: Numeración atómica para órdenes de compra
+-- Evita números duplicados cuando dos usuarios crean órdenes simultáneamente
+CREATE SEQUENCE seq_orden_compra
+    START WITH 1
+    INCREMENT BY 1
+    NO CYCLE;
