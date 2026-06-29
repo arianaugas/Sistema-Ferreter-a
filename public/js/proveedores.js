@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             aria-label="Ver ficha de ${p.nombre}">
                             <i class="fa-solid fa-eye fa-fw" aria-hidden="true"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-secondary"
+                        <button class="btn btn-sm btn-outline-primary"
                             data-accion="abrir-editar" data-id="${p.id_proveedor}"
                             aria-label="Editar ${p.nombre}">
                             <i class="fa-solid fa-pen fa-fw" aria-hidden="true"></i>
@@ -560,7 +560,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const body = {
             id_producto: parseInt(document.getElementById('vp-producto').value),
-            codigo_proveedor: document.getElementById('vp-codigo-prov').value.trim(),
             precio_compra: parseFloat(document.getElementById('vp-precio').value),
             tiempo_entrega_dias: parseInt(document.getElementById('vp-entrega').value) || null,
             es_preferido: document.getElementById('vp-preferido').checked,
@@ -773,4 +772,143 @@ document.addEventListener('DOMContentLoaded', () => {
         initExpandableRows();
     }
 
+    // Función para abrir el modal y vincular producto
+    async function abrirModalVincularProducto() {
+        try {
+            // 1. Cargar la información del proveedor activo
+            const resProv = await fetch(`/api/proveedores/${proveedorActivoId}`);
+            const proveedorData = await resProv.json();
+
+            // 2. Mostrar el nombre del proveedor en el campo deshabilitado
+            document.getElementById('vp-proveedor-nombre').value =
+                proveedorData.nombre || proveedorData.razon_social;
+
+            // 3. Limpiar otros campos
+            document.getElementById('vp-precio').value = '';
+            document.getElementById('vp-entrega').value = '';
+            document.getElementById('vp-preferido').checked = false;
+
+            // 4. Cargar productos disponibles
+            await cargarProductosDisponibles();
+
+            // 5. Mostrar el modal
+            const modal = new bootstrap.Modal(document.getElementById('modalVincularProducto'));
+            modal.show();
+
+        } catch (error) {
+            console.error('Error al cargar datos del proveedor:', error);
+            mostrarToast('Error al cargar información del proveedor', 'error');
+        }
+    }
+
+    // Función para cargar productos disponibles
+    async function cargarProductosDisponibles() {
+        try {
+            const res = await fetch('/api/productos');
+            const productos = await res.json();
+
+            const select = document.getElementById('vp-producto');
+            select.innerHTML = '<option value="">Seleccione un producto</option>';
+
+            productos.forEach(prod => {
+                const option = document.createElement('option');
+                option.value = prod.id_producto;
+                option.textContent = `${prod.nombre} (${prod.codigo})`;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error al cargar productos:', error);
+        }
+    }
+
+    // Función para guardar el vínculo (actualizar para hacer código opcional)
+    async function guardarVinculoProducto() {
+        const productoId = document.getElementById('vp-producto').value;
+        const codigoProveedor = document.getElementById('vp-codigo-prov').value.trim();
+        const precioCompra = document.getElementById('vp-precio').value;
+        const tiempoEntrega = document.getElementById('vp-entrega').value;
+        const esPreferido = document.getElementById('vp-preferido').checked;
+
+        if (!productoId) {
+            mostrarToast('Seleccione un producto', 'warning');
+            return;
+        }
+
+        if (!precioCompra) {
+            mostrarToast('Ingrese el precio de compra', 'warning');
+            return;
+        }
+
+        try {
+            const body = {
+                id_producto: parseInt(productoId),
+                codigo_proveedor: codigoProveedor || null, // Hacer opcional
+                precio_compra: parseFloat(precioCompra),
+                tiempo_entrega_dias: parseInt(tiempoEntrega) || null,
+                es_preferido: esPreferido,
+            };
+
+            const res = await fetch(`/api/proveedores/${proveedorActivoId}/productos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+
+            if (!res.ok) throw new Error('Error al vincular producto');
+
+            mostrarToast('Producto vinculado correctamente', 'success');
+
+            // Cerrar modal y recargar tabla
+            bootstrap.Modal.getInstance(document.getElementById('modalVincularProducto')).hide();
+            await cargarProductosProveedor();
+
+        } catch (error) {
+            console.error('Error:', error);
+            mostrarToast('Error al vincular producto', 'error');
+        }
+    }
+
+    // Event listener para cuando se abre el modal de vincular producto
+    const modalVincular = document.getElementById('modal-vincular-producto');
+    modalVincular?.addEventListener('shown.bs.modal', async function () {
+        if (!proveedorActivoId) {
+            showToast('No hay proveedor seleccionado', 'error');
+            return;
+        }
+
+        try {
+            // Cargar información del proveedor
+            const resProv = await fetch(`/api/proveedores/${proveedorActivoId}`, { credentials: 'include' });
+            const proveedorData = await resProv.json();
+
+            if (!resProv.ok || !proveedorData.ok) {
+                throw new Error('Error al cargar datos del proveedor');
+            }
+
+            // Mostrar nombre del proveedor
+            const inputProveedor = document.getElementById('vp-proveedor-nombre');
+            if (inputProveedor) {
+                inputProveedor.value = proveedorData.proveedor?.nombre ||
+                    proveedorData.proveedor?.razon_social ||
+                    'Proveedor no encontrado';
+            }
+
+            // Limpiar formulario
+            document.getElementById('vp-precio').value = '';
+            document.getElementById('vp-entrega').value = '';
+            document.getElementById('vp-preferido').checked = false;
+
+            // Cargar productos disponibles si no están cargados
+            const selectProducto = document.getElementById('vp-producto');
+            if (selectProducto && selectProducto.options.length <= 1) {
+                await cargarProductosParaVincular();
+            }
+
+        } catch (error) {
+            console.error('Error al cargar datos del proveedor:', error);
+            showToast('Error al cargar información del proveedor', 'error');
+        }
+    });
+
+    
 });

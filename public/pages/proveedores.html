@@ -1425,11 +1425,12 @@ Qué productos suministra cada proveedor y a qué precio.
                             <div class="invalid-feedback">Selecciona un producto.</div>
                         </div>
                         <div class="mb-3">
-                            <label for="vp-codigo-prov" class="form-label fw-medium">Código del proveedor</label>
-                            <input type="text" id="vp-codigo-prov" name="codigo_proveedor"
-                                class="form-control font-monospace" maxlength="50" placeholder="Ej: IND-0025">
-                            <div class="form-text">Código con el que el proveedor identifica este producto.</div>
+                            <label class="form-label">Proveedor</label>
+                            <input type="text" id="vp-proveedor-nombre" class="form-control" disabled
+                                placeholder="Cargando proveedor...">
+                            <small class="text-muted">Proveedor al que se vinculará el producto</small>
                         </div>
+
                         <div class="mb-3">
                             <label for="vp-precio" class="form-label fw-medium">
                                 Precio de compra <span class="text-danger" aria-hidden="true">*</span>

@@ -216,7 +216,7 @@ async function generarRepVentas() {
         rows.forEach(r => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td class="font-monospace">${r.periodo ?? '—'}</td>
+                <td class="font-monospace">${r.periodo ?? 'No tiene'}</td>
                 <td>${Number(r.cantidad_ventas).toLocaleString('es-PE')}</td>
                 <td>${formatMoney(r.subtotal)}</td>
                 <td>${formatMoney(r.igv)}</td>
@@ -361,11 +361,11 @@ async function generarRepStock() {
                 <td class="fw-medium">${r.nombre}</td>
                 <td><span class="small">${r.categoria}</span><br>
                     <span class="small text-muted">${r.subcategoria}</span></td>
-                <td class="small text-muted">${r.ubicacion ?? '—'}</td>
+                <td class="small text-muted">${r.ubicacion ?? 'No tiene'}</td>
                 <td class="fw-bold ${sinStock ? 'text-danger' : ''}">${Number(r.stock_actual).toLocaleString('es-PE')}</td>
                 <td>${Number(r.stock_minimo).toLocaleString('es-PE')}</td>
                 <td class="fw-semibold text-danger">-${Number(r.diferencia).toLocaleString('es-PE')}</td>
-                <td class="small">${r.proveedor_preferido ?? '—'}</td>`;
+                <td class="small">${r.proveedor_preferido ?? 'No tiene'}</td>`;
             tb.appendChild(tr);
         });
 
@@ -379,7 +379,7 @@ async function generarRepStock() {
 
 async function generarRepLotes() {
     const vence_antes  = document.getElementById('rl-vence-antes')?.value;
-    const estado       = document.getElementById('rl-estado-lote')?.value;
+    const estado = document.getElementById('rl-estado-lote')?.value;
 
     setTbodyLoading('tbody-rep-lotes', 7);
 
@@ -406,10 +406,10 @@ async function generarRepLotes() {
             tr.innerHTML = `
                 <td class="font-monospace small">${r.codigo_producto}</td>
                 <td class="fw-medium">${r.producto}</td>
-                <td class="font-monospace small">${r.numero_lote ?? '—'}</td>
+                <td class="font-monospace small">${r.numero_lote ?? 'No tiene'}</td>
                 <td class="small">${r.almacen}</td>
                 <td>${Number(r.cantidad).toLocaleString('es-PE')}</td>
-                <td>${formatDate(r.fecha_vencimiento)}</td>
+                <td>${r.fecha_vencimiento ? formatDate(r.fecha_vencimiento) : '<span class="text-muted fst-italic">Sin fecha</span>'}</td>
                 <td>${badgeEstado(r.estado_lote)}</td>`;
             tb.appendChild(tr);
         });
@@ -481,7 +481,7 @@ async function generarRepKardex() {
                 ${productoCol}
                 <td class="small text-nowrap">${formatDate(m.registrado_en, true)}</td>
                 <td>${badgeEstado(m.tipo_movimiento)}</td>
-                <td class="small">${m.motivo ?? '—'}</td>
+                <td class="small">${m.motivo ?? 'No tiene'}</td>
                 <td>${ref}</td>
                 <td class="small">${m.almacen}</td>
                 <td class="fw-semibold ${cantidadCls}">${esEntrada ? '+' : '-'}${Number(m.cantidad).toLocaleString('es-PE')}</td>
@@ -635,7 +635,7 @@ async function generarRepCaja() {
                 <td>${formatMoney(r.monto_esperado)}</td>
                 <td>${formatMoney(r.monto_real)}</td>
                 <td class="fw-semibold ${difCls}">${formatMoney(dif)}</td>
-                <td class="small text-muted">${r.observacion ?? '—'}</td>`;
+                <td class="small text-muted">${r.observacion ?? 'Sin observación'}</td>`;
             tb.appendChild(tr);
         });
 

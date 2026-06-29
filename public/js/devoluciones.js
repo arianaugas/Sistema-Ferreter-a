@@ -36,13 +36,13 @@ function renderFilaDevolucion(d) {
 
   const tdId = document.createElement('td');
   const idSpan = document.createElement('span');
-  idSpan.className = 'badge text-bg-light border font-monospace';
+  idSpan.className = 'fw-semibold font-monospace';
   idSpan.textContent = `DEV-${String(d.id_devolucion).padStart(5, '0')}`;
   tdId.appendChild(idSpan);
 
   const tdVenta = document.createElement('td');
   const compSpan = document.createElement('span');
-  compSpan.className = 'badge text-bg-light border font-monospace';
+  compSpan.className = 'fw-semibold font-monospace';
   compSpan.textContent = d.numero_comprobante;
   tdVenta.appendChild(compSpan);
 

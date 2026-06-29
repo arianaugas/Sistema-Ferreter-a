@@ -1558,7 +1558,7 @@ function renderTablaLotes(lotes) {
             <td>${l.producto ?? '—'}</td>
             <td>${l.almacen}</td> 
             <td class="text-end">${Number(l.cantidad).toFixed(2)}</td>
-            <td>${l.fecha_vencimiento ? `<time datetime="${l.fecha_vencimiento}">${formatDate(l.fecha_vencimiento)}</time>` : '—'}</td>
+            <td>${l.fecha_vencimiento ? `<time datetime="${l.fecha_vencimiento}">${formatDate(l.fecha_vencimiento)}</time>` : 'Sin fecha'}</td>
             <td>${_badgeLoteEstado(l.estado_vencimiento)}</td>
             <td><time datetime="${l.creado_en}">${formatDate(l.creado_en)}</time></td>
         `;
@@ -1572,7 +1572,7 @@ function _badgeLoteEstado(estado) {
         vencido:'<span class="badge text-bg-danger d-flex align-items-center gap-1" style="width:fit-content"><i class="fa-solid fa-calendar-xmark fa-xs" aria-hidden="true"></i>Vencido</span>',
         proximo:'<span class="badge text-bg-warning text-dark d-flex align-items-center gap-1" style="width:fit-content"><i class="fa-solid fa-clock fa-xs" aria-hidden="true"></i>Próx. vencer</span>',
         vigente:'<span class="badge text-bg-success d-flex align-items-center gap-1" style="width:fit-content"><i class="fa-solid fa-circle-check fa-xs" aria-hidden="true"></i>Vigente</span>',
-        sin_vencimiento: '<span class="badge text-bg-secondary d-flex align-items-center gap-1" style="width:fit-content">Sin vencimiento</span>',
+        sin_vencimiento: '<span class="fw-semibold d-flex align-items-center gap-1" style="width:fit-content">Sin vencimiento</span>',
     };
     return map[estado] ?? `<span class="badge text-bg-secondary">${estado}</span>`;
 }

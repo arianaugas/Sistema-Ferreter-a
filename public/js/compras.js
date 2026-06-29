@@ -81,7 +81,7 @@ function renderFilaOrden(o) {
       </button>
     `;
   } else {
-    tdAcciones.innerHTML = '<span class="text-muted small">—</span>';
+    tdAcciones.innerHTML = '<span class="text-muted small">Sin acciones</span>';
   }
   tdAcciones.querySelector('[data-accion="enviar-orden"]')?.addEventListener('click', () => enviarOrden(o.id_orden, o.numero_orden));
   tdAcciones.querySelector('[data-accion="anular-orden"]')?.addEventListener('click', () => anularOrden(o.id_orden, o.numero_orden));
