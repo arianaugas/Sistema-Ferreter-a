@@ -286,7 +286,7 @@ async function buscarProductos(termino) {
     return;
   }
 
- try {
+  try {
     const params = new URLSearchParams({ activo: '1' });
     if (termino && termino.length >= 2) params.set('nombre', termino);
     if (tieneCategoria) params.set('categoria', selCat.value);
@@ -881,25 +881,32 @@ async function cargarDetalleVentaExpandible(id_venta, detailId) {
   }
 }
 
-//  Ver detalle de venta en modal 
+// Ver detalle de venta en modal
 async function verDetalleVenta(id_venta) {
-  const modal = document.getElementById('modal-detalle-venta');
-  if (!modal) return;
-  try {
-    const v = await apiFetch(`/api/ventas/${id_venta}`);
-    const setEl = (sel, val) => { const el = modal.querySelector(sel); if (el) el.textContent = val ?? '—'; };
-    setEl('#detalle-comprobante', v.numero_comprobante);
-    setEl('#detalle-fecha', formatDate(v.fecha, true));
-    setEl('#detalle-cliente', v.cliente_nombre || 'Sin cliente');
-    setEl('#detalle-empleado', v.empleado_nombre);
-    setEl('#detalle-subtotal', formatMoney(v.subtotal));
-    setEl('#detalle-igv', formatMoney(v.igv));
-    setEl('#detalle-total', formatMoney(v.total));
-    setEl('#detalle-estado', v.estado);
-    new bootstrap.Modal(modal).show();
-  } catch (err) {
-    showToast('Error al cargar el detalle: ' + err.message, 'error');
-  }
+    const modal = document.getElementById('modal-detalle-venta');
+    if (!modal) return;
+    try {
+        const v = await apiFetch(`/api/ventas/${id_venta}`);
+        const setEl = (sel, val) => { const el = modal.querySelector(sel); if (el) el.textContent = val ?? '—'; };
+        setEl('#detalle-comprobante', v.numero_comprobante);
+        setEl('#detalle-fecha', formatDate(v.fecha, true));
+        setEl('#detalle-cliente', v.cliente_nombre || 'Sin cliente');
+        setEl('#detalle-empleado', v.empleado_nombre);
+        setEl('#detalle-subtotal', formatMoney(v.subtotal));
+        setEl('#detalle-igv', formatMoney(v.igv));
+        setEl('#detalle-total', formatMoney(v.total));
+        setEl('#detalle-estado', v.estado);
+        
+        //botón de descargar comprobante
+        const btnDescargar = modal.querySelector('#btn-descargar-comprobante');
+        if (btnDescargar) {
+            btnDescargar.onclick = () => generarComprobantePDF(id_venta);
+        }
+        
+        new bootstrap.Modal(modal).show();
+    } catch (err) {
+        showToast('Error al cargar el detalle: ' + err.message, 'error');
+    }
 }
 
 //  Anular venta  
@@ -1107,4 +1114,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (VentasState.ventasList.length === 0) cargarListaVentas();
     });
   }
+
+  // Exportar ventas
+  document.getElementById('btn-exportar-ventas')?.addEventListener('click', () => {
+    const filtros = {
+      fecha_desde: document.getElementById('filtro-venta-desde')?.value || '',
+      fecha_hasta: document.getElementById('filtro-venta-hasta')?.value || '',
+      tipo_comprobante: document.getElementById('filtro-venta-comprobante')?.value || '',
+      estado: document.getElementById('filtro-venta-estado')?.value || ''
+    };
+    exportarVentas(filtros);
+  });
 });

@@ -1,7 +1,7 @@
 /* ── CSS Variables ── */
 :root {
-  --electric-blue: #194b9c;
-  --primary-container: #3879e7;
+  --electric-blue: #043461;
+  --primary-container: #043488;
   --surface: #12131a;
   --surface-variant: #33343c;
   --surface-container: #1e1f26;
@@ -298,7 +298,7 @@ body {
 .card-badge {
   font-size: 13px;
   font-weight: 500;
-  color: var(--electric-blue);
+  color: #0042b4;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }

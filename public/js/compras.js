@@ -36,7 +36,7 @@ function renderFilaOrden(o) {
 
   const tdNum = document.createElement('td');
   const numSpan = document.createElement('span');
-  numSpan.className = 'badge text-bg-light border font-monospace';
+  numSpan.className = 'fw-semibold font-monospace';
   numSpan.textContent = o.numero_orden;
   tdNum.appendChild(numSpan);
 
@@ -815,7 +815,7 @@ function renderFilaRecepcion(r) {
 
   const tdNum = document.createElement('td');
   const numSpan = document.createElement('span');
-  numSpan.className = 'badge text-bg-light border font-monospace';
+  numSpan.className = 'fw-semibold font-monospace';
   numSpan.textContent = `REC-${String(r.id_recepcion).padStart(4, '0')}`;
   tdNum.appendChild(numSpan);
 

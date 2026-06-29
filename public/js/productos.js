@@ -807,7 +807,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inputCatActivo) inputCatActivo.checked = true;
   });
 
-  
+
   // Guardar edición categoría (modal)
   btnGuardarEditCat?.addEventListener('click', async () => {
     const id = editCatId?.value;
@@ -1287,5 +1287,40 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast(err.message, 'error');
     }
   });
+
+
+
+  // EXPORTAR - Event listeners para los botones de exportar
+  // Necesitamos detectar qué tab está activo para exportar la tabla correcta
+  const btnExportarProductos = document.getElementById('btn-exportar-productos');
+  if (btnExportarProductos) {
+    btnExportarProductos.addEventListener('click', async () => {
+      // Detectar qué tab está activo
+      const tabActivo = document.querySelector('.nav-link.active[data-bs-toggle="tab"]');
+      const tabId = tabActivo?.id || 'productos-tab';
+
+      if (tabId === 'productos-tab' || tabId.includes('producto')) {
+        // Exportar productos con filtros actuales
+        const filtros = {
+          nombre: filtroNombre?.value.trim() || '',
+          categoria: filtroCategoria?.value || '',
+          subcategoria: filtroSubcat?.value || '',
+          marca: filtroMarca?.value || '',
+          estado: filtroEstado?.value || '',
+          fecha_desde: filtroFechaDesde?.value || '',
+          fecha_hasta: filtroFechaHasta?.value || ''
+        };
+        await exportarProductos(filtros);
+      } else if (tabId === 'categorias-tab' || tabId.includes('categoria')) {
+        await exportarCategorias();
+      } else if (tabId === 'subcategorias-tab' || tabId.includes('subcategoria')) {
+        await exportarSubcategorias();
+      } else if (tabId === 'marcas-tab' || tabId.includes('marca')) {
+        await exportarMarcas();
+      } else if (tabId === 'unidades-tab' || tabId.includes('unidad')) {
+        await exportarUnidades();
+      }
+    });
+  }
 
 }); // fin DOMContentLoaded

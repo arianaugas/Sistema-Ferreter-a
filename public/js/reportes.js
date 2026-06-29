@@ -202,7 +202,7 @@ async function generarRepVentas() {
             totalVentas += Number(r.cantidad_ventas || 0);
             totalSubtotal += Number(r.subtotal || 0);
             totalIgv += Number(r.igv || 0);
-            totalGeneral  += Number(r.total || 0);
+            totalGeneral += Number(r.total || 0);
         });
 
         document.getElementById('rv-total-ventas').textContent = totalVentas;
@@ -252,9 +252,9 @@ async function generarRepGanancias() {
         const rows = data.datos ?? [];
         const totales = data.totales ?? {};
 
-        document.getElementById('rg-ingresos').textContent = formatMoney(totales.ingresos  ?? 0);
+        document.getElementById('rg-ingresos').textContent = formatMoney(totales.ingresos ?? 0);
         document.getElementById('rg-inversion').textContent = formatMoney(totales.costo_total ?? 0);
-        document.getElementById('rg-ganancia').textContent = formatMoney(totales.ganancia  ?? 0);
+        document.getElementById('rg-ganancia').textContent = formatMoney(totales.ganancia ?? 0);
 
         if (!rows.length) {
             setTbodyEmpty('tbody-rep-ganancias', 8);
@@ -378,7 +378,7 @@ async function generarRepStock() {
 
 
 async function generarRepLotes() {
-    const vence_antes  = document.getElementById('rl-vence-antes')?.value;
+    const vence_antes = document.getElementById('rl-vence-antes')?.value;
     const estado = document.getElementById('rl-estado-lote')?.value;
 
     setTbodyLoading('tbody-rep-lotes', 7);
@@ -401,7 +401,7 @@ async function generarRepLotes() {
         rows.forEach(r => {
             const tr = document.createElement('tr');
             const rowClass = r.estado_lote === 'caducado' ? 'table-danger'
-                            : r.estado_lote === 'por_vencer' ? 'table-warning' : '';
+                : r.estado_lote === 'por_vencer' ? 'table-warning' : '';
             tr.className = rowClass;
             tr.innerHTML = `
                 <td class="font-monospace small">${r.codigo_producto}</td>
@@ -600,19 +600,19 @@ async function generarRepCaja() {
 
         if (!data.ok) throw new Error(data.mensaje || 'Error en el reporte');
 
-        const rows = data.datos    ?? [];
-        const totales = data.totales  ?? {};
+        const rows = data.datos ?? [];
+        const totales = data.totales ?? {};
 
         document.getElementById('rcaja-turnos').textContent = data.total_cierres ?? 0;
-        document.getElementById('rcaja-esperado').textContent = formatMoney(totales.total_esperado   ?? 0);
-        document.getElementById('rcaja-real').textContent = formatMoney(totales.total_real       ?? 0);
+        document.getElementById('rcaja-esperado').textContent = formatMoney(totales.total_esperado ?? 0);
+        document.getElementById('rcaja-real').textContent = formatMoney(totales.total_real ?? 0);
 
         // Diferencia con color según si es positiva (sobrante) o negativa (faltante)
         const elDif = document.getElementById('rcaja-diferencia');
         if (elDif) {
             const dif = Number(totales.total_diferencia ?? 0);
             elDif.textContent = formatMoney(dif);
-            elDif.className   = `fw-semibold h5 mb-0 ${dif >= 0 ? 'text-success' : 'text-danger'}`;
+            elDif.className = `fw-semibold h5 mb-0 ${dif >= 0 ? 'text-success' : 'text-danger'}`;
         }
 
         if (!rows.length) {
@@ -665,7 +665,7 @@ async function generarRepDevoluciones() {
 
         const rows = data.datos ?? [];
 
-        document.getElementById('rd-total-dev').textContent       = data.total ?? 0;
+        document.getElementById('rd-total-dev').textContent = data.total ?? 0;
         document.getElementById('rd-total-reembolsos').textContent = formatMoney(data.total_reembolsado ?? 0);
 
         if (!rows.length) {
@@ -721,15 +721,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     //  Botones de generar reporte 
-    document.getElementById('btn-generar-rep-ventas') ?.addEventListener('click', generarRepVentas);
-    document.getElementById('btn-generar-rep-ganancias') ?.addEventListener('click', generarRepGanancias);
-    document.getElementById('btn-generar-rep-productos') ?.addEventListener('click', generarRepProductos);
-    document.getElementById('btn-generar-rep-stock') ?.addEventListener('click', generarRepStock);
-    document.getElementById('btn-generar-rep-lotes') ?.addEventListener('click', generarRepLotes);
-    document.getElementById('btn-generar-rep-kardex') ?.addEventListener('click', generarRepKardex);
-    document.getElementById('btn-generar-rep-compras') ?.addEventListener('click', generarRepCompras);
-    document.getElementById('btn-generar-rep-gastos') ?.addEventListener('click', generarRepGastos);
-    document.getElementById('btn-generar-rep-caja') ?.addEventListener('click', generarRepCaja);
+    document.getElementById('btn-generar-rep-ventas')?.addEventListener('click', generarRepVentas);
+    document.getElementById('btn-generar-rep-ganancias')?.addEventListener('click', generarRepGanancias);
+    document.getElementById('btn-generar-rep-productos')?.addEventListener('click', generarRepProductos);
+    document.getElementById('btn-generar-rep-stock')?.addEventListener('click', generarRepStock);
+    document.getElementById('btn-generar-rep-lotes')?.addEventListener('click', generarRepLotes);
+    document.getElementById('btn-generar-rep-kardex')?.addEventListener('click', generarRepKardex);
+    document.getElementById('btn-generar-rep-compras')?.addEventListener('click', generarRepCompras);
+    document.getElementById('btn-generar-rep-gastos')?.addEventListener('click', generarRepGastos);
+    document.getElementById('btn-generar-rep-caja')?.addEventListener('click', generarRepCaja);
     document.getElementById('btn-generar-rep-devoluciones')?.addEventListener('click', generarRepDevoluciones);
 
     //  Cargar automáticamente al cambiar de pestaña (todos los reportes)
@@ -757,5 +757,58 @@ document.addEventListener('DOMContentLoaded', () => {
         // Si no hay pestaña activa identificada, cargar ventas por defecto
         generarRepVentas();
     }
+
+
+
+    //EXPORTAR REPORTES  
+    // Botón exportar ventas
+    document.getElementById('btn-exportar-rep-ventas')?.addEventListener('click', () => {
+        exportarReporteVentas();
+    });
+
+    // Botón exportar ganancias
+    document.getElementById('btn-exportar-rep-ganancias')?.addEventListener('click', () => {
+        exportarReporteGanancias();
+    });
+
+    // Botón exportar productos más vendidos
+    document.getElementById('btn-exportar-rep-productos')?.addEventListener('click', () => {
+        exportarReporteProductosVendidos();
+    });
+
+    // Botón exportar stock crítico
+    document.getElementById('btn-exportar-rep-stock')?.addEventListener('click', () => {
+        exportarReporteStockCritico();
+    });
+
+    // Botón exportar lotes
+    document.getElementById('btn-exportar-rep-lotes')?.addEventListener('click', () => {
+        exportarReporteLotes();
+    });
+
+    // Botón exportar kardex
+    document.getElementById('btn-exportar-rep-kardex')?.addEventListener('click', () => {
+        exportarReporteKardex();
+    });
+
+    // Botón exportar compras
+    document.getElementById('btn-exportar-rep-compras')?.addEventListener('click', () => {
+        exportarReporteCompras();
+    });
+
+    // Botón exportar gastos
+    document.getElementById('btn-exportar-rep-gastos')?.addEventListener('click', () => {
+        exportarReporteGastos();
+    });
+
+    // Botón exportar caja
+    document.getElementById('btn-exportar-rep-caja')?.addEventListener('click', () => {
+        exportarReporteCaja();
+    });
+
+    // Botón exportar devoluciones
+    document.getElementById('btn-exportar-rep-devoluciones')?.addEventListener('click', () => {
+        exportarReporteDevoluciones();
+    });
 
 });

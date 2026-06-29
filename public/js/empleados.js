@@ -15,8 +15,8 @@ function formatFecha(fechaStr) {
     if (!fechaStr) return '—';
     const fecha = new Date(fechaStr);
     if (isNaN(fecha.getTime())) return '—';
-    const dia  = String(fecha.getUTCDate()).padStart(2, '0');
-    const mes  = String(fecha.getUTCMonth() + 1).padStart(2, '0');
+    const dia = String(fecha.getUTCDate()).padStart(2, '0');
+    const mes = String(fecha.getUTCMonth() + 1).padStart(2, '0');
     const anio = fecha.getUTCFullYear();
     return `${dia}/${mes}/${anio}`;
 }
@@ -27,8 +27,8 @@ function fechaParaInput(valor) {
     const d = new Date(valor);
     if (isNaN(d.getTime())) return '';
     const anio = d.getUTCFullYear();
-    const mes  = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const dia  = String(d.getUTCDate()).padStart(2, '0');
+    const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const dia = String(d.getUTCDate()).padStart(2, '0');
     return `${anio}-${mes}-${dia}`;
 }
 
@@ -242,17 +242,17 @@ function renderTablaEmpleados(empleados) {
                         <i class="fa-regular fa-pen-to-square" aria-hidden="true"></i>
                     </button>
                     ${activo
-                        ? `<button type="button" class="btn btn-sm text-danger btn-desactivar-empleado"
+                ? `<button type="button" class="btn btn-sm text-danger btn-desactivar-empleado"
                                 data-empleado-id="${emp.id_empleado}" data-nombre="${emp.nombre} ${emp.apellido}"
                                 aria-label="Desactivar empleado ${emp.nombre} ${emp.apellido}">
                                 <i class="fa-solid fa-user-slash" aria-hidden="true"></i>
                             </button>`
-                        : `<button type="button" class="btn btn-sm text-success btn-reactivar-empleado"
+                : `<button type="button" class="btn btn-sm text-success btn-reactivar-empleado"
                                 data-empleado-id="${emp.id_empleado}" data-nombre="${emp.nombre} ${emp.apellido}"
                                 aria-label="Reactivar empleado ${emp.nombre} ${emp.apellido}">
                                 <i class="fa-solid fa-user-check" aria-hidden="true"></i>
                             </button>`
-                    }
+            }
                 </div>
             </td>`;
         tbody.appendChild(tr);
@@ -501,6 +501,23 @@ async function cargarTurnosParaEmpleados() {
 
 //Inicializamos el dom
 document.addEventListener('DOMContentLoaded', () => {
+    // Agregar al final de empleados.js, dentro del DOMContentLoaded existente:
+
+    // Exportar empleados
+    document.getElementById('btn-exportar-empleados')?.addEventListener('click', () => {
+        // Obtener filtros actuales
+        const busqueda = document.getElementById('filtro-empleado-nombre')?.value.trim() || '';
+        const id_cargo = document.getElementById('filtro-empleado-cargo')?.value || '';
+        const activo = document.getElementById('filtro-empleado-estado')?.value || '';
+
+        exportarEmpleados({ busqueda, id_cargo, activo });
+    });
+
+    // Exportar cargos (si hay botón)
+    document.getElementById('btn-exportar-cargos')?.addEventListener('click', () => {
+        exportarCargos();
+    });
+
     cargarCargos();
     cargarTurnosParaEmpleados();
     cargarEmpleados();

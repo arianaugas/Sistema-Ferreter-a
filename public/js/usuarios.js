@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <tr>
                 <td>${r.id_rol}</td>
                 <td><span class="fw-semibold">${r.nombre}</span></td>
-                <td class="text-muted small">${r.descripcion ?? '—'}</td>
+                <td class="text-muted small">${r.descripcion ?? 'Sin descripción'}</td>
                 <td>${conteo[r.id_rol] ?? 0}</td>
                 <td class="text-end">
                     <div class="d-flex gap-1 justify-content-end">
