@@ -311,15 +311,6 @@ const create = async (req, res) => {
                     'UPDATE cajas SET monto_esperado = monto_esperado - @monto WHERE id_caja = @id_caja'
                 );
             }
-            const reqUpVenta = transaction.request();
-            reqUpVenta.input('id_venta', sql.Int, id_venta);
-            await reqUpVenta.query(`
-                        UPDATE ventas
-                        SET estado = 'con_devolucion'
-                        WHERE id_venta = @id_venta
-                            AND estado <> 'anulada'
-                    `);
-
             return nuevaDev;
         });
 
@@ -496,42 +487,9 @@ const anular = async (req, res) => {
             await reqAnular.query(
                 `UPDATE devoluciones SET estado = 'anulada' WHERE id_devolucion = @id`
             );
-
-
-            // Restaurar estado de la venta si ya no tiene devoluciones activas
-            const reqCheckDevs = transaction.request();
-            reqCheckDevs.input('id_venta_check', sql.Int, resDev.recordset[0].id_venta ?? null);
-
-            // Primero leer el id_venta de esta devolución
-            const resIdVenta = await reqAnular.query(
-                `SELECT id_venta FROM devoluciones WHERE id_devolucion = @id`
-            )
-
         });
 
-        // Revertir estado de la venta si ya no tiene devoluciones no-anuladas
-        const reqRevert = transaction.request();
-        reqRevert.input('id_venta_r', sql.Int, dev.id_venta);
-        const resDevActivas = await reqRevert.query(`
-                            SELECT COUNT(*) AS total
-                            FROM devoluciones
-                            WHERE id_venta = @id_venta_r
-                                AND estado <> 'anulada'
-                                AND id_devolucion <> @id
-                        `);
-        reqRevert.input('id', sql.Int, parseInt(id)); 
-
-        if (resDevActivas.recordset[0].total === 0) {
-            const reqRevertVenta = transaction.request();
-            reqRevertVenta.input('id_venta_rv', sql.Int, dev.id_venta);
-            await reqRevertVenta.query(`
-        UPDATE ventas SET estado = 'pagada'
-        WHERE id_venta = @id_venta_rv AND estado = 'con_devolucion'
-    `);
-        }
-
         return res.json({ ok: true, mensaje: 'Devolución anulada y cambios revertidos correctamente.' });
-
     } catch (err) {
         console.error('Error al anular devolución:', err);
         if (err.statusCode === 400) {

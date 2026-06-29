@@ -595,8 +595,3 @@ CREATE TABLE permisos_rol (
     CONSTRAINT fk_permisos_rol_rol FOREIGN KEY (id_rol) REFERENCES roles(id_rol) ON DELETE CASCADE,
     CONSTRAINT fk_permisos_rol_modulo FOREIGN KEY (id_modulo) REFERENCES modulos(id_modulo)
 );
-
---Nuevo, sintetizar dsps
-
-ALTER TABLE ventas ADD CONSTRAINT chk_ventas_estado 
-    CHECK (estado IN ('pendiente','pagada','anulada','con_devolucion'));

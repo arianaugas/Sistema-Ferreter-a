@@ -442,10 +442,10 @@ const kardexGeneral = async (req, res) => {
                 u.username AS usuario,
                 k.registrado_en
             FROM kardex k
-            INNER JOIN productos  p ON p.id_producto = k.id_producto
+            INNER JOIN productos p ON p.id_producto = k.id_producto
             INNER JOIN subcategorias sc ON sc.id_subcategoria = p.id_subcategoria
-            INNER JOIN almacenes  a ON a.id_almacen  = k.id_almacen
-            INNER JOIN usuarios   u ON u.id_usuario  = k.id_usuario
+            INNER JOIN almacenes a ON a.id_almacen = k.id_almacen
+            INNER JOIN usuarios u ON u.id_usuario = k.id_usuario
             ${where}
             ORDER BY k.registrado_en DESC`,
             params

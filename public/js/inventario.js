@@ -1136,7 +1136,7 @@ function renderTablaTransferencias(transferencias) {
                 <button type="button" class="btn btn-sm btn-ver-transf"
                     data-transf-id="${t.id_transferencia}"
                     aria-label="Ver detalle de transferencia">
-                    <i class="fa-regular fa-eye" aria-hidden="true"></i> Ver
+                    <i class="fa-regular fa-eye" aria-hidden="true"></i>
                 </button>
             </td>
         `;
@@ -1572,7 +1572,7 @@ function _badgeLoteEstado(estado) {
         vencido:'<span class="badge text-bg-danger d-flex align-items-center gap-1" style="width:fit-content"><i class="fa-solid fa-calendar-xmark fa-xs" aria-hidden="true"></i>Vencido</span>',
         proximo:'<span class="badge text-bg-warning text-dark d-flex align-items-center gap-1" style="width:fit-content"><i class="fa-solid fa-clock fa-xs" aria-hidden="true"></i>Próx. vencer</span>',
         vigente:'<span class="badge text-bg-success d-flex align-items-center gap-1" style="width:fit-content"><i class="fa-solid fa-circle-check fa-xs" aria-hidden="true"></i>Vigente</span>',
-        sin_vencimiento: '<span class="badge text-bg-secondary d-flex align-items-center gap-1" style="width:fit-content"><i class="fa-solid fa-infinity fa-xs" aria-hidden="true"></i>Sin vencimiento</span>',
+        sin_vencimiento: '<span class="badge text-bg-secondary d-flex align-items-center gap-1" style="width:fit-content">Sin vencimiento</span>',
     };
     return map[estado] ?? `<span class="badge text-bg-secondary">${estado}</span>`;
 }
