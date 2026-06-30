@@ -1,12 +1,6 @@
-/*
-   global.js — Funciones compartidas de todas las páginas
-*/
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  /* ----------------------------------------------------------
-     1. SIDEBAR — Toggle colapsar/expandir
-  ---------------------------------------------------------- */
   const sidebar = document.getElementById('sidebar');
   const toggleBtn = document.getElementById('sidebar-toggle-btn');
   const appWrapper = document.getElementById('app-wrapper');
@@ -20,9 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 
-  /* ----------------------------------------------------------
-     2. SIDEBAR — Acordeón (un submenú abierto a la vez)
-  ---------------------------------------------------------- */
   document.querySelectorAll('.sidebar-accordion-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const targetId = btn.getAttribute('aria-controls');
@@ -51,9 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
-  /* ----------------------------------------------------------
-     3. SIDEBAR — Marcar ítem activo según URL actual
-  ---------------------------------------------------------- */
   const currentPath = window.location.pathname.split('/').pop() || 'index.html';
   const currentHash = window.location.hash;
 
@@ -84,9 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
-  /* ----------------------------------------------------------
-     4. SIDEBAR — Buscador de módulos
-  ---------------------------------------------------------- */
   const sidebarSearch = document.getElementById('sidebar-search');
 
   if (sidebarSearch) {
@@ -131,9 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 
-  /* ----------------------------------------------------------
-     5. TOPBAR — Pantalla completa
-  ---------------------------------------------------------- */
   const fullscreenBtn = document.getElementById('topbar-fullscreen-btn');
   if (fullscreenBtn) {
     fullscreenBtn.addEventListener('click', () => {
@@ -148,9 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 
-  /* ----------------------------------------------------------
-     6. MODALES — Apilamiento de z-index
-  ---------------------------------------------------------- */
   document.addEventListener('show.bs.modal', function (e) {
     const abiertos = document.querySelectorAll('.modal.show');
     if (abiertos.length > 0) {
@@ -166,16 +145,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-
-  /* ----------------------------------------------------------
-     7. UTILIDAD — Filas expandibles
-  ---------------------------------------------------------- */
   initExpandableRows();
 
 
-  /* ----------------------------------------------------------
-     8. UTILIDAD — Búsquedas de tabla por página
-  ---------------------------------------------------------- */
   const tableSearchPairs = [
     ['input-buscar-cliente', 'tabla-clientes'],
     ['input-buscar-proveedor', 'tabla-proveedores'],
@@ -189,11 +161,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 }); // fin DOMContentLoaded
 
-
-/* ----------------------------------------------------------
-   UTILIDADES — Declaradas fuera del DOMContentLoaded
-   para que los JS de módulo puedan llamarlas libremente
----------------------------------------------------------- */
 
 const BADGE_MAP = {
   activo: { cls: 'text-bg-success', label: 'Activo' },
@@ -235,7 +202,7 @@ function formatDate(dateStr, includeTime = false) {
     ? dateStr + 'T00:00:00'
     : dateStr;
   const d = new Date(normalized);
-  if (isNaN(d.getTime())) return '—'; // ← esto mata el "Infinity"
+  if (isNaN(d.getTime())) return '—'; 
   const date = d.toLocaleDateString('es-PE');
   if (!includeTime) return date;
   const time = d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
@@ -336,13 +303,6 @@ function initTableSearch(inputId, tableId) {
   });
 }
 
-
-/* 
-   USUARIO AUTENTICADO — Nombre real en topbar y sidebar
-   Endpoint: GET /api/auth/me
-   Response: { ok, usuario: { id, username, rol, nombre } }
-    */
-
 async function cargarUsuarioActual() {
   try {
     const res = await fetch('/api/auth/me', { credentials: 'include' });
@@ -404,7 +364,7 @@ async function cargarNotificaciones() {
 
     const { stock_bajo, sin_stock, ordenes_pendientes } = data.alertas;
 
-    const items = []; // { icono, claseIcono, texto, href }
+    const items = []; 
 
     //Sin stock (prioridad máxima, rojo) 
     if (sin_stock.length > 0) {
@@ -526,7 +486,6 @@ async function cargarNotificaciones() {
       }
     }
 
-    // Divider + "Ver todas"
     menu.innerHTML += `
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item text-center small" href="/public/pages/reportes.html">Ver todas</a></li>`;
@@ -546,22 +505,18 @@ async function cerrarSesion(e) {
   } catch (_) {
     // fallo de red: igual redirigimos
   } finally {
-    sessionStorage.clear(); // ← limpia la caja guardada y cualquier otro dato de sesión
+    sessionStorage.clear(); 
     window.location.href = '/login';
   }
 }
 
 function inicializarLogout() {
 
-  //1. Dropdown del topbar (el <a id="btn-logout"> que ya existe en el HTML) 
   const btnLogoutTopbar = document.getElementById('btn-logout');
   if (btnLogoutTopbar) {
     btnLogoutTopbar.addEventListener('click', cerrarSesion);
   }
 
-  //2. Sidebar footer — inyectar botón junto al nombre/rol 
-  // El sidebar-footer tiene: [avatar] [nombre + rol]
-  // Agregamos: [avatar] [nombre + rol] [botón logout]
   const sidebarFooter = document.getElementById('sidebar-footer');
   if (sidebarFooter) {
     // Evitar duplicados si global.js se ejecuta dos veces
@@ -579,11 +534,6 @@ function inicializarLogout() {
   }
 }
 
-//  Caja de trabajo de la sesión (compartida entre Ventas y Devoluciones) 
-// El vendedor elige UNA VEZ, al iniciar su turno, con qué caja va a
-// trabajar. Se guarda en sessionStorage y se reutiliza en cualquier
-// pantalla (Ventas, Devoluciones) sin volver a preguntar, hasta que esa
-// caja deje de estar disponible.
 const CAJA_TRABAJO_SESSION_KEY = 'caja_trabajo_sesion';
 
 function obtenerCajaTrabajoGuardada() {
@@ -607,8 +557,7 @@ function limpiarCajaTrabajo() {
   } catch { /* noopp */ }
 }
 
-// Muestra el modal de selección de caja (debe existir #modal-elegir-caja-venta
-// y #lista-cajas-elegir en la página actual) y resuelve con la caja elegida.
+
 function mostrarModalSeleccionCaja(cajasAbiertas) {
   return new Promise((resolve) => {
     const modalEl = document.getElementById('modal-elegir-caja-venta');
@@ -646,10 +595,7 @@ function mostrarModalSeleccionCaja(cajasAbiertas) {
   });
 }
 
-// Punto de entrada: asegura que haya una caja de trabajo válida para esta
-// sesión, preguntando al vendedor solo si hace falta. Devuelve la caja
-// elegida (objeto) o null si no hay ninguna caja abierta en el sistema.
-// DESPUÉS
+
 async function asegurarCajaDeTrabajo() {
   let data;
   try {
@@ -731,8 +677,6 @@ async function aplicarSidebarSegunPermisos() {
     }
   });
 
-  // Si una sección entera (ej. "Análisis", "Sistema") se queda sin ningún
-  // ítem visible, ocultamos también su título para que no quede flotando solo.
   document.querySelectorAll('#sidebar-nav p.sidebar-nav-label').forEach(label => {
     const ul = label.nextElementSibling;
     if (!ul || ul.tagName !== 'UL') return;

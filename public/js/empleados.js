@@ -501,7 +501,6 @@ async function cargarTurnosParaEmpleados() {
 
 //Inicializamos el dom
 document.addEventListener('DOMContentLoaded', () => {
-    // Agregar al final de empleados.js, dentro del DOMContentLoaded existente:
 
     // Exportar empleados
     document.getElementById('btn-exportar-empleados')?.addEventListener('click', () => {
@@ -513,7 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
         exportarEmpleados({ busqueda, id_cargo, activo });
     });
 
-    // Exportar cargos (si hay botón)
+    // Exportar cargos 
     document.getElementById('btn-exportar-cargos')?.addEventListener('click', () => {
         exportarCargos();
     });

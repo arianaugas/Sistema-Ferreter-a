@@ -222,7 +222,7 @@ async function cargarConfiguracion() {
         input.dataset.clave = cfg.clave;
       }
 
-      // Vista previa dinámica - ACTUALIZADO CON NUEVAS CLAVES
+      // Vista previa dinámica
       if (cfg.clave === 'empresa_nombre') {
         const el = document.getElementById('preview-negocio');
         if (el) el.textContent = cfg.valor || '—';

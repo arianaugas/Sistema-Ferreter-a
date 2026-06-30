@@ -821,7 +821,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Función para guardar el vínculo (actualizar para hacer código opcional)
     async function guardarVinculoProducto() {
         const productoId = document.getElementById('vp-producto').value;
         const codigoProveedor = document.getElementById('vp-codigo-prov')?.value?.trim() ?? null;

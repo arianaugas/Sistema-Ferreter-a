@@ -6,82 +6,82 @@
 
 -- 1. CONFIGURACIÓN -----------------------------------------
 INSERT INTO configuracion (clave, valor, descripcion) VALUES
-('empresa_nombre',   'Ferretería El Tornillo SAC',                                             'Nombre comercial del negocio'),
-('empresa_ruc',      '20601234567',                                                            'RUC de la empresa'),
-('empresa_direccion','Av. Industrial 1245, Trujillo',                                          'Dirección principal'),
-('empresa_telefono', '044-234567',                                                             'Teléfono de contacto'),
-('empresa_correo',   'ventas@eltornillo.com.pe',                                               'Correo de contacto'),
-('igv_porcentaje',   '18',                                                                     'Porcentaje de IGV vigente'),
-('moneda',           'PEN',                                                                    'Moneda del sistema'),
-('stock_alerta',     '10',                                                                     'Umbral para alerta de stock bajo'),
-('logo_url',         'https://res.cloudinary.com/ferreteria/image/upload/v1/config/logo.png', 'URL del logo del negocio');
+('empresa_nombre', 'Ferretería El Tornillo SAC', 'Nombre comercial del negocio'),
+('empresa_ruc', '20601234567', 'RUC de la empresa'),
+('empresa_direccion','Av. Industrial 1245, Trujillo', 'Dirección principal'),
+('empresa_telefono', '044-234567', 'Teléfono de contacto'),
+('empresa_correo', 'ventas@eltornillo.com.pe', 'Correo de contacto'),
+('igv_porcentaje', '18', 'Porcentaje de IGV vigente'),
+('moneda', 'PEN', 'Moneda del sistema'),
+('stock_alerta', '10', 'Umbral para alerta de stock bajo'),
+('logo_url', 'https://res.cloudinary.com/ferreteria/image/upload/v1/config/logo.png', 'URL del logo del negocio');
 
 -- 2. TURNOS ------------------------------------------------
 INSERT INTO turnos (nombre, hora_inicio, hora_fin, activo) VALUES
-('Turno Mañana',   '07:00:00', '15:00:00', 1), -- id 1
-('Turno Tarde',    '15:00:00', '23:00:00', 1), -- id 2
+('Turno Mañana', '07:00:00', '15:00:00', 1), -- id 1
+('Turno Tarde', '15:00:00', '23:00:00', 1), -- id 2
 ('Turno Nocturno', '23:00:00', '07:00:00', 1); -- id 3
 
 -- 3. CARGOS ------------------------------------------------
 INSERT INTO cargos (nombre, activo) VALUES
-('Administrador',        1), -- id 1
-('Vendedor',             1), -- id 2
-('Almacenero',           1), -- id 3
-('Cajero',               1), -- id 4
-('Supervisor',           1), -- id 5
+('Administrador', 1), -- id 1
+('Vendedor', 1), -- id 2
+('Almacenero', 1), -- id 3
+('Cajero', 1), -- id 4
+('Supervisor', 1), -- id 5
 ('Asistente de Compras', 1); -- id 6
 
 -- 4. ROLES -------------------------------------------------
 INSERT INTO roles (nombre, descripcion) VALUES
-('Administrador', 'Acceso total al sistema'),                             -- id 1
-('Vendedor',      'Puede registrar ventas y consultar productos'),        -- id 2
-('Almacenero',    'Gestiona inventario y recepciones'),                   -- id 3
-('Cajero',        'Gestiona caja y cobros'),                              -- id 4
-('Supervisor',    'Acceso de supervisión sin modificar configuración');   -- id 5
+('Administrador', 'Acceso total al sistema'), -- id 1
+('Vendedor', 'Puede registrar ventas y consultar productos'), -- id 2
+('Almacenero', 'Gestiona inventario y recepciones'), -- id 3
+('Cajero', 'Gestiona caja y cobros'), -- id 4
+('Supervisor', 'Acceso de supervisión sin modificar configuración');   -- id 5
 
 -- 5. EMPLEADOS ---------------------------------------------
 INSERT INTO empleados (id_cargo, id_turno, dni, nombre, apellido, telefono, correo, fecha_ingreso, activo) VALUES
-(1, 1, '12345678', 'Ana',     'García Soto',     '987654321', 'ana.garcia@eltornillo.com.pe',     '2022-01-10', 1), -- id 1
-(2, 1, '23456789', 'Luis',    'Ramírez Pérez',   '976543210', 'luis.ramirez@eltornillo.com.pe',   '2022-03-15', 1), -- id 2
-(3, 1, '34567890', 'Carlos',  'Mendoza Ruiz',    '965432109', 'carlos.mendoza@eltornillo.com.pe', '2022-06-01', 1), -- id 3
-(4, 2, '45678901', 'María',   'Torres Vega',     '954321098', 'maria.torres@eltornillo.com.pe',   '2023-01-05', 1), -- id 4
-(2, 1, '56789012', 'Pedro',   'Quispe Llanos',   '943210987', 'pedro.quispe@eltornillo.com.pe',   '2023-04-20', 1), -- id 5
-(4, 2, '67890123', 'Sofía',   'Huanca Mamani',   '932109876', 'sofia.huanca@eltornillo.com.pe',   '2023-07-01', 1), -- id 6
-(2, 1, '78901234', 'Diego',   'Flores Castillo', '921098765', 'diego.flores@eltornillo.com.pe',   '2024-01-10', 1), -- id 7
-(3, 2, '89012345', 'Valeria', 'Castro Díaz',     '910987654', 'valeria.castro@eltornillo.com.pe', '2024-03-01', 1), -- id 8
-(5, 1, '90123456', 'Roberto', 'Silva Paredes',   '999111222', 'roberto.silva@eltornillo.com.pe',  '2021-08-15', 1), -- id 9
-(6, 1, '01234567', 'Gisela',  'Núñez Alva',      '988222333', 'gisela.nunez@eltornillo.com.pe',   '2023-09-10', 1), -- id 10
-(2, 2, '11223344', 'Kevin',   'Morales León',    '977333444', 'kevin.morales@eltornillo.com.pe',  '2024-02-01', 1), -- id 11
-(3, 3, '22334455', 'Beatriz', 'Vargas Chávez',   '966444555', 'beatriz.vargas@eltornillo.com.pe', '2024-05-15', 1); -- id 12
+(1, 1, '12345678', 'Ana', 'García Soto', '987654321', 'ana.garcia@eltornillo.com.pe', '2022-01-10', 1), -- id 1
+(2, 1, '23456789', 'Luis', 'Ramírez Pérez', '976543210', 'luis.ramirez@eltornillo.com.pe', '2022-03-15', 1), -- id 2
+(3, 1, '34567890', 'Carlos', 'Mendoza Ruiz', '965432109', 'carlos.mendoza@eltornillo.com.pe', '2022-06-01', 1), -- id 3
+(4, 2, '45678901', 'María', 'Torres Vega', '954321098', 'maria.torres@eltornillo.com.pe', '2023-01-05', 1), -- id 4
+(2, 1, '56789012', 'Pedro', 'Quispe Llanos', '943210987', 'pedro.quispe@eltornillo.com.pe', '2023-04-20', 1), -- id 5
+(4, 2, '67890123', 'Sofía', 'Huanca Mamani', '932109876', 'sofia.huanca@eltornillo.com.pe', '2023-07-01', 1), -- id 6
+(2, 1, '78901234', 'Diego', 'Flores Castillo', '921098765', 'diego.flores@eltornillo.com.pe', '2024-01-10', 1), -- id 7
+(3, 2, '89012345', 'Valeria', 'Castro Díaz', '910987654', 'valeria.castro@eltornillo.com.pe', '2024-03-01', 1), -- id 8
+(5, 1, '90123456', 'Roberto', 'Silva Paredes', '999111222', 'roberto.silva@eltornillo.com.pe',  '2021-08-15', 1), -- id 9
+(6, 1, '01234567', 'Gisela', 'Núñez Alva', '988222333', 'gisela.nunez@eltornillo.com.pe', '2023-09-10', 1), -- id 10
+(2, 2, '11223344', 'Kevin', 'Morales León', '977333444', 'kevin.morales@eltornillo.com.pe', '2024-02-01', 1), -- id 11
+(3, 3, '22334455', 'Beatriz', 'Vargas Chávez', '966444555', 'beatriz.vargas@eltornillo.com.pe', '2024-05-15', 1); -- id 12
 
 -- 6. USUARIOS (bcrypt) -------------------------------------
 INSERT INTO usuarios (id_empleado, id_rol, username, contrasena, activo) VALUES
-(1,  1, 'ana.admin',   '$2b$10$lZlGueq.dbr5.qBGUny4wOL1PCOHVD3v3MotDeqD1y52JnAa9K6p.', 1), -- admin123
-(2,  2, 'luis.vend',   '$2b$10$oClJs9PLxbtinMqF9LgHrOTlHbucNOGAulkXCZi92Ffx3P.DDkRwS', 1), -- LuisVend123
-(3,  3, 'carlos.alm',  '$2b$10$xna/E49lqBQOakqLbO3mju4XJbtV63R8o8JUPQvaVarKUZDUAQF7u', 1), -- carlos123
-(4,  4, 'maria.caj',   '$2b$10$O28qtTOgzll8FStdaLOPyOdRTPR0hmM9fmx9JX4JmzvuTb/Qq0nXK', 1), -- maria123
-(5,  2, 'pedro.vend',  '$2b$10$Gy2AOFDSRKKRJjZrqxCQC.8.D4dX1odxBHTXid0Q/JPtumgTlbaki', 1), -- pedro123
-(6,  4, 'sofia.caj',   '$2b$10$izfZXU2PKS3CGKsUddz6he1smmH5Q5qH0NrO.scInAkbt//WpR/tO', 1), -- sofsof123
-(7,  2, 'diego.vend',  '$2b$10$mBLPJJs/vFQvD8MOhEyVkuV2P.dXXGeXOuqnRuoOLw4qQuJlozAVW', 1), -- diego123
+(1,  1, 'ana.admin', '$2b$10$lZlGueq.dbr5.qBGUny4wOL1PCOHVD3v3MotDeqD1y52JnAa9K6p.', 1), -- admin123
+(2,  2, 'luis.vend', '$2b$10$oClJs9PLxbtinMqF9LgHrOTlHbucNOGAulkXCZi92Ffx3P.DDkRwS', 1), -- LuisVend123
+(3,  3, 'carlos.alm', '$2b$10$xna/E49lqBQOakqLbO3mju4XJbtV63R8o8JUPQvaVarKUZDUAQF7u', 1), -- carlos123
+(4,  4, 'maria.caj', '$2b$10$O28qtTOgzll8FStdaLOPyOdRTPR0hmM9fmx9JX4JmzvuTb/Qq0nXK', 1), -- maria123
+(5,  2, 'pedro.vend', '$2b$10$Gy2AOFDSRKKRJjZrqxCQC.8.D4dX1odxBHTXid0Q/JPtumgTlbaki', 1), -- pedro123
+(6,  4, 'sofia.caj', '$2b$10$izfZXU2PKS3CGKsUddz6he1smmH5Q5qH0NrO.scInAkbt//WpR/tO', 1), -- sofsof123
+(7,  2, 'diego.vend', '$2b$10$mBLPJJs/vFQvD8MOhEyVkuV2P.dXXGeXOuqnRuoOLw4qQuJlozAVW', 1), -- diego123
 (8,  3, 'valeria.alm', '$2b$10$5gPVWa4hkhJfq91WKh/KRul/gFP4EDyH9aum/yD1JriusIeMMcj9W', 1), -- vale1234
 (9,  5, 'roberto.sup', '$2b$10$n/IIOnWSpXpee5ixyUGkx.7xELL7mp/h8QWr95CIS/0WFjiG3SAfi', 1), -- robert123
 (10, 2, 'gisela.comp', '$2b$10$LWgpninW46xcceB7UTx9wO4JgH7.uDt4svuafwx34xc1miPEKSVVK', 1), -- gisel123
-(11, 2, 'kevin.vend',  '$2b$10$ugO1ZSC7JqMg9RCa5lZGI.OfKvz.t/C2oHMmKVXFvAwchGhvy6kXO', 1), -- kevin123
+(11, 2, 'kevin.vend', '$2b$10$ugO1ZSC7JqMg9RCa5lZGI.OfKvz.t/C2oHMmKVXFvAwchGhvy6kXO', 1), -- kevin123
 (12, 3, 'beatriz.alm', '$2b$10$c5gwRX0kHn0WCv.mJc1i6eEvjv.xgySY8Dsm817vZoYl35oTdoiw2', 1); -- bea12345
 
 -- 7. MÓDULOS -----------------------------------------------
 INSERT INTO modulos (nombre, ruta, descripcion) VALUES
-('Productos',                 '/productos',               'Catálogo de productos, categorías, marcas y unidades'), -- id 1
-('Clientes',                  '/clientes',                'Gestión de clientes'),                                  -- id 2
-('Proveedores',               '/proveedores',             'Gestión de proveedores'),                               -- id 3
-('Compras',                   '/compras',                 'Órdenes de compra y recepciones'),                     -- id 4
-('Inventario',                '/inventario',              'Stock, kardex, almacenes y transferencias'),           -- id 5
-('Ventas',                    '/ventas',                  'Registro de ventas'),                                  -- id 6
-('Caja',                      '/caja',                    'Apertura, movimientos y cierre de caja'),             -- id 7
-('Devoluciones',              '/devoluciones',            'Cambios y reembolsos'),                                -- id 8
-('Empleados',                 '/empleados',               'Gestión de empleados y cargos'),                      -- id 9
-('Usuarios',                  '/usuarios',                'Cuentas de acceso y roles'),                           -- id 10
-('Reportes',                  '/reportes',                'Reportes y estadísticas'),                             -- id 11
+('Productos', '/productos', 'Catálogo de productos, categorías, marcas y unidades'), -- id 1
+('Clientes', '/clientes', 'Gestión de clientes'), -- id 2
+('Proveedores', '/proveedores', 'Gestión de proveedores'), -- id 3
+('Compras', '/compras', 'Órdenes de compra y recepciones'), -- id 4
+('Inventario', '/inventario', 'Stock, kardex, almacenes y transferencias'), -- id 5
+('Ventas', '/ventas', 'Registro de ventas'), -- id 6
+('Caja', '/caja', 'Apertura, movimientos y cierre de caja'), -- id 7
+('Devoluciones', '/devoluciones', 'Cambios y reembolsos'), -- id 8
+('Empleados', '/empleados', 'Gestión de empleados y cargos'), -- id 9
+('Usuarios', '/usuarios', 'Cuentas de acceso y roles'), -- id 10
+('Reportes', '/reportes', 'Reportes y estadísticas'), -- id 11
 ('Configuración y Auditoría', '/configuracion-auditoria', 'Configuración del sistema, turnos y auditoría');      -- id 12
 
 -- 8. PERMISOS POR ROL --------------------------------------
@@ -108,89 +108,89 @@ INSERT INTO permisos_rol (id_rol, id_modulo, tiene_acceso) VALUES
 
 -- 9. CLIENTES ----------------------------------------------
 INSERT INTO clientes (tipo_documento, numero_documento, nombre, telefono, correo, activo) VALUES
-('DNI', '48291037',    'Marco Antonio Reyes Burgos',       '956123456',  'marco.reyes@gmail.com',       1), -- id 1
-('DNI', '71038294',    'Elena Quispe Sánchez',             '967234567',  'elena.quispe@hotmail.com',    1), -- id 2
+('DNI', '48291037', 'Marco Antonio Reyes Burgos', '956123456',  'marco.reyes@gmail.com',       1), -- id 1
+('DNI', '71038294', 'Elena Quispe Sánchez', '967234567',  'elena.quispe@hotmail.com', 1), -- id 2
 ('RUC', '20456789123', 'Constructora Pérez & Hijos SAC',  '044-391234', 'compras@perezhijos.com.pe',   1), -- id 3
-('DNI', '60294817',    'Jorge Villanueva Chávez',          '978345678',  'j.villanueva@gmail.com',      1), -- id 4
-('RUC', '20578234901', 'Inmobiliaria Los Pinos EIRL',     '044-456123', 'lospinos@hotmail.com',        1), -- id 5
-('DNI', '52837461',    'Patricia Luna Soto',               '989456789',  'patricia.luna@yahoo.com',     1), -- id 6
-('CE',  'CE-1234567',  'Roberto Fernández Silva',          '944567890',  'rfernandez@outlook.com',      1), -- id 7
-('DNI', '38402956',    'Hugo Salinas Vargas',              '933678901',  'h.salinas@gmail.com',         1), -- id 8
-('RUC', '20612345678', 'Ferretería Norte SAC',            '044-512345', 'admin@ferreteria-norte.com',  1), -- id 9
-('DNI', '44719283',    'Carmen Rosa Navarro Díaz',         '922789012',  'carmen.navarro@gmail.com',    1), -- id 10
-('DNI', '83019274',    'Andrés Cabrera León',              '911890123',  'andres.cabrera@gmail.com',    1), -- id 11
-('RUC', '20734567890', 'Taller Mecánico El Perno SRL',   '044-623456', 'elperno@gmail.com',           1), -- id 12
-('DNI', '57384920',    'Lucía Mendoza Alva',               '999001122',  'lucia.mendoza@gmail.com',     1), -- id 13
-('DNI', '29103847',    'Óscar Ramos Paredes',              '988002233',  'oscar.ramos@hotmail.com',     1), -- id 14
+('DNI', '60294817', 'Jorge Villanueva Chávez', '978345678',  'j.villanueva@gmail.com', 1), -- id 4
+('RUC', '20578234901', 'Inmobiliaria Los Pinos EIRL', '044-456123', 'lospinos@hotmail.com',        1), -- id 5
+('DNI', '52837461', 'Patricia Luna Soto', '989456789',  'patricia.luna@yahoo.com', 1), -- id 6
+('CE',  'CE-1234567', 'Roberto Fernández Silva', '944567890',  'rfernandez@outlook.com',      1), -- id 7
+('DNI', '38402956', 'Hugo Salinas Vargas', '933678901',  'h.salinas@gmail.com', 1), -- id 8
+('RUC', '20612345678', 'Ferretería Norte SAC', '044-512345', 'admin@ferreteria-norte.com',  1), -- id 9
+('DNI', '44719283', 'Carmen Rosa Navarro Díaz', '922789012',  'carmen.navarro@gmail.com', 1), -- id 10
+('DNI', '83019274', 'Andrés Cabrera León', '911890123', 'andres.cabrera@gmail.com', 1), -- id 11
+('RUC', '20734567890', 'Taller Mecánico El Perno SRL', '044-623456', 'elperno@gmail.com', 1), -- id 12
+('DNI', '57384920', 'Lucía Mendoza Alva', '999001122', 'lucia.mendoza@gmail.com', 1), -- id 13
+('DNI', '29103847', 'Óscar Ramos Paredes', '988002233', 'oscar.ramos@hotmail.com', 1), -- id 14
 ('RUC', '20890123456', 'Empresa Constructora Trujillo SA','044-734567', 'contacto@ectrujillo.pe',      1); -- id 15
 
 -- 10. CATEGORÍAS -------------------------------------------
 -- (8 categorías, descripciones alineadas con las carpetas de imágenes)
 INSERT INTO categorias (nombre, descripcion, activo) VALUES
-('Herramientas Manuales',     'Martillos, llaves, alicates, sierras manuales, winchas y más',       1), -- id 1
-('Herramientas Eléctricas',   'Taladros, amoladoras, sierras eléctricas, rotomartillos y accesorios',1), -- id 2
-('Materiales de Construcción','Cemento, varillas de acero, mallas, mortero y accesorios metálicos',  1), -- id 3
-('Plomería y Gasfitería',     'Tuberías PVC, válvulas, accesorios de unión y adhesivos',             1), -- id 4
-('Electricidad e Iluminación','Cables, accesorios eléctricos, tomacorrientes, focos LED y pilas',    1), -- id 5
-('Pinturas y Acabados',       'Pinturas, esmaltes, selladores, disolventes y herramientas de pintura',1), -- id 6
-('Fijaciones y Tornillería',  'Pernos, clavos, tornillos, remaches, anclajes y tarugos',             1), -- id 7
-('Seguridad Industrial',      'EPP: cascos de seguridad, guantes y conos de señalización',           1); -- id 8
+('Herramientas Manuales', 'Martillos, llaves, alicates, sierras manuales, winchas y más', 1), -- id 1
+('Herramientas Eléctricas', 'Taladros, amoladoras, sierras eléctricas, rotomartillos y accesorios',1), -- id 2
+('Materiales de Construcción','Cemento, varillas de acero, mallas, mortero y accesorios metálicos', 1), -- id 3
+('Plomería y Gasfitería', 'Tuberías PVC, válvulas, accesorios de unión y adhesivos', 1), -- id 4
+('Electricidad e Iluminación','Cables, accesorios eléctricos, tomacorrientes, focos LED y pilas', 1), -- id 5
+('Pinturas y Acabados', 'Pinturas, esmaltes, selladores, disolventes y herramientas de pintura',1), -- id 6
+('Fijaciones y Tornillería', 'Pernos, clavos, tornillos, remaches, anclajes y tarugos', 1), -- id 7
+('Seguridad Industrial', 'EPP: cascos de seguridad, guantes y conos de señalización', 1); -- id 8
 
 -- 11. SUBCATEGORÍAS ----------------------------------------
 -- Conteo: 6+6+3+4+6+5+4+3 = 37 subcategorías
 INSERT INTO subcategorias (id_categoria, nombre, descripcion, activo) VALUES
 -- Herramientas Manuales (cat 1) → subcategorías 1-6
-(1, 'Martillos y Mazos',       'Martillos de carpintero, demoledor, bola y mazos de goma',       1), -- id 1
-(1, 'Llaves y Alicates',       'Llaves combinadas, inglesas, coronas, alicates y pinzas',        1), -- id 2
-(1, 'Destornilladores',        'Sets de destornilladores planos, estrella y de impacto',         1), -- id 3
-(1, 'Serruchos y Cortadores',  'Sierras manuales, cutter, tijeras hojalatera y cinceles',        1), -- id 4
-(1, 'Medición y Trazado',      'Winchas, niveles de burbuja y escuadras metálicas',              1), -- id 5
-(1, 'Herramientas de Madera',  'Formones, limas y remachadoras manuales',                        1), -- id 6
+(1, 'Martillos y Mazos', 'Martillos de carpintero, demoledor, bola y mazos de goma', 1), -- id 1
+(1, 'Llaves y Alicates', 'Llaves combinadas, inglesas, coronas, alicates y pinzas', 1), -- id 2
+(1, 'Destornilladores', 'Sets de destornilladores planos, estrella y de impacto', 1), -- id 3
+(1, 'Serruchos y Cortadores', 'Sierras manuales, cutter, tijeras hojalatera y cinceles', 1), -- id 4
+(1, 'Medición y Trazado', 'Winchas, niveles de burbuja y escuadras metálicas', 1), -- id 5
+(1, 'Herramientas de Madera', 'Formones, limas y remachadoras manuales', 1), -- id 6
 -- Herramientas Eléctricas (cat 2) → subcategorías 7-12
-(2, 'Taladros',                'Taladros percutores, inalámbricos y de impacto',                 1), -- id 7
-(2, 'Amoladoras',              'Amoladoras angulares y esmeriles de banco',                      1), -- id 8
-(2, 'Sierras Eléctricas',      'Sierras circulares y caladoras eléctricas',                      1), -- id 9
-(2, 'Lijadoras',               'Lijadoras orbitales y de banda',                                 1), -- id 10
-(2, 'Rotomartillos y Especiales','Rotomartillos SDS, pistolas de calor y de clavos',             1), -- id 11
+(2, 'Taladros', 'Taladros percutores, inalámbricos y de impacto', 1), -- id 7
+(2, 'Amoladoras', 'Amoladoras angulares y esmeriles de banco', 1), -- id 8
+(2, 'Sierras Eléctricas', 'Sierras circulares y caladoras eléctricas', 1), -- id 9
+(2, 'Lijadoras', 'Lijadoras orbitales y de banda', 1), -- id 10
+(2, 'Rotomartillos y Especiales','Rotomartillos SDS, pistolas de calor y de clavos', 1), -- id 11
 (2, 'Accesorios para Herramientas','Brocas, discos de corte, mandriles, cargadores y cepillos', 1), -- id 12
 -- Materiales de Construcción (cat 3) → subcategorías 13-15
-(3, 'Cementos y Morteros',     'Cemento Portland Tipo I, mortero premezclado y estuco',          1), -- id 13
-(3, 'Acero y Fierro',          'Varillas corrugadas, roscadas, mallas electrosoldadas y alambre',1), -- id 14
-(3, 'Perfiles y Accesorios Metálicos','Esquineros y abrazaderas de acero galvanizado',          1), -- id 15
+(3, 'Cementos y Morteros', 'Cemento Portland Tipo I, mortero premezclado y estuco', 1), -- id 13
+(3, 'Acero y Fierro', 'Varillas corrugadas, roscadas, mallas electrosoldadas y alambre',1), -- id 14
+(3, 'Perfiles y Accesorios Metálicos','Esquineros y abrazaderas de acero galvanizado', 1), -- id 15
 -- Plomería y Gasfitería (cat 4) → subcategorías 16-19
-(4, 'Tuberías PVC',            'Tuberías PVC para agua fría y desagüe',                          1), -- id 16
-(4, 'Válvulas y Llaves de Paso','Válvulas esfera y compuerta de bronce',                         1), -- id 17
-(4, 'Accesorios de Unión PVC', 'Codos, tees y trampas PVC para agua y desagüe',                 1), -- id 18
-(4, 'Adhesivos de Plomería',   'Cinta teflón, pegamento PVC y accesorios de sellado',            1), -- id 19
+(4, 'Tuberías PVC', 'Tuberías PVC para agua fría y desagüe', 1), -- id 16
+(4, 'Válvulas y Llaves de Paso','Válvulas esfera y compuerta de bronce', 1), -- id 17
+(4, 'Accesorios de Unión PVC', 'Codos, tees y trampas PVC para agua y desagüe', 1), -- id 18
+(4, 'Adhesivos de Plomería', 'Cinta teflón, pegamento PVC y accesorios de sellado', 1), -- id 19
 -- Electricidad e Iluminación (cat 5) → subcategorías 20-25
-(5, 'Cables y Conductores',    'Cable THW, mellizo SPT y extensiones eléctricas',                1), -- id 20
-(5, 'Accesorios Eléctricos',   'Cajas octagonales, rectangulares, canaletas y tubos corrugados',1), -- id 21
+(5, 'Cables y Conductores', 'Cable THW, mellizo SPT y extensiones eléctricas', 1), -- id 20
+(5, 'Accesorios Eléctricos', 'Cajas octagonales, rectangulares, canaletas y tubos corrugados',1), -- id 21
 (5, 'Tomacorrientes e Interruptores','Tomacorrientes dobles, interruptores simples, soquetes y timbres',1), -- id 22
-(5, 'Iluminación LED',         'Focos LED y reflectores LED para interiores y exteriores',       1), -- id 23
-(5, 'Protección Eléctrica',    'Cintas aislante y vulcanizante, probadores y llaves diferenciales',1), -- id 24
-(5, 'Pilas y Baterías',        'Pilas alcalinas y recargables AA/AAA y cargadores',              1), -- id 25
+(5, 'Iluminación LED', 'Focos LED y reflectores LED para interiores y exteriores', 1), -- id 23
+(5, 'Protección Eléctrica', 'Cintas aislante y vulcanizante, probadores y llaves diferenciales',1), -- id 24
+(5, 'Pilas y Baterías', 'Pilas alcalinas y recargables AA/AAA y cargadores', 1), -- id 25
 -- Pinturas y Acabados (cat 6) → subcategorías 26-30
-(6, 'Pinturas Látex',          'Pinturas de base acuosa mate y satinada para interior/exterior', 1), -- id 26
-(6, 'Pinturas Esmalte',        'Esmaltes alkídicos al aceite para metal y madera',               1), -- id 27
-(6, 'Selladores y Adhesivos',  'Selladores de poros, silicona, pegamento madera y epoxi',        1), -- id 28
-(6, 'Disolventes',             'Thiner acrílico, aguarrás y diluyentes para pinturas',           1), -- id 29
-(6, 'Herramientas de Pintura', 'Brochas, rodillos, bandejas, espátulas y lijas',                1), -- id 30
+(6, 'Pinturas Látex', 'Pinturas de base acuosa mate y satinada para interior/exterior', 1), -- id 26
+(6, 'Pinturas Esmalte', 'Esmaltes alkídicos al aceite para metal y madera', 1), -- id 27
+(6, 'Selladores y Adhesivos', 'Selladores de poros, silicona, pegamento madera y epoxi', 1), -- id 28
+(6, 'Disolventes', 'Thiner acrílico, aguarrás y diluyentes para pinturas', 1), -- id 29
+(6, 'Herramientas de Pintura', 'Brochas, rodillos, bandejas, espátulas y lijas', 1), -- id 30
 -- Fijaciones y Tornillería (cat 7) → subcategorías 31-34
-(7, 'Pernos, Tuercas y Arandelas','Pernos hexagonales, tuercas y arandelas zincadas',           1), -- id 31
-(7, 'Clavos y Grapas',         'Clavos para madera, concreto, calamina y clavo de concreto',    1), -- id 32
-(7, 'Tornillos y Remaches',    'Tornillos autorroscantes, drywall y remaches de aluminio',       1), -- id 33
-(7, 'Anclajes y Tarugos',      'Pernos de anclaje expansivo, tarugos Fischer y abrazaderas',     1), -- id 34
+(7, 'Pernos, Tuercas y Arandelas','Pernos hexagonales, tuercas y arandelas zincadas', 1), -- id 31
+(7, 'Clavos y Grapas', 'Clavos para madera, concreto, calamina y clavo de concreto', 1), -- id 32
+(7, 'Tornillos y Remaches', 'Tornillos autorroscantes, drywall y remaches de aluminio', 1), -- id 33
+(7, 'Anclajes y Tarugos', 'Pernos de anclaje expansivo, tarugos Fischer y abrazaderas', 1), -- id 34
 -- Seguridad Industrial (cat 8) → subcategorías 35-37
-(8, 'Cascos y Lentes',         'Cascos de seguridad industrial clase E y lentes protectores',   1), -- id 35
-(8, 'Guantes y Botas',         'Guantes de nitrilo, cuero y botas punta de acero',              1), -- id 36
-(8, 'Señalización',            'Conos, cintas de peligro y letreros de seguridad',               1); -- id 37
+(8, 'Cascos y Lentes', 'Cascos de seguridad industrial clase E y lentes protectores', 1), -- id 35
+(8, 'Guantes y Botas', 'Guantes de nitrilo, cuero y botas punta de acero', 1), -- id 36
+(8, 'Señalización', 'Conos, cintas de peligro y letreros de seguridad', 1); -- id 37
 
 -- 12. MARCAS -----------------------------------------------
 INSERT INTO marcas (nombre, pais_origen, activo) VALUES
 ('Stanley',  'Estados Unidos', 1), -- id 1
 ('Bosch',    'Alemania',       1), -- id 2
 ('Makita',   'Japón',          1), -- id 3
-('Truper',   'México',         1), -- id 4
+('Truper',   'México', 1), -- id 4
 ('Sika',     'Suiza',          1), -- id 5
 ('3M',       'Estados Unidos', 1), -- id 6
 ('Forsage',  'Rusia',          1), -- id 7
@@ -219,18 +219,13 @@ INSERT INTO unidades_medida (nombre, abreviatura, activo) VALUES
 ('Varilla',        'VAR', 1); -- id 12
 
 -- 14. PRODUCTOS (100 en total) -----------------------------
--- Columnas: id_subcategoria, id_marca, id_unidad, codigo, nombre, descripcion,
---           precio_compra, precio_venta, stock_actual, stock_minimo, stock_maximo,
---           ubicacion, tiene_lote, activo
--- IDs asignados en orden de inserción (anotados al final de cada fila)
-
 INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, descripcion,
     precio_compra, precio_venta, stock_actual, stock_minimo, stock_maximo, ubicacion, tiene_lote, activo) VALUES
 
 -- ── HERRAMIENTAS MANUALES ── (IDs 1-20) ──────────────────
 
 -- Martillos y Mazos (sub 1) — 4 productos
-(1, 1, 1,'HM-001','Martillo carpintero 16oz Stanley',
+(1, 1, 1,'HM-001','Martillo de carpintero 16oz Stanley',
  'Martillo de orejas 16oz, mango de fibra de vidrio, cabeza de acero forjado, anti-vibración',
  28.00, 45.00,  35, 10, 100,'A-01-01', 0, 1),                           -- id 1
 (1, 4, 1,'HM-002','Mazo de goma Truper 2lb',
@@ -244,7 +239,7 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
  32.00, 52.00,  18,  5,  50,'A-01-01', 0, 1),                           -- id 4
 
 -- Llaves y Alicates (sub 2) — 5 productos
-(2, 7, 1,'LL-001','Set llaves combinadas Forsage 8-22mm x12pz',
+(2, 7, 1,'LL-001','Set de llaves combinadas Forsage 8-22mm (12 piezas)',
  'Juego 12 llaves combinadas cromo-vanadio en estuche de tela, bocas 8 a 22mm',
  85.00,140.00,  18,  5,  40,'A-02-01', 0, 1),                           -- id 5
 (2, 1, 1,'LL-002','Alicate de corte diagonal Stanley 8"',
@@ -261,7 +256,7 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
  18.00, 30.00,  28,  8,  70,'A-02-01', 0, 1),                           -- id 9
 
 -- Destornilladores (sub 3) — 1 producto
-(3, 1, 1,'DS-001','Set destornilladores Stanley 6pz',
+(3, 1, 1,'DS-001','Set de destornilladores Stanley (6 piezas)',
  'Juego 6 destornilladores (3 planos + 3 estrella), mango trilobular antideslizante',
  35.00, 58.00,  22,  8,  60,'A-03-01', 0, 1),                           -- id 10
 
@@ -283,7 +278,7 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
  14.00, 23.00,  25,  8,  60,'A-04-01', 0, 1),                           -- id 15
 
 -- Medición y Trazado (sub 5) — 3 productos
-(5, 1, 1,'MT-001','Wincha 5m Stanley Classic',
+(5, 1, 1,'MT-001','Wincha 5m Stanley',
  'Cinta métrica retráctil 5m, bloqueo rápido, lámina con recubrimiento protector, clip cinturón',
  18.00, 30.00,  40, 12, 100,'A-05-01', 0, 1),                           -- id 16
 (5, 1, 1,'MT-002','Nivel de burbuja 24" Stanley',
@@ -297,28 +292,28 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
 (6, 1, 1,'MD-001','Formón para madera 1" Stanley',
  'Formón 1" para carpintería, acero cromo-vanadio, mango bicolor con refuerzo metálico',
  28.00, 46.00,  18,  5,  45,'A-06-01', 0, 1),                           -- id 19
-(6, 4, 1,'MD-002','Lima plana bastarda 10" Truper',
+(6, 4, 1,'MD-002','Lima plana 10" Truper',
  'Lima plana bastarda 10" para metal y madera, acero al carbono templado, mango plástico',
  12.00, 20.00,  25,  8,  60,'A-06-02', 0, 1),                           -- id 20
 
 -- ── HERRAMIENTAS ELÉCTRICAS ── (IDs 21-40) ───────────────
 
 -- Taladros (sub 7) — 3 productos
-(7, 2, 1,'TE-001','Taladro percutor Bosch GSB 550W',
+(7, 2, 1,'TE-001','Taladro percutor Bosch 550W',
  'Taladro percutor 550W, 2800rpm, chuck 13mm, maletín incluido, ideal concreto y madera',
 210.00,350.00,  10,  3,  25,'B-01-01', 0, 1),                           -- id 21
-(7, 3, 1,'TE-002','Taladro inalámbrico Makita DDF482Z 18V',
+(7, 3, 1,'TE-002','Taladro inalámbrico Makita 18V',
  'Taladro atornillador a batería 18V Li-Ion, 2 velocidades, 13 pares de torsión (sin batería)',
 280.00,480.00,   8,  2,  20,'B-01-02', 0, 1),                           -- id 22
-(7, 8, 1,'TE-003','Taladro percutor Dewalt DWD024-B3 750W',
+(7, 8, 1,'TE-003','Taladro percutor Dewalt 750W',
  'Taladro percutor 750W, velocidad variable 0-3000rpm, mango auxiliar incluido, 13mm',
 245.00,420.00,   6,  2,  15,'B-01-01', 0, 1),                           -- id 23
 
 -- Amoladoras (sub 8) — 3 productos
-(8, 2, 1,'AM-001','Amoladora angular Bosch GWS 060 4.5"',
+(8, 2, 1,'AM-001','Amoladora angular Bosch 4.5"',
  'Amoladora angular 4.5" 670W, protector regulable, botón de apagado de seguridad, 11000rpm',
 175.00,290.00,  12,  3,  30,'B-02-01', 0, 1),                           -- id 24
-(8, 3, 1,'AM-002','Amoladora angular Makita GA4530R 4.5" 720W',
+(8, 3, 1,'AM-002','Amoladora angular Makita 4.5" 720W',
  'Amoladora angular 720W, disco 4.5", protector regulable, velocidad constante bajo carga',
 195.00,320.00,   9,  3,  25,'B-02-01', 0, 1),                           -- id 25
 (8, 4, 1,'AM-003','Esmeril de banco Truper 6" 1/3HP',
@@ -326,59 +321,59 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
 145.00,240.00,   6,  2,  15,'B-02-02', 0, 1),                           -- id 26
 
 -- Sierras Eléctricas (sub 9) — 2 productos
-(9, 3, 1,'SE-001','Sierra circular Makita 5007MG 7-1/4" 1200W',
+(9, 3, 1,'SE-001','Sierra circular Makita 7-1/4" 1200W',
  'Sierra circular 1200W, disco 7-1/4", profundidad corte 66mm, guía paralela y maletín',
 320.00,520.00,   5,  2,  12,'B-03-01', 0, 1),                           -- id 27
-(9, 2, 1,'SE-002','Sierra caladora Bosch GST 650 450W',
+(9, 2, 1,'SE-002','Sierra caladora Bosch 450W',
  'Sierra caladora 450W, 3100 carreras/min, soplador de viruta, agarre tipo D ergonómico',
 185.00,300.00,   6,  2,  15,'B-03-02', 0, 1),                           -- id 28
 
 -- Lijadoras (sub 10) — 1 producto
-(10,3, 1,'LJ-001','Lijadora orbital Makita BO4555 200W',
+(10,3, 1,'LJ-001','Lijadora orbital Makita 200W',
  'Lijadora orbital 200W, 12000 opm, plato 93x185mm, bolsa recolectora de polvo incluida',
 155.00,255.00,   6,  2,  15,'B-04-01', 0, 1),                           -- id 29
 
 -- Rotomartillos y Especiales (sub 11) — 3 productos
-(11,2, 1,'RT-001','Rotomartillo Bosch GBH 2-26 SDS-Plus 800W',
+(11,2, 1,'RT-001','Rotomartillo Bosch SDS-Plus 800W',
  'Rotomartillo SDS-Plus 800W, 3 funciones (perforación/cincelado/combinado), 2.7J, maletín',
 420.00,680.00,   4,  1,  10,'B-05-01', 0, 1),                           -- id 30
-(11,2, 1,'RT-002','Pistola de calor Bosch GHG 500-2 1600W',
+(11,2, 1,'RT-002','Pistola de calor Bosch 1600W',
  'Pistola de calor 1600W, 2 temperaturas (300°C y 500°C), 2 boquillas incluidas',
 168.00,275.00,   5,  2,  12,'B-05-02', 0, 1),                           -- id 31
-(11,4, 1,'RT-003','Pistola neumática de clavos Truper GN-2 2"',
+(11,4, 1,'RT-003','Pistola neumática de clavos Truper 2"',
  'Pistola clavadora neumática para clavos 25-50mm, cuerpo aluminio ligero, 70-100psi',
 225.00,370.00,   4,  1,  10,'B-05-03', 0, 1),                           -- id 32
 
 -- Accesorios para Herramientas (sub 12) — 8 productos
-(12,2, 1,'AC-001','Set brocas metal HSS Bosch 1/8"-1/2" x13pz',
+(12,2, 1,'AC-001','Set de brocas para metal Bosch 1/8"-1/2" (13 piezas)',
  'Juego 13 brocas HSS para metal en estuche metálico, corte limpio, recubrimiento TIN',
  42.00, 68.00,  20,  6,  50,'B-06-01', 0, 1),                           -- id 33
-(12,2, 1,'AC-002','Set brocas SDS-Plus concreto Bosch 5-13mm x5pz',
+(12,2, 1,'AC-002','Set de brocas para concreto Bosch 5-13mm (5 piezas)',
  'Kit 5 brocas SDS-Plus para concreto y mampostería, punta de carburo de tungsteno',
  55.00, 90.00,  18,  5,  45,'B-06-01', 0, 1),                           -- id 34
 (12,2, 1,'AC-003','Broca copa bi-metal 32mm Bosch',
  'Broca copa bi-metal 32mm para madera, plástico y metal delgado, vástago hexagonal 1/4"',
  22.00, 36.00,  22,  6,  55,'B-06-02', 0, 1),                           -- id 35
-(12,2, 1,'AC-004','Disco corte metal 4.5" Bosch caja x25u',
+(12,2, 1,'AC-004','Disco de corte para metal 4.5" Bosch (caja x25)',
  'Disco de corte para metal 4.5" x 1mm, caja 25 unidades, acero reforzado con fibra de vidrio',
  65.00,105.00,  15,  4,  35,'B-06-03', 0, 1),                           -- id 36
-(12,2, 1,'AC-005','Disco diamantado concreto 4.5" Bosch',
+(12,2, 1,'AC-005','Disco diamantado para concreto 4.5" Bosch',
  'Disco diamantado segmentado para concreto 4.5", corte rápido y frío, núcleo de acero',
  35.00, 58.00,  18,  5,  45,'B-06-03', 0, 1),                           -- id 37
-(12,2, 1,'AC-006','Disco sierra madera 7-1/4" 24D Bosch',
+(12,2, 1,'AC-006','Disco para sierra de madera 7-1/4" Bosch',
  'Disco de sierra circular para madera 7-1/4", 24 dientes de widia, corte limpio y rápido',
  28.00, 46.00,  15,  5,  40,'B-06-03', 0, 1),                           -- id 38
 (12,4, 1,'AC-007','Mandril portabrocas con llave 13mm Truper',
  'Mandril con llave para taladro 13mm, compatible husillos 1/2"-20UNF y 3/8"-24UNF',
  18.00, 30.00,  20,  6,  50,'B-06-04', 0, 1),                           -- id 39
-(12,4, 1,'AC-008','Cepillo metálico copa 4" Truper para amoladora',
+(12,4, 1,'AC-008','Cepillo metálico copa 4" Truper',
  'Cepillo copa 4" para amoladora angular, alambre de acero ondulado, vástago 5/8"-11',
  12.00, 20.00,  25,  8,  60,'B-06-05', 0, 1),                           -- id 40
 
 -- ── MATERIALES DE CONSTRUCCIÓN ── (IDs 41-49) ────────────
 
 -- Cementos y Morteros (sub 13) — 2 productos
-(13,13, 4,'CM-001','Cemento Portland Tipo I Cppq 42.5kg',
+(13,13, 4,'CM-001','Cemento Portland Tipo I Pacasmayo 42.5kg',
  'Cemento Portland Tipo I uso general, saco 42.5kg, norma NTP 334.009, alta resistencia inicial',
  28.00, 38.00, 200, 50, 500,'C-01-01', 1, 1),                           -- id 41
 (13, 5, 3,'CM-002','Mortero seco Sika Mix 25kg',
@@ -392,10 +387,10 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
 (14,NULL,12,'AF-002','Varilla corrugada 1/2" x 9m',
  'Varilla corrugada 1/2", barra 9m, fy=4200 kg/cm², norma NTP 341.031',
  55.00, 82.00, 200, 40, 500,'C-02-01', 0, 1),                           -- id 44
-(14,NULL,10,'AF-003','Alambre negro N°16 kg',
+(14,NULL,10,'AF-003','Alambre negro N°16 (por kg)',
  'Alambre negro recocido calibre 16, venta por kilogramo, para amarre de estructuras de fierro',
   4.50,  8.00, 150, 30, 350,'C-02-02', 0, 1),                           -- id 45
-(14,NULL, 7,'AF-004','Malla electrosoldada 15x15cm Ø6mm plancha 2.4x6m',
+(14,NULL, 7,'AF-004','Malla electrosoldada 15x15cm (plancha 2.4x6m)',
  'Malla electrosoldada de acero trefilado, cuadrado 15x15cm, varilla 6mm, plancha 2.4x6m',
  85.00,130.00,  60, 10, 150,'C-02-03', 0, 1),                           -- id 46
 (14,NULL,12,'AF-005','Varilla roscada galvanizada 3/8"x1m',
@@ -403,10 +398,10 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
  12.00, 20.00,  80, 20, 200,'C-02-01', 0, 1),                           -- id 47
 
 -- Perfiles y Accesorios Metálicos (sub 15) — 2 productos
-(15,NULL, 1,'PM-001','Esquinero metálico galvanizado 2"x2" caja x10u',
+(15,NULL, 1,'PM-001','Esquinero metálico galvanizado 2"x2" (caja x10)',
  'Esquinero de acero galvanizado 2x2 pulgadas para protección de bordes y columnas, caja x10',
  18.00, 30.00,  60, 15, 150,'C-03-01', 0, 1),                           -- id 48
-(15,NULL, 1,'PM-002','Abrazadera metálica galvanizada 2" caja x5u',
+(15,NULL, 1,'PM-002','Abrazadera metálica galvanizada 2" (caja x5)',
  'Abrazadera de acero galvanizado 2 pulgadas para sujeción de tuberías, caja x5 unidades',
   8.00, 14.00,  80, 20, 200,'C-03-02', 0, 1),                           -- id 49
 
@@ -419,10 +414,10 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
 (16,10, 6,'PV-002','Tubería PVC desagüe 4" x 3m Tigre',
  'Tubo PVC desagüe pesado 4", longitud 3m, alta resistencia química y mecánica',
  18.00, 28.00,  80, 20, 200,'D-01-02', 0, 1),                           -- id 51
-(16, 9, 6,'PV-003','Tubería PVC agua fría 1/2" x 5m Nicoll C-10',
+(16, 9, 6,'PV-003','Tubería PVC agua fría 1/2" x 5m Nicoll',
  'Tubo PVC agua fría clase C-10, 1/2", longitud 5m, color blanco, PN=10bar',
  10.00, 16.00, 100, 25, 250,'D-01-01', 0, 1),                           -- id 52
-(16, 9, 6,'PV-004','Tubería PVC agua fría 3/4" x 5m Nicoll C-10',
+(16, 9, 6,'PV-004','Tubería PVC agua fría 3/4" x 5m Nicoll',
  'Tubo PVC agua fría clase C-10, 3/4", longitud 5m, color blanco, PN=10bar',
  14.00, 22.00,  80, 20, 200,'D-01-01', 0, 1),                           -- id 53
 
@@ -430,7 +425,7 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
 (17,NULL, 1,'VA-001','Válvula de paso esfera 1/2" bronce',
  'Válvula de esfera cromada agua fría y caliente 1/2", cuerpo bronce, rosca hembra-hembra',
  12.00, 20.00,  60, 15, 150,'D-02-01', 0, 1),                           -- id 54
-(17,NULL, 1,'VA-002','Válvula compuerta bronce 3/4"',
+(17,NULL, 1,'VA-002','Válvula compuerta bronce 3/4"', 
  'Válvula compuerta bronce fundido 3/4", rosca hembra BSP, presión máx 200psi',
  25.00, 40.00,  40, 10, 100,'D-02-01', 0, 1),                           -- id 55
 
@@ -446,7 +441,7 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
   8.00, 14.00,  60, 15, 150,'D-03-02', 0, 1),                           -- id 58
 
 -- Adhesivos de Plomería (sub 19) — 2 productos
-(19, 9, 1,'AD-001','Cinta teflón PTFE 1/2"x10m Nicoll',
+(19, 9, 1,'AD-001','Cinta teflón 1/2"x10m Nicoll',
  'Cinta PTFE 1/2" x 10m densidad media para sellado de roscas de plomería',
   1.50,  2.50, 300, 60, 600,'D-04-01', 0, 1),                           -- id 59
 (19, 9, 8,'AD-002','Pegamento PVC 250ml Nicoll',
@@ -462,7 +457,7 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
 (20,11, 5,'CA-002','Cable THW 4mm² Indeco x100m',
  'Cable Cu TW-THW 4mm² negro, rollo 100m, 750V, temperatura máx 75°C, norma NTP 370.252',
 105.00,168.00,  35,  8,  80,'E-01-01', 1, 1),                           -- id 62
-(20,11, 5,'CA-003','Cable mellizo SPT 2x1mm² Indeco x100m',
+(20,11, 5,'CA-003','Cable mellizo 2x1mm² Indeco x100m',
  'Cable mellizo paralelo 2x1mm² blanco para instalaciones domiciliarias, rollo 100m, 300V',
  52.00, 85.00,  40, 10,  90,'E-01-02', 1, 1),                           -- id 63
 (20,11, 5,'CA-004','Cable THW 1.5mm² Indeco x100m',
@@ -479,10 +474,10 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
 (21,NULL, 1,'AE-002','Caja rectangular galvanizada 2"x4"',
  'Caja eléctrica rectangular galvanizada 2x4" para tomacorrientes e interruptores empotrados',
   2.00,  3.50, 200, 50, 500,'E-02-01', 0, 1),                           -- id 67
-(21,NULL, 6,'AE-003','Canaleta plástica PVC 20x10mm x2m',
+(21,NULL, 6,'AE-003','Canaleta plástica 20x10mm x2m',
  'Canaleta PVC blanca 20x10mm para cableado superficial, longitud 2m, autoadhesiva + tornillos',
   4.50,  7.50, 120, 30, 300,'E-02-02', 0, 1),                           -- id 68
-(21,NULL, 5,'AE-004','Tubo corrugado flexible PVC 3/4" rollo x25m',
+(21,NULL, 5,'AE-004','Tubo corrugado flexible 3/4" (rollo x25m)',
  'Tubo corrugado flexible PVC 3/4" para conductos empotrados, rollo 25m, auto-extinguible',
  18.00, 30.00,  60, 15, 150,'E-02-03', 0, 1),                           -- id 69
 
@@ -493,7 +488,7 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
 (22,NULL, 1,'TI-002','Interruptor simple empotrable',
  'Interruptor unipolar simple 10A/250V, color blanco, para empotrar, compatible con LED',
   4.50,  7.50, 150, 40, 400,'E-03-01', 0, 1),                           -- id 71
-(22,NULL, 1,'TI-003','Soquete portalámparas E27 baquelita',
+(22,NULL, 1,'TI-003','Soquete portalámparas E27',
  'Portalámparas baquelita blanca E27, 60W máx/250V, para empotrar o superficie, rosca estándar',
   2.50,  4.20, 120, 30, 300,'E-03-02', 0, 1),                           -- id 72
 (22,NULL, 1,'TI-004','Timbre zumbador eléctrico 220V',
@@ -501,7 +496,7 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
   8.50, 14.00,  40, 10, 100,'E-03-03', 0, 1),                           -- id 73
 
 -- Iluminación LED (sub 23) — 2 productos
-(23,14, 1,'IL-001','Foco LED 9W E27 Philips',
+(23,14, 1,'IL-001','Foco LED 9W Philips',
  'Lámpara LED 9W equiv. 60W, rosca E27, luz blanca fría 6500K, 806 lúmenes, vida 15000h',
   8.00, 13.00,  80, 20, 200,'E-04-01', 0, 1),                           -- id 74
 (23,14, 1,'IL-002','Reflector LED 50W exterior Philips',
@@ -509,31 +504,31 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
  42.00, 68.00,  30,  8,  75,'E-04-02', 0, 1),                           -- id 75
 
 -- Protección Eléctrica (sub 24) — 4 productos
-(24, 6, 5,'PE-001','Cinta aislante 3M Temflex 19mm x20m',
+(24, 6, 5,'PE-001','Cinta aislante 3M 19mm x20m',
  'Cinta aislante PVC 19mm x 20m, resistente a aceites y humedad, negro, -18°C a 105°C',
   5.50,  9.00, 100, 25, 250,'E-05-01', 0, 1),                           -- id 76
-(24, 6, 5,'PE-002','Cinta vulcanizante 3M 2228 19mm x3m',
+(24, 6, 5,'PE-002','Cinta vulcanizante 3M 19mm x3m',
  'Cinta autofusionante EPDM 19mm x 3m para sellado resistente intemperie y agua, negro',
  12.00, 20.00,  60, 15, 150,'E-05-01', 0, 1),                           -- id 77
-(24,NULL, 1,'PE-003','Probador de voltaje tipo lápiz 70-250V',
+(24,NULL, 1,'PE-003','Probador de voltaje tipo lápiz',
  'Probador tensión AC tipo lápiz 70-250V, indicador luminoso y sonoro, clip de bolsillo',
   5.00,  8.50,  60, 15, 150,'E-05-02', 0, 1),                           -- id 78
-(24,NULL, 1,'PE-004','Llave diferencial bipolar 2x25A 30mA',
+(24,NULL, 1,'PE-004','Llave diferencial bipolar 25A',
  'Interruptor diferencial bipolar 25A/30mA para protección de personas, montaje riel DIN',
  55.00, 88.00,  20,  5,  50,'E-05-03', 0, 1),                           -- id 79
 
 -- Pilas y Baterías (sub 25) — 2 productos
-(25,NULL,11,'PB-001','Pilas alcalinas AA Duracell caja x12u',
+(25,NULL,11,'PB-001','Pilas alcalinas AA Duracell (caja x12)',
  'Pilas alcalinas AA 1.5V, caja 12 unidades, 10 años de vida en almacén, baja autodescarga',
  15.00, 25.00,  60, 15, 150,'E-06-01', 0, 1),                           -- id 80
-(25, 3, 2,'PB-002','Pilas recargables AA 1900mAh Makita x4u (BH-AAE)',
+(25, 3, 2,'PB-002','Pilas recargables AA Makita (4 unidades)',
  'Pilas recargables NiMH AA 1900mAh, pack x4, hasta 500 recargas, bajo autodescar carga',
  25.00, 42.00,  30,  8,  75,'E-06-01', 0, 1),                           -- id 81
 
 -- ── PINTURAS Y ACABADOS ── (IDs 82-93) ───────────────────
 
 -- Pinturas Látex (sub 26) — 1 producto
-(26,12, 9,'PI-001','Pintura látex Tekno Supermate blanco 4gal',
+(26,12, 9,'PI-001','Pintura látex Tekno blanco mate 4gal',
  'Pintura látex mate lavable interior/exterior, blanco humo, lata 4 galones, alto rendimiento',
  72.00,115.00,  30,  8,  80,'F-01-01', 0, 1),                           -- id 82
 
@@ -543,16 +538,16 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
  38.00, 62.00,  25,  6,  60,'F-01-02', 0, 1),                           -- id 83
 
 -- Selladores y Adhesivos (sub 28) — 4 productos
-(28, 5, 8,'PI-003','Sellador Sika Murex para pared 1L',
+(28, 5, 8,'PI-003','Sellador para pared Sika 1L',
  'Sellador transparente de poros para muros y techos, 1L, base agua, secado 2h',
  18.00, 30.00,  40, 10, 100,'F-02-01', 0, 1),                           -- id 84
-(28, 5, 1,'PI-004','Silicona transparente Sikasil AC 280ml',
+(28, 5, 1,'PI-004','Silicona transparente Sika 280ml',
  'Silicona acética multiusos 280ml, transparente, resistente a la intemperie, secado 24h',
  15.00, 25.00,  50, 12, 120,'F-02-02', 0, 1),                           -- id 85
 (28, 5, 1,'PI-005','Pegamento para madera Sika 250ml',
  'Adhesivo PVA para madera 250ml, interior, alta resistencia al corte, sin solventes',
   8.00, 14.00,  60, 15, 150,'F-02-03', 0, 1),                           -- id 86
-(28, 5, 1,'PI-006','Soldadura líquida epoxi Sika Anchorfix 50g',
+(28, 5, 1,'PI-006','Pegamento epóxico Sika 50g',
  'Adhesivo epoxi bicomponente 50g para metal, piedra y concreto, fraguado en 5 minutos',
  12.00, 20.00,  40, 10, 100,'F-02-04', 0, 1),                           -- id 87
 
@@ -562,7 +557,7 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
  10.00, 17.00,  50, 12, 120,'F-03-01', 0, 1),                           -- id 88
 
 -- Herramientas de Pintura (sub 30) — 5 productos
-(30, 4, 1,'HP-001','Brocha 2" Truper nylon/poliéster',
+(30, 4, 1,'HP-001','Brocha 2" Truper',
  'Brocha 2" cerdas nylon/poliéster mezcladas para pinturas látex y al aceite, mango plástico',
   5.50,  9.00,  60, 15, 150,'F-04-01', 0, 1),                           -- id 89
 (30, 4, 1,'HP-002','Rodillo de felpa 9" Truper',
@@ -571,42 +566,42 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
 (30, 4, 1,'HP-003','Espátula de acero 4" Truper',
  'Espátula de acero inoxidable 4" para masillas y pintura, mango de madera, flexible',
   5.00,  8.50,  50, 12, 120,'F-04-03', 0, 1),                           -- id 91
-(30, 6, 1,'HP-004','Lija al agua grano 220 3M 230x280mm',
+(30, 6, 1,'HP-004','Lija al agua grano 220 3M',
  'Lija al agua base papel grano 220 para madera y superficies lacadas, hoja 230x280mm',
   1.80,  3.00, 150, 40, 400,'F-04-04', 0, 1),                           -- id 92
-(30, 6, 1,'HP-005','Lija de hierro/esmeril grano 80 3M 230x280mm',
+(30, 6, 1,'HP-005','Lija de fierro grano 80 3M',
  'Lija abrasiva para metal grano 80 base tela, resistente al desgarro, hoja 230x280mm',
   2.00,  3.50, 120, 30, 300,'F-04-05', 0, 1),                           -- id 93
 
 -- ── FIJACIONES Y TORNILLERÍA ── (IDs 94-97) ──────────────
 
 -- Pernos, Tuercas y Arandelas (sub 31) — 1 producto
-(31,NULL,11,'FI-001','Perno hexagonal 3/8"x2.5" zincado caja x50',
+(31,NULL,11,'FI-001','Perno hexagonal 3/8"x2.5" zincado (caja x50)',
  'Perno hexagonal zincado 3/8"x2.5" con tuerca y arandela, caja x50 unidades',
  18.00, 30.00,  55, 10, 120,'G-01-01', 0, 1),                           -- id 94
 
 -- Clavos y Grapas (sub 32) — 2 productos
-(32,NULL,10,'FI-002','Clavo con cabeza 3" kg',
+(32,NULL,10,'FI-002','Clavo con cabeza 3" (por kg)',
  'Clavo con cabeza para madera 3 pulgadas, venta por kilogramo, acero brillante',
   5.00,  8.50, 100, 20, 250,'G-02-01', 0, 1),                           -- id 95
-(32,NULL,10,'FI-003','Clavo calamina 2.5" kg',
+(32,NULL,10,'FI-003','Clavo para calamina 2.5" (por kg)',
  'Clavo para calamina/plancha metálica 2.5", con cabeza cuadrada ancha, venta por kg',
   5.50,  9.00,  80, 15, 200,'G-02-01', 0, 1),                           -- id 96
 
 -- Anclajes y Tarugos (sub 34) — 1 producto
-(34, NULL,11,'FI-004','Taco Fischer S8 caja x100 unidades',
+(34, NULL,11,'FI-004','Taco Fischer S8 (caja x100)',
  'Taco plástico Fisher S8 para concreto, ladrillo y mampostería, caja x100 unidades',
  22.00, 36.00,  45, 10, 100,'G-04-01', 0, 1),                           -- id 97
 
 -- ── SEGURIDAD INDUSTRIAL ── (IDs 98-100) ─────────────────
 
 -- Cascos y Lentes (sub 35) — 1 producto
-(35, 6, 1,'SI-001','Casco de seguridad 3M blanco clase E',
+(35, 6, 1,'SI-001','Casco de seguridad 3M blanco',
  'Casco seguridad industrial clase E, ABS de alta densidad, suspensión Fas-Trac III, 6 puntos',
  35.00, 58.00,  30,  8,  80,'H-01-01', 0, 1),                           -- id 98
 
 -- Guantes y Botas (sub 36) — 1 producto
-(36, 6, 2,'SI-002','Guantes de nitrilo 3M talla M par',
+(36, 6, 2,'SI-002','Guantes de nitrilo 3M talla M',
  'Guantes nitrilo resistentes a químicos y corte leve, talla M, grip texturizado en palma',
  12.00, 20.00,  60, 15, 150,'H-02-01', 0, 1),                           -- id 99
 
@@ -615,7 +610,7 @@ INSERT INTO productos (id_subcategoria, id_marca, id_unidad, codigo, nombre, des
  'Cono señalización vial naranja 70cm con franja reflectante plateada, base de goma',
  18.00, 30.00,  25,  5,  60,'H-03-01', 0, 1);                           -- id 100
 
--- VERIFICACIÓN: 4+5+1+5+3+2 + 3+3+2+1+3+8 + 2+5+2 + 4+2+3+2 + 5+4+4+2+4+2 + 1+1+4+1+5 + 1+2+1 + 1+1+1 = 100 ✓
+
 
 -- ==========================================================
 -- HABILITAR LOTES en cables Indeco (tienen fecha de fabricación)
@@ -964,20 +959,20 @@ INSERT INTO detalle_recepcion (id_recepcion, id_producto, cantidad_recibida, pre
 -- 25. VENTAS -----------------------------------------------
 INSERT INTO ventas (id_cliente, id_empleado, id_serie, numero_comprobante, fecha, subtotal, igv, total, estado, observacion) VALUES
 ( 1, 2, 1,'B001-00001','2025-01-13 10:15:00',  76.27, 13.73,  90.00,'pagada', NULL),
-( 3, 2, 2,'F001-00001','2025-01-14 11:00:00', 237.29, 42.71, 280.00,'pagada','Factura para obra Los Álamos'),
-( 4, 7, 1,'B001-00002','2025-01-20 09:30:00',  67.80, 12.20,  80.00,'pagada', NULL),
-( 2, 5, 1,'B001-00003','2025-02-05 14:00:00', 169.49, 30.51, 200.00,'pagada', NULL),
-( 5, 2, 2,'F001-00002','2025-02-12 10:00:00', 423.73, 76.27, 500.00,'pagada','Factura Inmobiliaria Los Pinos'),
-( 6, 7, 1,'B001-00004','2025-02-18 16:00:00',  50.85,  9.15,  60.00,'pagada', NULL),
-( 7, 5, 3,'NV01-00001','2025-03-03 10:30:00',  33.90,  6.10,  40.00,'pagada','Nota venta cliente CE'),
-( 9, 2, 2,'F001-00003','2025-03-10 11:00:00', 677.97,122.03, 800.00,'pagada','Venta a Ferretería Norte'),
-(10, 7, 1,'B001-00005','2025-03-15 12:00:00', 101.69, 18.31, 120.00,'pagada', NULL),
-(11, 5, 1,'B001-00006','2025-03-22 15:00:00',  42.37,  7.63,  50.00,'pagada', NULL),
-( 1, 7, 1,'B001-00007','2025-04-01 09:00:00', 152.54, 27.46, 180.00,'pagada', NULL),
-( 4, 2, 2,'F001-00004','2025-04-08 10:00:00', 338.98, 61.02, 400.00,'pagada','Factura obra Urb. El Bosque'),
-(NULL,5,3,'NV01-00002','2025-04-10 11:00:00',  25.42,  4.58,  30.00,'pagada','Venta sin cliente registrado'),
-(13, 7, 1,'B001-00008','2025-04-15 14:30:00',  84.75, 15.25, 100.00,'pagada', NULL),
-( 3, 2, 2,'F001-00005','2025-04-20 10:00:00', 889.83,160.17,1050.00,'pagada','Gran pedido constructora Pérez');
+( 3, 2, 2,'F001-00001','2025-01-14 11:00:00', 296.61, 53.39, 350.00,'pagada','Factura para obra Los Álamos'),
+( 4, 7, 1,'B001-00002','2025-01-20 09:30:00', 113.56, 20.44, 134.00,'pagada', NULL),
+( 2, 5, 1,'B001-00003','2025-02-05 14:00:00', 322.03, 57.97, 380.00,'pagada', NULL),
+( 5, 2, 2,'F001-00002','2025-02-12 10:00:00', 610.17,109.83, 720.00,'pagada','Factura Inmobiliaria Los Pinos'),
+( 6, 7, 1,'B001-00004','2025-02-18 16:00:00',  50.42,  9.08,  59.50,'pagada', NULL),
+( 7, 5, 3,'NV01-00001','2025-03-03 10:30:00',  55.93, 10.07,  66.00,'pagada','Nota venta cliente CE'),
+( 9, 2, 2,'F001-00003','2025-03-10 11:00:00', 703.39,126.61, 830.00,'pagada','Venta a Ferretería Norte'),
+(10, 7, 1,'B001-00005','2025-03-15 12:00:00',  97.46, 17.54, 115.00,'pagada', NULL),
+(11, 5, 1,'B001-00006','2025-03-22 15:00:00',  59.32, 10.68,  70.00,'pagada', NULL),
+( 1, 7, 1,'B001-00007','2025-04-01 09:00:00', 211.86, 38.14, 250.00,'pagada', NULL),
+( 4, 2, 2,'F001-00004','2025-04-08 10:00:00', 406.78, 73.22, 480.00,'pagada','Factura obra Urb. El Bosque'),
+(NULL,5,3,'NV01-00002','2025-04-10 11:00:00',  21.61,  3.89,  25.50,'pagada','Venta sin cliente registrado'),
+(13, 7, 1,'B001-00008','2025-04-15 14:30:00',  77.97, 14.03,  92.00,'pagada', NULL),
+( 3, 2, 2,'F001-00005','2025-04-20 10:00:00',1165.25,209.75,1375.00,'pagada','Gran pedido constructora Pérez');
 
 -- 26. DETALLE DE VENTAS ------------------------------------
 INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario, subtotal) VALUES
@@ -1008,20 +1003,20 @@ INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario, sub
 -- 27. PAGOS DE VENTA ---------------------------------------
 INSERT INTO pagos_venta (id_venta, id_tipo_pago, monto, numero_operacion, fecha) VALUES
 ( 1, 1,   90.00, NULL,           '2025-01-13 10:20:00'),
-( 2, 4,  280.00,'TRF-001-2025', '2025-01-14 11:30:00'),
-( 3, 1,   80.00, NULL,           '2025-01-20 09:35:00'),
-( 4, 5,  200.00,'YPE-002-2025', '2025-02-05 14:05:00'),
-( 5, 4,  500.00,'TRF-002-2025', '2025-02-12 10:30:00'),
-( 6, 1,   60.00, NULL,           '2025-02-18 16:05:00'),
-( 7, 1,   40.00, NULL,           '2025-03-03 10:35:00'),
-( 8, 4,  800.00,'TRF-003-2025', '2025-03-10 11:30:00'),
-( 9, 2,  120.00,'TRJ-001-2025', '2025-03-15 12:10:00'),
-(10, 1,   50.00, NULL,           '2025-03-22 15:05:00'),
-(11, 5,  180.00,'YPE-003-2025', '2025-04-01 09:10:00'),
-(12, 3,  400.00,'TRJ-002-2025', '2025-04-08 10:15:00'),
-(13, 1,   30.00, NULL,           '2025-04-10 11:05:00'),
-(14, 6,  100.00,'PLN-001-2025', '2025-04-15 14:35:00'),
-(15, 4, 1050.00,'TRF-004-2025', '2025-04-20 10:30:00');
+( 2, 4,  350.00,'TRF-001-2025', '2025-01-14 11:30:00'),
+( 3, 1,  134.00, NULL,           '2025-01-20 09:35:00'),
+( 4, 5,  380.00,'YPE-002-2025', '2025-02-05 14:05:00'),
+( 5, 4,  720.00,'TRF-002-2025', '2025-02-12 10:30:00'),
+( 6, 1,   59.50, NULL,           '2025-02-18 16:05:00'),
+( 7, 1,   66.00, NULL,           '2025-03-03 10:35:00'),
+( 8, 4,  830.00,'TRF-003-2025', '2025-03-10 11:30:00'),
+( 9, 2,  115.00,'TRJ-001-2025', '2025-03-15 12:10:00'),
+(10, 1,   70.00, NULL,           '2025-03-22 15:05:00'),
+(11, 5,  250.00,'YPE-003-2025', '2025-04-01 09:10:00'),
+(12, 3,  480.00,'TRJ-002-2025', '2025-04-08 10:15:00'),
+(13, 1,   25.50, NULL,           '2025-04-10 11:05:00'),
+(14, 6,   92.00,'PLN-001-2025', '2025-04-15 14:35:00'),
+(15, 4, 1375.00,'TRF-004-2025', '2025-04-20 10:30:00');
 
 -- 28. CAJAS ------------------------------------------------
 INSERT INTO cajas (id_empleado, id_turno, numero_turno, fecha_apertura, fecha_cierre_programada,
@@ -1128,7 +1123,6 @@ INSERT INTO auditoria (id_usuario, tabla_afectada, operacion, registro_id, datos
 (10,'ordenes_compra','INSERT',1, NULL,                                  '{"numero_orden":"OC-2025-0001","id_proveedor":1,"total":1302.72,"estado":"pendiente"}','192.168.1.19','2025-01-08 09:00:00'),
 (10,'ordenes_compra','UPDATE',1,'{"estado":"pendiente"}',              '{"estado":"recibida"}',                                                           '192.168.1.19','2025-01-11 10:00:00'),
 (10,'ordenes_compra','INSERT',2, NULL,                                  '{"numero_orden":"OC-2025-0002","id_proveedor":6,"total":2808.40,"estado":"pendiente"}','192.168.1.19','2025-01-15 10:30:00'),
--- (continuación del INSERT de auditoría — fila 9 en adelante)
 (10,'ordenes_compra','INSERT',3, NULL,                                  '{"numero_orden":"OC-2025-0003","id_proveedor":5,"total":4112.30,"estado":"pendiente"}','192.168.1.19','2025-02-03 11:00:00'),
 (10,'ordenes_compra','UPDATE',3,'{"estado":"pendiente"}',              '{"estado":"recibida"}',                                                           '192.168.1.19','2025-02-10 11:00:00'),
 ( 2,'ventas',        'INSERT',1, NULL,                                  '{"numero_comprobante":"B001-00001","total":90.00,"estado":"pendiente"}',           '192.168.1.11','2025-01-13 10:15:00'),

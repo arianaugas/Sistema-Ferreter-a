@@ -347,8 +347,8 @@ const getEmpleadosConTurno = async (req, res) => {
 // Asigna o reasigna el turno de un empleado (se puede volver a llamar
 // en cualquier momento si cambia su horario de trabajo)
 const asignarTurnoEmpleado = async (req, res) => {
-    const { id } = req.params; // id_empleado
-    const { id_turno } = req.body; // puede venir null para "sin turno asignado"
+    const { id } = req.params;
+    const { id_turno } = req.body;
 
     try {
         const existeEmpleado = await query(
@@ -384,10 +384,7 @@ const asignarTurnoEmpleado = async (req, res) => {
 };
 
 
-// Eliminar un turno. Si hay empleados con ese turno asignado, quedan en
-// id_turno = NULL (el frontend avisa esto antes de confirmar). Si el turno
-// ya tiene historial en `cajas` (alguien abrió caja con él alguna vez), NO
-// se permite borrar: perderíamos ese dato histórico.
+
 const eliminarTurno = async (req, res) => {
     const { id } = req.params;
     try {

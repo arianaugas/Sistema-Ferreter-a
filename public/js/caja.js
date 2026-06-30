@@ -1,8 +1,3 @@
-/*
-  caja.js — Lógica del módulo de Caja
-  Conecta con las APIs: /api/caja/*
-*/
-
 
 
 // Estado global del módulo 
@@ -375,11 +370,6 @@ function renderHistorial() {
 
 // Cargar historial de cajas 
 async function cargarHistorial() {
-  // El backend no tiene endpoint de historial directo, usamos el de activa
-  // Para historial completo, consultamos /api/reportes/caja (si existe) o construimos
-  // En este caso, si no hay endpoint de historial de cajas, mostramos aviso
-  // Usamos el endpoint de caja activa para obtener todas (enviando estado != activa no es posible con la API actual)
-  // Como alternativa, se puede agregar un endpoint; por ahora, ocultamos filas estáticas y mostramos mensaje informativo
   const tbody = document.querySelector('#tabla-historial-cajas tbody');
   if (!tbody) return;
 

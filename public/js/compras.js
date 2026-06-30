@@ -528,8 +528,7 @@ function initFormNuevaOrden() {
 
 }
 
-// Preparar formulario de recepción
-// Carga las órdenes en estado 'enviada' (pendientes de recibir) en el select #nr-orden
+
 async function cargarOrdenesPendientesSelect(idOrdenPreseleccionada = null) {
   const sel = document.getElementById('nr-orden');
   if (!sel) return;
@@ -563,8 +562,7 @@ async function cargarOrdenesPendientesSelect(idOrdenPreseleccionada = null) {
   }
 }
 
-// Preparar formulario de recepción a partir de una orden ya elegida (id_orden puede venir
-// del botón de una fila específica, o del cambio manual del select #nr-orden)
+
 async function prepararRecepcion(id_orden) {
   const tbody = document.getElementById('tbody-lineas-recepcion');
   if (!tbody) return;

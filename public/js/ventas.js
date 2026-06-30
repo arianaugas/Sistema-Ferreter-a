@@ -15,7 +15,7 @@ async function cargarConfigIGV() {
 
 // Estado del módulo 
 const VentasState = {
-  carrito: [], // [{ id_producto, nombre, codigo, precio_unitario, stock_actual, unidad, cantidad }]
+  carrito: [],
   clienteSeleccionado: null,
   cajaActiva: null,
   series: [],
@@ -23,7 +23,6 @@ const VentasState = {
   ventasList: [],
   ventasPagina: 1,
   ventasPorPagina: 12,
-  // IDs hidden para la venta
   id_almacen: null,
 };
 
@@ -690,6 +689,7 @@ async function cargarListaVentas(filtros = {}) {
 function renderTablaVentas() {
   const tbody = document.getElementById('tabla-ventas-body');
   const badge = document.getElementById('ventas-total-badge');
+  const infoPaginacion = document.getElementById('ventas-paginacion-info');
   if (!tbody) return;
 
   tbody.replaceChildren();
@@ -698,6 +698,14 @@ function renderTablaVentas() {
   const inicio = (VentasState.ventasPagina - 1) * VentasState.ventasPorPagina;
   const pagina = VentasState.ventasList.slice(inicio, inicio + VentasState.ventasPorPagina);
   const frag = document.createDocumentFragment();
+
+  if (infoPaginacion) {
+    const total = VentasState.ventasList.length;
+    const mostrando = total === 0 ? 0 : Math.min(inicio + pagina.length, total) - inicio;
+    infoPaginacion.textContent = total === 0
+      ? 'Sin ventas registradas'
+      : `Mostrando ${mostrando} de ${total} ventas`;
+  }
 
   if (pagina.length === 0) {
     const tr = document.createElement('tr');
@@ -883,32 +891,84 @@ async function cargarDetalleVentaExpandible(id_venta, detailId) {
 
 // Ver detalle de venta en modal
 async function verDetalleVenta(id_venta) {
-    const modal = document.getElementById('modal-detalle-venta');
-    if (!modal) return;
-    try {
-        const v = await apiFetch(`/api/ventas/${id_venta}`);
-        const setEl = (sel, val) => { const el = modal.querySelector(sel); if (el) el.textContent = val ?? '—'; };
-        setEl('#detalle-comprobante', v.numero_comprobante);
-        setEl('#detalle-fecha', formatDate(v.fecha, true));
-        setEl('#detalle-cliente', v.cliente_nombre || 'Sin cliente');
-        setEl('#detalle-empleado', v.empleado_nombre);
-        setEl('#detalle-subtotal', formatMoney(v.subtotal));
-        setEl('#detalle-igv', formatMoney(v.igv));
-        setEl('#detalle-total', formatMoney(v.total));
-        setEl('#detalle-estado', v.estado);
-        
-        //botón de descargar comprobante
-        const btnDescargar = modal.querySelector('#btn-descargar-comprobante');
-        if (btnDescargar) {
-            btnDescargar.onclick = () => generarComprobantePDF(id_venta);
-        }
-        
-        new bootstrap.Modal(modal).show();
-    } catch (err) {
-        showToast('Error al cargar el detalle: ' + err.message, 'error');
-    }
-}
+  const modal = document.getElementById('modal-detalle-venta');
+  if (!modal) return;
+  try {
+    const v = await apiFetch(`/api/ventas/${id_venta}`);
+    const setEl = (sel, val) => { const el = modal.querySelector(sel); if (el) el.textContent = val ?? '—'; };
 
+    // Encabezado
+    setEl('#comprobante-numero', v.numero_comprobante);
+    setEl('#comprobante-fecha', formatDate(v.fecha, true));
+    setEl('#comprobante-cliente', v.cliente_nombre
+      ? `${v.cliente_nombre}${v.numero_documento ? ' (DNI ' + v.numero_documento + ')' : ''}`
+      : 'Sin cliente');
+    setEl('#comprobante-vendedor', v.empleado_nombre);
+
+    const estadoBadge = modal.querySelector('#comprobante-estado');
+    if (estadoBadge) {
+      const estadoMap = {
+        pagada: { texto: 'Pagada', cls: 'text-bg-success' },
+        anulada: { texto: 'Anulada', cls: 'text-bg-danger' },
+        con_devolucion: { texto: 'Con devolución', cls: 'text-bg-warning text-dark' },
+      };
+      const info = estadoMap[v.estado] ?? { texto: v.estado, cls: 'text-bg-secondary' };
+      estadoBadge.textContent = info.texto;
+      estadoBadge.className = `badge rounded-pill ${info.cls}`;
+    }
+
+    // Tabla de productos
+    const tbodyProductos = modal.querySelector('#comprobante-productos-body');
+    if (tbodyProductos) {
+      tbodyProductos.replaceChildren();
+      (v.items || []).forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.producto_nombre}</td>
+          <td>${item.cantidad}</td>
+          <td>${formatMoney(item.precio_unitario)}</td>
+          <td class="text-end">${formatMoney(item.subtotal)}</td>`;
+        tbodyProductos.appendChild(tr);
+      });
+    }
+
+    setEl('#comprobante-subtotal', formatMoney(v.subtotal));
+    setEl('#comprobante-igv', formatMoney(v.igv));
+    setEl('#comprobante-total', formatMoney(v.total));
+
+    // Forma de pago
+    const pagosWrap = modal.querySelector('#comprobante-pagos');
+    if (pagosWrap) {
+      pagosWrap.replaceChildren();
+      (v.pagos || []).forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'd-flex justify-content-between small mb-1';
+        const refOperacion = p.numero_operacion ? ` <span class="text-muted">· Op. #${p.numero_operacion}</span>` : '';
+        div.innerHTML = `<span>${p.tipo_pago_nombre}${refOperacion}</span><span>${formatMoney(p.monto)}</span>`;
+        pagosWrap.appendChild(div);
+      });
+    }
+
+    // Botón descargar comprobante (PDF, generado por exports.js)
+    const btnDescargarModal = modal.querySelector('#btn-descargar-comprobante');
+    if (btnDescargarModal) {
+      btnDescargarModal.dataset.ventaId = v.id_venta;
+    }
+
+    // Botón anular: solo visible si la venta sigue activa
+    const btnAnularModal = modal.querySelector('#btn-anular-desde-modal');
+    if (btnAnularModal) {
+      const puedeAnular = v.estado === 'pagada' || v.estado === 'con_devolucion';
+      btnAnularModal.classList.toggle('d-none', !puedeAnular);
+      btnAnularModal.dataset.ventaId = v.id_venta;
+      btnAnularModal.dataset.numeroComprobante = v.numero_comprobante;
+    }
+
+    new bootstrap.Modal(modal).show();
+  } catch (err) {
+    showToast('Error al cargar el detalle: ' + err.message, 'error');
+  }
+}
 //  Anular venta  
 async function anularVenta(id_venta, numero_comprobante) {
   if (!VentasState.cajaActiva) {
@@ -930,6 +990,83 @@ async function anularVenta(id_venta, numero_comprobante) {
     }
   });
 }
+//  Conexión del modal de detalle con el modal de anular venta  
+function initModalAnularVenta() {
+  const modalDetalle = document.getElementById('modal-detalle-venta');
+  const modalAnular = document.getElementById('modal-anular-venta');
+  const btnAnularDesdeModal = document.getElementById('btn-anular-desde-modal');
+  const formAnular = document.getElementById('form-anular-venta');
+  const btnDescargarComprobante = document.getElementById('btn-descargar-comprobante');
+
+  if (btnDescargarComprobante) {
+    btnDescargarComprobante.addEventListener('click', () => {
+      const idVenta = btnDescargarComprobante.dataset.ventaId;
+      if (!idVenta) {
+        showToast('No se pudo identificar la venta a descargar.', 'error');
+        return;
+      }
+      if (typeof generarComprobantePDF !== 'function') {
+        showToast('El generador de comprobantes no está disponible.', 'error');
+        return;
+      }
+      generarComprobantePDF(idVenta);
+    });
+  }
+
+  if (btnAnularDesdeModal && modalAnular) {
+    btnAnularDesdeModal.addEventListener('click', () => {
+      const idVenta = btnAnularDesdeModal.dataset.ventaId;
+      const numeroComprobante = btnAnularDesdeModal.dataset.numeroComprobante;
+
+      const inputId = modalAnular.querySelector('#anular-venta-id');
+      const numeroEl = modalAnular.querySelector('#anular-venta-numero');
+      const motivoEl = modalAnular.querySelector('#anular-venta-motivo');
+
+      if (inputId) inputId.value = idVenta ?? '';
+      if (numeroEl) numeroEl.textContent = numeroComprobante ?? '—';
+      if (motivoEl) motivoEl.value = '';
+
+      bootstrap.Modal.getInstance(modalDetalle)?.hide();
+    });
+  }
+
+  if (formAnular) {
+    formAnular.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!formAnular.checkValidity()) {
+        formAnular.classList.add('was-validated');
+        return;
+      }
+
+      if (!VentasState.cajaActiva) {
+        showToast('Necesitas una caja abierta para anular una venta.', 'error');
+        return;
+      }
+
+      const idVenta = document.getElementById('anular-venta-id')?.value;
+      const motivo = document.getElementById('anular-venta-motivo')?.value;
+
+      try {
+        await apiFetch(`/api/ventas/${idVenta}/anular`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            id_caja: VentasState.cajaActiva.id_caja,
+            motivo_anulacion: motivo,
+          }),
+        });
+        showToast('Venta anulada correctamente.', 'success');
+        formAnular.reset();
+        formAnular.classList.remove('was-validated');
+        bootstrap.Modal.getInstance(modalAnular)?.hide();
+        cargarListaVentas();
+      } catch (err) {
+        showToast('Error al anular: ' + err.message, 'error');
+      }
+    });
+  }
+}
+
 
 //  Filtros de ventas  
 function initFiltrosVentas() {
@@ -1106,6 +1243,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initBusquedaCliente();
   initFormNuevaVenta();
   initFiltrosVentas();
+  initModalAnularVenta();
 
   // Cargar lista de ventas cuando se activa el tab
   const tabListaVentas = document.getElementById('tab-lista-ventas');

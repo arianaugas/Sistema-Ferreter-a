@@ -54,13 +54,13 @@ const getAll = async (req, res) => {
                 p.creado_en,
                 COUNT(DISTINCT pp.id) AS total_productos,
                 COUNT(DISTINCT cp.id_contacto) AS total_contactos
-             FROM proveedores p
-             LEFT JOIN productos_proveedor pp ON pp.id_proveedor = p.id_proveedor
-             LEFT JOIN contactos_proveedor cp ON cp.id_proveedor = p.id_proveedor
-             ${where}
-             GROUP BY p.id_proveedor, p.ruc, p.nombre, p.direccion, p.telefono,
-                      p.correo, p.web, p.condicion_pago, p.activo, p.creado_en
-             ORDER BY p.nombre ASC`,
+            FROM proveedores p
+            LEFT JOIN productos_proveedor pp ON pp.id_proveedor = p.id_proveedor
+            LEFT JOIN contactos_proveedor cp ON cp.id_proveedor = p.id_proveedor
+            ${where}
+            GROUP BY p.id_proveedor, p.ruc, p.nombre, p.direccion, p.telefono,
+                        p.correo, p.web, p.condicion_pago, p.activo, p.creado_en
+            ORDER BY p.nombre ASC`,
             params
         );
 

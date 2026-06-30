@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const form      = document.getElementById('login-form');
-    const alertBox  = document.getElementById('demo-alert');
+    const form = document.getElementById('login-form');
+    const alertBox = document.getElementById('demo-alert');
     const alertText = alertBox.querySelector('.alert-text');
-    const overlay   = document.getElementById('success-overlay');
+    const overlay = document.getElementById('success-overlay');
 
     // Verificar si ya hay sesión activa
     fetch('/api/auth/me', { credentials: 'include' })
@@ -27,10 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const res  = await fetch('/api/auth/login', {
-                method:      'POST',
+                method: 'POST',
                 credentials: 'include',
-                headers:     { 'Content-Type': 'application/json' },
-                body:        JSON.stringify({ username, password })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
             });
 
             const data = await res.json();

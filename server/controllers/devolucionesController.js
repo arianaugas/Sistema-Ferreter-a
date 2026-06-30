@@ -384,9 +384,6 @@ const anular = async (req, res) => {
             // 3. Por cada producto que reingresó al stock, revertirlo
             for (const item of resDetalle.recordset) {
                 if (!item.reingresa_stock) continue;
-
-                // Leer el almacén desde el kardex de esta devolución
-                // (fue registrado ahí cuando se creó la devolución)
                 const reqAlm = transaction.request();
                 reqAlm.input('referencia_id', sql.Int, id);
                 reqAlm.input('id_producto', sql.Int, item.id_producto);

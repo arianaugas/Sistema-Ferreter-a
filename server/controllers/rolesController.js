@@ -93,7 +93,7 @@ const editarRol = async (req, res) => {
             `SELECT id_rol FROM roles WHERE nombre = @nombre AND id_rol <> @id`,
             {
                 nombre: { type: sql.VarChar, value: nombre },
-                id:     { type: sql.Int, value: id }
+                id: { type: sql.Int, value: id }
             }
         );
         if (nombreDuplicado.recordset.length > 0) {
@@ -106,9 +106,9 @@ const editarRol = async (req, res) => {
              OUTPUT INSERTED.id_rol, INSERTED.nombre, INSERTED.descripcion
              WHERE id_rol = @id`,
             {
-                nombre:      { type: sql.VarChar, value: nombre },
+                nombre: { type: sql.VarChar, value: nombre },
                 descripcion: { type: sql.VarChar, value: descripcion || null },
-                id:          { type: sql.Int, value: id }
+                id: { type: sql.Int, value: id }
             }
         );
 
@@ -119,42 +119,6 @@ const editarRol = async (req, res) => {
     }
 };
 
-/* Eliminar un rol (solo si no tiene usuarios asociados)
-const eliminarRol = async (req, res) => {
-    const id = req.params.id;
-    try {
-        // Verificar que existe
-        const existe = await query(
-            `SELECT id_rol FROM roles WHERE id_rol = @id`,
-            { id: { type: sql.Int, value: id } }
-        );
-        if (existe.recordset.length === 0) {
-            return res.status(404).json({ ok: false, mensaje: 'El rol no existe.' });
-        }
-
-        // Verificar que no tenga usuarios vinculados
-        const enUso = await query(
-            `SELECT id_usuario FROM usuarios WHERE id_rol = @id`,
-            { id: { type: sql.Int, value: id } }
-        );
-        if (enUso.recordset.length > 0) {
-            return res.status(400).json({
-                ok: false,
-                mensaje: 'No se puede eliminar el rol porque tiene usuarios asociados.'
-            });
-        }
-
-        await query(
-            `DELETE FROM roles WHERE id_rol = @id`,
-            { id: { type: sql.Int, value: id } }
-        );
-
-        res.json({ ok: true, mensaje: 'Rol eliminado correctamente.' });
-    } catch (err) {
-        console.error('Error al eliminar rol:', err);
-        res.status(500).json({ ok: false, mensaje: 'Error al eliminar el rol.' });
-    }
-};*/
 
 module.exports = { 
     getAll, 

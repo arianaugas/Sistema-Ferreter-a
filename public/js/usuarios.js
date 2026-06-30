@@ -1,7 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
 
-    // Al cargar la página, verificar si hay un empleado pendiente de crear usuario
-   // Leer el pendiente ANTES de cualquier carga, procesarlo después
     const pendienteRaw = sessionStorage.getItem('nuevo_usuario_para_empleado');
     if (pendienteRaw) sessionStorage.removeItem('nuevo_usuario_para_empleado');
 
@@ -59,12 +57,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     //CARGA INICIAL
-    //CARGA INICIAL
     cargarRoles();
     await cargarUsuarios();
 
-    // Si llegamos desde empleados con un empleado pendiente de usuario,
-    // abrimos el modal ahora que usuariosCache ya está lleno
     if (pendienteRaw) {
         try {
             const { id_empleado, nombreEmpleado } = JSON.parse(pendienteRaw);
@@ -150,7 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al cargar permisos');
 
-            _permisosEditando = data.permisos.map(p => ({ ...p })); // copia editable
+            _permisosEditando = data.permisos.map(p => ({ ...p }));
 
             const renderItem = (p, idx) => `
                 <div class="d-flex align-items-center justify-content-between py-2 px-3 border-bottom">
@@ -335,7 +330,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const id = parseInt(btn.dataset.rolId);
 
         if (accion === 'editar-rol') abrirEditarRol(id);
-        //if (accion === 'eliminar-rol') abrirEliminarRol(id, btn.dataset.rolNombre);
     });
 
     //MODAL: Ver usuario
@@ -501,12 +495,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            // Si hay contraseña nueva la mandamos al endpoint de cambio
             if (nuevaPass) {
                 const u = usuariosCache.find(x => x.id_usuario === id);
-                // El endpoint requiere contrasenaAnterior — no la tenemos aquí,
-                // así que usamos el endpoint de admin (PUT users/:id) que ya
-                // maneja el campo si decides agregarlo, o mostramos aviso.
+
                 showToast('Usuario editado. Para cambiar la contraseña usa la opción específica.', 'info');
             } else {
                 showToast('Usuario actualizado correctamente', 'success');
@@ -640,33 +631,5 @@ document.addEventListener('DOMContentLoaded', async () => {
             showToast('No se pudo conectar con el servidor', 'error');
         }
     });
-
-    //MODAL: Eliminar rol
-
-    /*function abrirEliminarRol(id, nombre) {
-        elimRolNombre.textContent = nombre;
-        btnConfirmarElimRol.dataset.rolId  = id;
-    }
-
-    btnConfirmarElimRol.addEventListener('click', async function () {
-        const id = parseInt(this.dataset.rolId);
-
-        try {
-            const res  = await fetch(`/api/auth/roles/${id}`, {
-                method: 'DELETE', credentials: 'include'
-            });
-            const data = await res.json();
-
-            if (res.ok && data.ok) {
-                bootstrap.Modal.getInstance(document.getElementById('modal-eliminar-rol')).hide();
-                showToast('Rol eliminado correctamente', 'success');
-                cargarRoles();
-            } else {
-                showToast(data.mensaje || 'Error al eliminar rol', 'error');
-            }
-        } catch (err) {
-            showToast('No se pudo conectar con el servidor', 'error');
-        }
-    });*/
 
 });

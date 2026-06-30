@@ -1,8 +1,6 @@
 const { sql, query } = require('../db/conexion_sql');
 
 
-// Métricas del día: ventas del día, total recaudado, stock bajo, caja activa,
-// últimas 5 ventas
 const getResumen = async (req, res) => {
     try {
         // Ventas del día
@@ -29,7 +27,7 @@ const getResumen = async (req, res) => {
              WHERE activo = 1 AND stock_actual <= 0`
         );
 
-        // Caja activa (abierta hoy)
+        // Caja activa
         const cajaActiva = await query(
             `SELECT TOP 1
                 c.id_caja,
@@ -75,8 +73,6 @@ const getResumen = async (req, res) => {
     }
 };
 
-// getGraficoVentas
-// Datos para gráfico de ventas de los últimos 7 o 30 días
 const getGraficoVentas = async (req, res) => {
     const dias = parseInt(req.query.dias) || 7;
 
@@ -104,8 +100,7 @@ const getGraficoVentas = async (req, res) => {
     }
 };
 
-// getAlertas
-// Lista de alertas activas: stock bajo, sin stock, órdenes pendientes
+
 const getAlertas = async (req, res) => {
     try {
         // Productos con stock bajo (pero no en 0)
@@ -170,10 +165,7 @@ const getAlertas = async (req, res) => {
     }
 };
 
-//FALTA 
-//Caja abierta o cerrada del turno actual
-//Últimas ventas registradas
-//Órdenes de compra pendientes de recibir
+
 module.exports = { 
     getResumen, 
     getGraficoVentas, 

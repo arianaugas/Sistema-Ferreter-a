@@ -35,7 +35,7 @@ const getPermisosPorRol = async (req, res) => {
     }
 };
 
-//módulos a los que el usuario logueado tiene acceso (para armar el sidebar)
+//módulos a los que el usuario logueado tiene acceso
 const getMisPermisos = async (req, res) => {
     const { rol } = req.user;
 
@@ -79,10 +79,10 @@ const getMisPermisos = async (req, res) => {
 };
 
 
-//guardar permisos completos de un rol (upsert) por módulo
+//guardar permisos completos de un rol 
 const guardarPermisos = async (req, res) => {
     const { id_rol } = req.params;
-    const { permisos } = req.body; // array: [{ id_modulo, tiene_acceso }]
+    const { permisos } = req.body; 
 
     if (!Array.isArray(permisos) || permisos.length === 0) {
         return res.status(400).json({ ok: false, mensaje: 'Se requiere el array de permisos.' });

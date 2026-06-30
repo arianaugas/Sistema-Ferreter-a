@@ -147,7 +147,6 @@ const seriesController = {
         }
     },
 
-    // 5. Desactivar una serie
     eliminar: async (req, res, next) => {
         try {
             const { id } = req.params;

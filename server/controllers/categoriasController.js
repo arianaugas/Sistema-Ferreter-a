@@ -52,8 +52,8 @@ const crearCategoria = async (req, res) => {
 
     const result = await query(
       `INSERT INTO categorias (nombre, descripcion, activo)
-       OUTPUT INSERTED.*
-       VALUES (@nombre, @descripcion, 1)`,
+      OUTPUT INSERTED.*
+      VALUES (@nombre, @descripcion, 1)`,
       {
         nombre:      { type: sql.VarChar, value: nombre },
         descripcion: { type: sql.VarChar, value: descripcion || null }
@@ -108,27 +108,6 @@ const actualizarCategoria = async (req, res) => {
   }
 };
 
-
-// Desactivar categoría
-/*const desactivarCategoria = async (req, res) => { IGNORAR
-  const { id } = req.params;//traemos el id
-
-  try {
-    //consultamos
-    const result = await query(`UPDATE categorias SET activo = 0 OUTPUT INSERTED.* 
-      WHERE id_categoria = @id AND activo = 1`, {
-      id: { type: sql.Int, value: id }
-    });
-
-    const categoria = result.recordset[0];
-    if (!categoria) return res.status(404).json({ ok: false, mensaje: 'Categoría no encontrada o ya inactiva' });
-    res.json({ ok: true, categoria });
-
-  } catch (err) {
-    console.error('Error al desactivar categoría:', err);
-    res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
-  }
-};*/
 
 module.exports = {
   getAll,

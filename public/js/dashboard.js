@@ -69,7 +69,6 @@ async function cargarAlertas() {
 
 
 function renderKpiVentas(ventasHoy) {
-    // ventasHoy: { cantidad_ventas, total_recaudado }
     const elValor = document.getElementById('kpi-ventas-dia-valor');
     const elSub   = document.getElementById('kpi-ventas-dia-sub');
     if (elValor) elValor.textContent = formatMoney(ventasHoy?.total_recaudado ?? 0);
@@ -77,7 +76,6 @@ function renderKpiVentas(ventasHoy) {
 }
 
 function renderKpiCaja(cajaActiva) {
-    // cajaActiva: { id_caja, numero_turno, monto_inicial, fecha_apertura, cajero } | null
     const elValor = document.getElementById('kpi-caja-valor');
     const elSub   = document.getElementById('kpi-caja-sub');
     if (!elValor || !elSub) return;
@@ -96,7 +94,6 @@ function renderKpiCaja(cajaActiva) {
 }
 
 function renderKpiStock(stockBajo, sinStock) {
-    // stock_bajo y sin_stock vienen como número desde getResumen
     const elValor = document.getElementById('kpi-stock-valor');
     if (!elValor) return;
 
@@ -244,22 +241,4 @@ function renderOrdenesPendientes(ordenes) {
             </td>`;
         tbody.appendChild(tr);
     });
-}
-
-
-/* ============================================================
-   USUARIO — Poblar nombre/rol en sidebar desde cookie JWT
-   global.js no expone el usuario, lo leemos del payload
-============================================================ */
-function renderUsuarioSidebar() {
-    try {
-        // El token está en httpOnly cookie — no accesible desde JS.
-        // El nombre lo cargamos desde el endpoint de resumen si el
-        // backend lo devuelve, o lo dejamos como está en el HTML.
-        // Si en el futuro agregas un endpoint GET /api/auth/me,
-        // aquí es donde lo llamarías.
-        //
-        // Por ahora no hacemos nada: el nombre ya viene pre-renderizado
-        // por global.js si existe, o queda el placeholder del HTML.
-    } catch (_) { /* silencioso */ }
 }

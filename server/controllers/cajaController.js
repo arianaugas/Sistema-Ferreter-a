@@ -59,8 +59,7 @@ const cajaController = {
         }
     },
     
-    // se abre la caja (solo Cajero o Administrador, cada uno con su propia caja individual)
-    // se abre la caja (el permiso de quién puede hacerlo lo controla
+
     abrirCaja: async (req, res, next) => {
         try {
             const { monto_inicial } = req.body;

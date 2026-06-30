@@ -42,7 +42,7 @@ const clientesController = {
             const resultado = await query(queryStr, parametros);
             return res.status(200).json(resultado.recordset);
         } catch (error) {
-            next(error); // Delega el error al manejador global de tu servidor.js
+            next(error); 
         }
     },
 

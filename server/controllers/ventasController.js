@@ -27,10 +27,6 @@ const ventasController = {
         try {
             const resultadoTransaccion = await withTransaction(async (tx) => {
 
-                // 1. Verificar que la caja elegida por el vendedor exista y siga
-                // abierta (nunca se confía ciegamente en lo que manda el frontend,
-                // por si se cerró/venció justo entre que el vendedor la eligió y
-                // ahora registra la venta).
                 const reqCaja = tx.request();
                 reqCaja.input('id_caja', sql.Int, id_caja);
                 const resCaja = await reqCaja.query('SELECT estado FROM cajas WHERE id_caja = @id_caja');
@@ -50,9 +46,6 @@ const ventasController = {
                     throw new Error("No se encontró la configuración de IGV. Contacte al administrador.");
                 }
                 const TASA_IGV = parseFloat(resIgv.recordset[0].valor);
-
-                // 2b. Identificar el tipo de pago "Efectivo" (monto_esperado de caja solo
-                // debe reflejar dinero físico, no pagos por Yape/tarjeta/transferencia)
                 const resEfectivo = await tx.request().query("SELECT id_tipo_pago FROM tipos_pago WHERE nombre = 'Efectivo'");
                 const idTipoEfectivo = resEfectivo.recordset[0]?.id_tipo_pago ?? null;
 
@@ -370,11 +363,8 @@ const ventasController = {
                 reqItems.input('id_venta', sql.Int, id);
                 const resItems = await reqItems.query('SELECT id_producto, cantidad FROM detalle_venta WHERE id_venta = @id_venta');
 
-                // REEMPLAZA todo el for loop del paso 4 con esto:
                 for (const item of resItems.recordset) {
 
-                    // Leer el almacén desde el kardex de la venta original
-                    // (evita que el frontend mande un almacén incorrecto)
                     const reqAlm = tx.request();
                     reqAlm.input('referencia_id', sql.Int, parseInt(id));
                     reqAlm.input('id_producto', sql.Int, item.id_producto);

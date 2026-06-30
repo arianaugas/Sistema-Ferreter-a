@@ -125,28 +125,6 @@ const actualizar = async (req, res) => {
   }
 };
 
-// Desactivar subcategoría IGNORAR
-/*const desactivar = async (req, res) => {
-  const { id } = req.params;//traemos el id
-
-  try {
-    //realizamos una consulta
-    const result = await query(`UPDATE subcategorias SET activo = 0 OUTPUT INSERTED.* 
-      WHERE id_subcategoria = @id AND activo = 1`, {
-      id: { type: sql.Int, value: id }
-    });
-    //guardamos
-    const sub = result.recordset[0];
-    if (!sub) return res.status(404).json({ ok: false, mensaje: 'Subcategoría no encontrada o ya inactiva' });
-    res.json({ ok: true, subcategoria: sub });
-
-  } catch (err) {
-    console.error('Error al desactivar subcategoría:', err);
-    res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
-  }
-};*/
-
-
 module.exports = {
   getAll,
   getById,

@@ -1064,7 +1064,6 @@ async function generarComprobantePDF(id_venta) {
         const items = venta.items || [];
         const pagos = venta.pagos || [];
         
-        // IGV: ahora viene como porcentaje (ej: "18") en lugar de decimal (0.18)
         const porcentajeIGV = parseFloat(config.igv_porcentaje) || 18;
         const tasaIGV = porcentajeIGV / 100;
         
@@ -1075,10 +1074,9 @@ async function generarComprobantePDF(id_venta) {
         const pageHeight = doc.internal.pageSize.getHeight();
         const margin = 15;
         
-        let yPos = 20; // ← Más espacio inicial para bajar el título
+        let yPos = 20; 
         
         //   ENCABEZADO  
-        // Nombre del negocio (NUEVA CLAVE)
         if (config.empresa_nombre) {
             doc.setFontSize(18);
             doc.setTextColor(0, 51, 102);
@@ -1087,7 +1085,7 @@ async function generarComprobantePDF(id_venta) {
             yPos += 8;
         }
         
-        // RUC (NUEVA CLAVE)
+        // RUC 
         if (config.empresa_ruc) {
             doc.setFontSize(9);
             doc.setTextColor(100, 100, 100);
@@ -1096,19 +1094,19 @@ async function generarComprobantePDF(id_venta) {
             yPos += 5;
         }
         
-        // Dirección (NUEVA CLAVE)
+        // Dirección 
         if (config.empresa_direccion) {
             doc.text(`Dirección: ${config.empresa_direccion}`, margin, yPos);
             yPos += 5;
         }
         
-        // Teléfono (NUEVA CLAVE)
+        // Teléfono 
         if (config.empresa_telefono) {
             doc.text(`Teléfono: ${config.empresa_telefono}`, margin, yPos);
             yPos += 5;
         }
         
-        // Email (NUEVA CLAVE)
+        // Email 
         if (config.empresa_correo) {
             doc.text(`Email: ${config.empresa_correo}`, margin, yPos);
             yPos += 5;
@@ -1134,8 +1132,7 @@ async function generarComprobantePDF(id_venta) {
         const tipoLineas = doc.splitTextToSize(tipoTexto, boxW - 4);
         doc.text(tipoLineas, boxX + boxW / 2, boxY + 10, { align: 'center' });
         
-        // Subtítulo "ELECTRÓNICA": solo aplica a boleta (factura ya lo dice en el título;
-        // nota de venta NO es un comprobante electrónico SUNAT)
+
         let yNumero = boxY + 18;
         if (venta.tipo_comprobante === 'boleta') {
             doc.setFontSize(8);
@@ -1243,7 +1240,7 @@ async function generarComprobantePDF(id_venta) {
         // OP. GRAVADAS
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0, 0, 0);
-        doc.text('OP. GRAVADAS:', totalesX - 40 - 35, finalY);
+        doc.text('SUB TOTAL:', totalesX - 40 - 35, finalY);
         doc.setFont('helvetica', 'bold');
         doc.text(`S/ ${parseFloat(venta.subtotal).toFixed(2)}`, totalesX, finalY, { align: 'right' });
         finalY += 6;

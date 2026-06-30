@@ -384,9 +384,6 @@ const editarProducto = async (req, res) => {
             }
         );
 
-        
-        // Si se subió una imagen nueva, reemplaza la anterior (mantiene siempre
-        // como máximo una imagen por producto, sin acumular filas viejas)
         if (req.fileUrl) {
             const anteriores = await query(
                 `SELECT id_imagen FROM imagenes_producto WHERE id_producto = @id`,

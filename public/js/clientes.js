@@ -22,7 +22,6 @@ async function apiFetch(url, options = {}) {
 }
 
 //  Renderizar una fila de la tabla 
-//  Renderizar una fila de la tabla 
 function renderFilaCliente(c) {
   const tr = document.createElement('tr');
 

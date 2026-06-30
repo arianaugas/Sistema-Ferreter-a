@@ -521,11 +521,13 @@ function initTabListeners() {
 
 //  KARDEX 
 
+// DESPUÉS
 function initKardexBusqueda() {
     const dlK = document.getElementById('kardex-productos-lista');
     if (dlK && dlK.options.length === 0) {
         apiFetch(`${API}/stock`).then(data => {
             const items = data.stock || [];
+            if (_stockCache.length === 0) _stockCache = items;
             items.forEach(item => {
                 const opt = document.createElement('option');
                 opt.value = `${item.codigo} — ${item.nombre}`;

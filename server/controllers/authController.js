@@ -15,10 +15,10 @@ const login = async (req, res) => {
                     u.id_empleado,
                     r.nombre AS rol,
                     e.nombre AS nombre_empleado
-             FROM usuarios u
-             INNER JOIN roles r ON u.id_rol = r.id_rol
-             INNER JOIN empleados e ON u.id_empleado = e.id_empleado
-             WHERE u.username = @username`,
+            FROM usuarios u
+            INNER JOIN roles r ON u.id_rol = r.id_rol
+            INNER JOIN empleados e ON u.id_empleado = e.id_empleado
+            WHERE u.username = @username`,
             { username: { type: sql.VarChar, value: username } }
         );
 
@@ -88,10 +88,10 @@ const getUsuario = async (req, res) => {
             `SELECT u.id_usuario, u.username, u.activo,
                     r.nombre AS rol,
                     e.nombre AS nombre_empleado
-             FROM usuarios u
-             INNER JOIN roles r ON u.id_rol = r.id_rol
-             INNER JOIN empleados e ON u.id_empleado = e.id_empleado
-             WHERE u.id_usuario = @id`,
+            FROM usuarios u
+            INNER JOIN roles r ON u.id_rol = r.id_rol
+            INNER JOIN empleados e ON u.id_empleado = e.id_empleado
+            WHERE u.id_usuario = @id`,
             {//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
                 id: { type: sql.Int, value: id }
             }

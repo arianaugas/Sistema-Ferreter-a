@@ -517,7 +517,6 @@ function initFiltros() {
   if (btnFiltrar) btnFiltrar.addEventListener('click', () => cargarDevoluciones(getFiltros()));
   if (btnLimpiar) {
     btnLimpiar.addEventListener('click', () => {
-      // Usar los IDs correctos que sí existen en el HTML
       ['filtro-estado-devolucion', 'filtro-tipo-devolucion',
         'filtro-fecha-desde-dev', 'filtro-fecha-hasta-dev'].forEach(id => {
           const el = document.getElementById(id); if (el) el.value = '';

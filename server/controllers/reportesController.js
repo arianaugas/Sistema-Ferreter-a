@@ -241,12 +241,12 @@ const comprasPorPeriodo = async (req, res) => {
     try {
         const result = await query(
             `SELECT
-                ${labelMap[agrupacion]}          AS periodo,
-                prov.nombre                      AS proveedor,
-                COUNT(oc.id_orden)               AS cantidad_ordenes,
-                SUM(oc.subtotal)                 AS subtotal,
-                SUM(oc.igv)                      AS igv,
-                SUM(oc.total)                    AS total
+                ${labelMap[agrupacion]} AS periodo,
+                prov.nombre AS proveedor,
+                COUNT(oc.id_orden) AS cantidad_ordenes,
+                SUM(oc.subtotal) AS subtotal,
+                SUM(oc.igv) AS igv,
+                SUM(oc.total) AS total
              FROM ordenes_compra oc
              INNER JOIN proveedores prov ON prov.id_proveedor = oc.id_proveedor
              ${where}
@@ -379,12 +379,12 @@ const movimientosCaja = async (req, res) => {
             `SELECT
                 CONVERT(DATE, mc.registrado_en)  AS fecha,
                 c.id_caja,
-                e.nombre + ' ' + e.apellido      AS cajero,
+                e.nombre + ' ' + e.apellido AS cajero,
                 mc.tipo,
-                COUNT(mc.id_movimiento)          AS cantidad,
-                SUM(mc.monto)                    AS total
+                COUNT(mc.id_movimiento) AS cantidad,
+                SUM(mc.monto) AS total
              FROM movimientos_caja mc
-             INNER JOIN cajas    c ON c.id_caja     = mc.id_caja
+             INNER JOIN cajas c ON c.id_caja = mc.id_caja
              INNER JOIN empleados e ON e.id_empleado = c.id_empleado
              ${where}
              GROUP BY CONVERT(DATE, mc.registrado_en), c.id_caja, e.nombre, e.apellido, mc.tipo
@@ -399,9 +399,6 @@ const movimientosCaja = async (req, res) => {
 };
 
 
-
-//Movimientos de inventario de un producto en un rango de fechas. ---(VERIFICAR)
-// Historial completo de movimientos de un producto (consulta directa a kardex)
 
 // Kardex general — todos los productos con filtros opcionales
 const kardexGeneral = async (req, res) => {
@@ -664,8 +661,6 @@ const reporteDevoluciones = async (req, res) => {
 };
 
 // reporteGanancias
-// Ganancia por producto: precio_venta - precio_compra por unidad vendida
-// Filtros: desde, hasta, id_categoria, id_subcategoria
 const reporteGanancias = async (req, res) => {
     const { desde, hasta, id_categoria, id_subcategoria } = req.query;
 
@@ -709,7 +704,7 @@ const reporteGanancias = async (req, res) => {
                 AVG(dv.precio_unitario) AS precio_venta_prom,
                 AVG(p.precio_compra) AS precio_costo_prom,
                 SUM(dv.subtotal) AS ingresos,
-                SUM(dv.cantidad * p.precio_compra)             AS costo_total,
+                SUM(dv.cantidad * p.precio_compra) AS costo_total,
                 SUM(dv.subtotal) - SUM(dv.cantidad * p.precio_compra) AS ganancia
             FROM detalle_venta dv
             INNER JOIN ventas v ON v.id_venta  = dv.id_venta
@@ -741,8 +736,6 @@ const reporteGanancias = async (req, res) => {
 };
 
 // reporteLotes
-// Lotes activos con fecha de vencimiento, filtrable por estado y fecha límite
-// estado: 'caducado' | 'por_vencer' | 'vigente'
 const reporteLotes = async (req, res) => {
     const { estado, vence_antes } = req.query;
 
@@ -804,7 +797,6 @@ const reporteLotes = async (req, res) => {
 };
 
 // reporteGastos
-// Egresos manuales de caja (movimientos_caja tipo='egreso') por período
 const reporteGastos = async (req, res) => {
     const { desde, hasta } = req.query;
 

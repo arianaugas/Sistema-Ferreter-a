@@ -60,8 +60,8 @@ async function crearMarca(req, res) {
        OUTPUT INSERTED.*
        VALUES (@nombre, @pais_origen, 1)`,
       {
-        nombre:      { type: sql.VarChar, value: nombre },
-        pais_origen: { type: sql.VarChar, value: pais_origen || null }  // descripcion → pais_origen
+        nombre:{ type: sql.VarChar, value: nombre },
+        pais_origen: { type: sql.VarChar, value: pais_origen || null } 
       }
     );
     return res.status(201).json({ ok: true, marca: recordset[0] });
@@ -73,7 +73,7 @@ async function crearMarca(req, res) {
 
 async function editarMarca(req, res) {
   const { id } = req.params;
-  const { nombre, pais_origen, activo } = req.body;  // descripcion → pais_origen
+  const { nombre, pais_origen, activo } = req.body; 
 
   const { recordset: existentes } = await query(
     'SELECT * FROM marcas WHERE id_marca = @id',
@@ -88,16 +88,16 @@ async function editarMarca(req, res) {
   try {
     const { recordset } = await query(
       `UPDATE marcas SET
-         nombre      = COALESCE(@nombre, nombre),
+         nombre= COALESCE(@nombre, nombre),
          pais_origen = COALESCE(@pais_origen, pais_origen),
-         activo      = COALESCE(@activo, activo)
+         activo= COALESCE(@activo, activo)
        OUTPUT INSERTED.*
        WHERE id_marca = @id`,
       {
-        id:          { type: sql.Int,     value: id },
-        nombre:      { type: sql.VarChar, value: nombre      || null },
+        id:{ type: sql.Int,value: id },
+        nombre:{ type: sql.VarChar, value: nombre|| null },
         pais_origen: { type: sql.VarChar, value: pais_origen || null },  // descripcion → pais_origen
-        activo:      { type: sql.Bit,     value: activo !== undefined ? activo : null }
+        activo:{ type: sql.Bit,value: activo !== undefined ? activo : null }
       }
     );
     return res.json({ ok: true, marca: recordset[0] });

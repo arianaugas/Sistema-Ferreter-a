@@ -61,10 +61,10 @@ const getOrdenById = async (req, res) => {
         const ordenResult = await query(
             `SELECT oc.*, p.nombre AS proveedor_nombre, p.ruc AS proveedor_ruc,
                     e.nombre + ' ' + e.apellido AS empleado_nombre
-             FROM ordenes_compra oc
-             INNER JOIN proveedores p ON oc.id_proveedor = p.id_proveedor
-             INNER JOIN empleados e ON oc.id_empleado = e.id_empleado
-             WHERE oc.id_orden = @id`,
+            FROM ordenes_compra oc
+            INNER JOIN proveedores p ON oc.id_proveedor = p.id_proveedor
+            INNER JOIN empleados e ON oc.id_empleado = e.id_empleado
+            WHERE oc.id_orden = @id`,
             { id: { type: sql.Int, value: id } }
         );
 
@@ -74,9 +74,9 @@ const getOrdenById = async (req, res) => {
 
         const detalleResult = await query(
             `SELECT d.*, p.nombre AS producto_nombre, p.codigo AS producto_codigo, p.tiene_lote
-             FROM detalle_orden_compra d
-             INNER JOIN productos p ON d.id_producto = p.id_producto
-             WHERE d.id_orden = @id`,
+            FROM detalle_orden_compra d
+            INNER JOIN productos p ON d.id_producto = p.id_producto
+            WHERE d.id_orden = @id`,
             { id: { type: sql.Int, value: id } }
         );
 
@@ -152,8 +152,8 @@ const crearOrden = async (req, res) => {
             const cabResult = await reqCab.query(
                 `INSERT INTO ordenes_compra 
                     (numero_orden, id_proveedor, id_empleado, fecha_esperada, subtotal, igv, total, estado, observacion)
-                 OUTPUT INSERTED.*
-                 VALUES (@numero_orden, @id_proveedor, @id_empleado, @fecha_esperada, @subtotal, @igv, @total, 'borrador', @observacion)`
+                OUTPUT INSERTED.*
+                VALUES (@numero_orden, @id_proveedor, @id_empleado, @fecha_esperada, @subtotal, @igv, @total, 'borrador', @observacion)`
             );
 
             const nuevaOrden = cabResult.recordset[0];
@@ -170,7 +170,7 @@ const crearOrden = async (req, res) => {
                 await reqDet.query(
                     `INSERT INTO detalle_orden_compra 
                         (id_orden, id_producto, cantidad_solicitada, cantidad_recibida, precio_unitario, subtotal)
-                     VALUES (@id_orden, @id_producto, @cantidad_solicitada, 0, @precio_unitario, @subtotal)`
+                    VALUES (@id_orden, @id_producto, @cantidad_solicitada, 0, @precio_unitario, @subtotal)`
                 );
             }
 
@@ -190,8 +190,8 @@ const enviarOrden = async (req, res) => {
     try {
         const result = await query(
             `UPDATE ordenes_compra SET estado = 'enviada' 
-             OUTPUT INSERTED.*
-             WHERE id_orden = @id AND estado = 'borrador'`,
+            OUTPUT INSERTED.*
+            WHERE id_orden = @id AND estado = 'borrador'`,
             { id: { type: sql.Int, value: id } }
         );
 
@@ -212,8 +212,8 @@ const anularOrden = async (req, res) => {
     try {
         const result = await query(
             `UPDATE ordenes_compra SET estado = 'anulada' 
-             OUTPUT INSERTED.*
-             WHERE id_orden = @id AND estado IN ('borrador', 'enviada')`,
+            OUTPUT INSERTED.*
+            WHERE id_orden = @id AND estado IN ('borrador', 'enviada')`,
             { id: { type: sql.Int, value: id } }
         );
 

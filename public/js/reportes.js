@@ -15,7 +15,6 @@ async function apiFetch(url, options = {}) {
 
 //  HELPERS UI 
 
-/** Muestra spinner en un tbody mientras carga */
 function setTbodyLoading(tbodyId, cols) {
     const tb = document.getElementById(tbodyId);
     if (!tb) return;
@@ -24,14 +23,12 @@ function setTbodyLoading(tbodyId, cols) {
     </td></tr>`;
 }
 
-/** Muestra mensaje vacío en un tbody */
 function setTbodyEmpty(tbodyId, cols, msg = 'Sin resultados para los filtros seleccionados.') {
     const tb = document.getElementById(tbodyId);
     if (!tb) return;
     tb.innerHTML = `<tr><td colspan="${cols}" class="text-center py-4 text-muted">${msg}</td></tr>`;
 }
 
-/** Construye query string ignorando valores vacíos */
 function buildQuery(params) {
     const qs = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
@@ -41,7 +38,6 @@ function buildQuery(params) {
     return str ? `?${str}` : '';
 }
 
-/** Badge de estado coloreado */
 function badgeEstado(estado) {
     const map = {
         caducado: 'text-bg-danger',
@@ -60,7 +56,6 @@ function badgeEstado(estado) {
     return `<span class="badge ${map[estado] ?? 'text-bg-secondary'}">${estado}</span>`;
 }
 
-/** Carga un <select> con [{id, nombre}] */
 function poblarSelect(selectId, items, idKey, nombreKey, primerOpcion = 'Todos') {
     const sel = document.getElementById(selectId);
     if (!sel) return;
